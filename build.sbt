@@ -32,4 +32,10 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
     libraryDependencies ++= Seq(
     ),
   )
-
+  .jvmSettings(
+    libraryDependencies ++= Seq(
+      "com.github.jwt-scala" %% "jwt-circe" % "9.4.3" % Test,
+      "com.chatwork" %% "scala-jwk" % "1.2.24" % Test,
+      "org.bitbucket.b_c" % "jose4j" % "0.9.6" % Test,
+    ),
+  )
