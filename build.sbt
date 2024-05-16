@@ -30,12 +30,16 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
   .settings(
     name := "jose-core",
     libraryDependencies ++= Seq(
+      "com.peknight" %%% "crypto-core" % pekCryptoVersion,
     ),
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.github.jwt-scala" %% "jwt-circe" % "9.4.3" % Test,
+      "com.github.jwt-scala" %% "jwt-circe" % "10.0.1" % Test,
       "com.chatwork" %% "scala-jwk" % "1.2.24" % Test,
       "org.bitbucket.b_c" % "jose4j" % "0.9.6" % Test,
     ),
   )
+
+val pekVersion = "0.1.0-SNAPSHOT"
+val pekCryptoVersion = pekVersion
