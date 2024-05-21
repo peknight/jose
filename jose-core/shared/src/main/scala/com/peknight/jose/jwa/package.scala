@@ -2,7 +2,7 @@ package com.peknight.jose
 
 import com.peknight.crypto.algorithm.cipher.asymmetric.RSA
 import com.peknight.crypto.algorithm.cipher.mgf.MGF1
-import com.peknight.crypto.algorithm.cipher.mode.GCM
+import com.peknight.crypto.algorithm.cipher.mode.{CBC, GCMKW}
 import com.peknight.crypto.algorithm.cipher.padding.{OAEP, OAEPWithDigestAndMGFPadding}
 import com.peknight.crypto.algorithm.cipher.symmetric.*
 import com.peknight.crypto.algorithm.digest.`SHA-256`
@@ -48,11 +48,13 @@ package object jwa:
   val `ECDH-ES+A192KW`: ECDHESAlgorithm = ECDHESAlgorithm(`ECDH-ESWithAESWrap_192`, Optional)
   val `ECDH-ES+A256KW`: ECDHESAlgorithm = ECDHESAlgorithm(`ECDH-ESWithAESWrap_256`, Recommended)
 
-  val A128GCMKW: AESGCMAlgorithm = AESGCMAlgorithm(AES_128 / GCM)
-  val A192GCMKW: AESGCMAlgorithm = AESGCMAlgorithm(AES_192 / GCM)
-  val A256GCMKW: AESGCMAlgorithm = AESGCMAlgorithm(AES_256 / GCM)
+  val A128GCMKW: AESGCMAlgorithm = AESGCMAlgorithm(AES_128 / GCMKW)
+  val A192GCMKW: AESGCMAlgorithm = AESGCMAlgorithm(AES_192 / GCMKW)
+  val A256GCMKW: AESGCMAlgorithm = AESGCMAlgorithm(AES_256 / GCMKW)
 
   val `PBES2-HS256+A128KW`: PBES2Algorithm = PBES2Algorithm(PBES2withHmacSHA256andAESWrap_128)
   val `PBES2-HS384+A192KW`: PBES2Algorithm = PBES2Algorithm(PBES2withHmacSHA384andAESWrap_192)
   val `PBES2-HS512+A256KW`: PBES2Algorithm = PBES2Algorithm(PBES2withHmacSHA512andAESWrap_256)
+
+  (HmacSHA256, AES_128 / CBC)
 end jwa
