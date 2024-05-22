@@ -1,4 +1,4 @@
-package com.peknight.jose.jwa
+package com.peknight.jose
 
 enum Requirement:
   case Required, Optional, `Recommended-`, Recommended, `Recommended+`

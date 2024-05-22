@@ -1,6 +1,7 @@
 package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.{Algorithm, NONE}
+import com.peknight.jose.Requirement
 
 /**
  * https://datatracker.ietf.org/doc/html/rfc7518

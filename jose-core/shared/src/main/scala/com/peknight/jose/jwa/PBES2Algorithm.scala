@@ -1,8 +1,9 @@
 package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.pbe.PBES2WithMACAndEncryption
+import com.peknight.jose.Requirement
 import com.peknight.jose.jwa.HeaderParam.{p2c, p2s}
-import com.peknight.jose.jwa.Requirement.Optional
+import com.peknight.jose.Requirement.Optional
 
 trait PBES2Algorithm extends KeyEncryptionAlgorithm:
   val headerParams: Seq[HeaderParam] = Seq(p2s, p2c)

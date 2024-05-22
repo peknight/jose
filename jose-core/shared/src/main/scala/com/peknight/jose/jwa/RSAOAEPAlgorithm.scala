@@ -1,6 +1,7 @@
 package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.cipher.Transformation
+import com.peknight.jose.Requirement
 
 trait RSAOAEPAlgorithm extends KeyEncryptionAlgorithm:
   val headerParams: Seq[HeaderParam] = Seq.empty[HeaderParam]

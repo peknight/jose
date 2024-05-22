@@ -1,6 +1,7 @@
 package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.mac.Hmac
+import com.peknight.jose.Requirement
 
 trait HmacAlgorithm extends JWSAlgorithm
 object HmacAlgorithm:

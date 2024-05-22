@@ -1,6 +1,7 @@
 package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.signature.DigestWithEncryption
+import com.peknight.jose.Requirement
 
 trait ECDSAAlgorithm extends DigitalSignatureAlgorithm
 object ECDSAAlgorithm:

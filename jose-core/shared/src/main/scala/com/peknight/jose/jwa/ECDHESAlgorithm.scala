@@ -2,8 +2,9 @@ package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.Algorithm
 import com.peknight.crypto.algorithm.key.agreement.`ECDH-ES`
+import com.peknight.jose.Requirement
 import com.peknight.jose.jwa.HeaderParam.{apu, apv, epk}
-import com.peknight.jose.jwa.Requirement.`Recommended+`
+import com.peknight.jose.Requirement.`Recommended+`
 
 trait ECDHESAlgorithm extends KeyAgreementAlgorithm:
   val headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)

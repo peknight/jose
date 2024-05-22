@@ -2,7 +2,8 @@ package com.peknight.jose.jwa
 
 import com.peknight.crypto.algorithm.Algorithm
 import com.peknight.crypto.algorithm.ssa.`RSASSA-PKCS1-v1_5`
-import com.peknight.jose.jwa.Requirement.`Recommended-`
+import com.peknight.jose.Requirement
+import com.peknight.jose.Requirement.`Recommended-`
 
 object RSA1_5Algorithm extends KeyEncryptionAlgorithm:
   val algorithm: Algorithm = `RSASSA-PKCS1-v1_5`
