@@ -5,8 +5,9 @@ import com.peknight.jose.Requirement.Optional
 import com.peknight.jose.jwa.encryption.HeaderParam.{iv, tag}
 import com.peknight.security.cipher.AESWrap
 
-trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm with AESWrap:
+trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm:
+  def encryption: AESWrap
   def headerParams: Seq[HeaderParam] = Seq(iv, tag)
   def requirement: Requirement = Optional
-  override def algorithm: String = s"A${blockSize * 8}GCMKW"
+  def algorithm: String = s"A${encryption.blockSize * 8}GCMKW"
 end AESGCMKWAlgorithm
