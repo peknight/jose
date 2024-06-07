@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.3.1"
+ThisBuild / scalaVersion := "3.4.2"
 
 ThisBuild / organization := "com.peknight"
 
@@ -30,7 +30,7 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
   .settings(
     name := "jose-core",
     libraryDependencies ++= Seq(
-      "com.peknight" %%% "crypto-core" % pekCryptoVersion,
+      "com.peknight" %%% "security-core" % pekSecurityVersion,
       "com.peknight" %%% "codec-base" % pekCodecVersion,
       "org.http4s" %%% "http4s-core" % http4sVersion,
     ),
@@ -45,5 +45,5 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
 
 val http4sVersion = "1.0.0-M34"
 val pekVersion = "0.1.0-SNAPSHOT"
-val pekCryptoVersion = pekVersion
+val pekSecurityVersion = pekVersion
 val pekCodecVersion = pekVersion
