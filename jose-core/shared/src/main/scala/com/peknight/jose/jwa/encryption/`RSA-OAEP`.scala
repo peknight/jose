@@ -4,7 +4,7 @@ import com.peknight.jose.Requirement
 import com.peknight.jose.Requirement.`Recommended+`
 import com.peknight.security.cipher.{RSAES, `RSAES-OAEPPadding`}
 
-object `RSA-OAEP` extends RSAESAlgorithm with `RSAES-OAEPPadding`:
+object `RSA-OAEP` extends `RSA-OAEPAlgorithm`:
   val encryption: RSAES = `RSAES-OAEPPadding`
   val requirement: Requirement = `Recommended+`
   override val algorithm: String = "RSA-OAEP"
