@@ -13,3 +13,7 @@ trait OctetSequenceJsonWebKey extends JsonWebKey:
    */
   def keyValue: Base64Url
 end OctetSequenceJsonWebKey
+object OctetSequenceJsonWebKey:
+  private[jwk] val memberNameMap: Map[String, String] =
+    JsonWebKey.memberNameMap + ("keyValue" -> "k")
+end OctetSequenceJsonWebKey

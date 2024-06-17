@@ -11,8 +11,8 @@ import org.http4s.Uri
 trait JsonWebKey:
   def keyType: KeyType
   def publicKeyUse: Option[PublicKeyUseType]
-  def keyOperations: Seq[KeyOperationType]
-  def algorithm: JsonWebAlgorithm
+  def keyOperations: Option[Seq[KeyOperationType]]
+  def algorithm: Option[JsonWebAlgorithm]
   def keyID: Option[KeyId]
   def x509URL: Option[Uri]
   def x509CertificateChain: Option[NonEmptyList[Base64]]
@@ -20,7 +20,7 @@ trait JsonWebKey:
   def x509CertificateSHA256Thumbprint: Option[Base64Url]
 end JsonWebKey
 object JsonWebKey:
-  val memberNameMap: Map[String, String] =
+  private[jwk] val memberNameMap: Map[String, String] =
     Map(
       "keyType" -> "kty",
       "publicKeyUse" -> "use",

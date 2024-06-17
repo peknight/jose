@@ -75,3 +75,17 @@ trait RSAJsonWebKey extends JsonWebKey:
    */
   def otherPrimesInfo: Seq[OtherPrimesInfo]
 end RSAJsonWebKey
+object RSAJsonWebKey:
+  private[jwk] val memberNameMap: Map[String, String] =
+    JsonWebKey.memberNameMap ++ Map(
+      "modulus" -> "n",
+      "exponent" -> "e",
+      "privateExponent" -> "d",
+      "firstPrimeFactor" -> "p",
+      "secondPrimeFactor" -> "q",
+      "firstFactorCRTExponent" -> "dp",
+      "secondFactorCRTExponent" -> "dq",
+      "firstCRTCoefficient" -> "qi",
+      "otherPrimesInfo" -> "oth",
+    )
+end RSAJsonWebKey

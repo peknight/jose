@@ -1,6 +1,13 @@
 package com.peknight.jose.jwk
 
+import cats.Monad
 import com.peknight.codec.base.Base64Url
+import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.sum.{NullType, ObjectType, StringType}
+import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.commons.string.cases.SnakeCase
+import com.peknight.commons.string.syntax.cases.to
 
 case class OtherPrimesInfo(
                             /**
@@ -22,3 +29,20 @@ case class OtherPrimesInfo(
                              */
                             factorCRTCoefficient: Base64Url
                           )
+object OtherPrimesInfo:
+  private val memberNameMap: Map[String, String] =
+    Map(
+      "primeFactor" -> "r",
+      "factorCRTExponent" -> "d",
+      "factorCRTCoefficient" -> "k"
+    )
+  given codecOtherPrimesInfo[F[_], S](using
+    Monad[F],
+    ObjectType[S],
+    NullType[S],
+    StringType[S]
+  ): Codec[F, S, Cursor[S], OtherPrimesInfo] =
+    Codec.derived[F, S, OtherPrimesInfo](using CodecConfiguration.default.withTransformMemberNames(memberName =>
+      memberNameMap.getOrElse(memberName, memberName.to(SnakeCase))
+    ))
+end OtherPrimesInfo

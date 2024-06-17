@@ -32,6 +32,7 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
     libraryDependencies ++= Seq(
       "com.peknight" %%% "security-core" % pekSecurityVersion,
       "com.peknight" %%% "codec-base" % pekCodecVersion,
+      "com.peknight" %%% "commons-string" % pekCommonsVersion,
       "org.http4s" %%% "http4s-core" % http4sVersion,
     ),
   )
@@ -47,3 +48,4 @@ val http4sVersion = "1.0.0-M34"
 val pekVersion = "0.1.0-SNAPSHOT"
 val pekSecurityVersion = pekVersion
 val pekCodecVersion = pekVersion
+val pekCommonsVersion = pekVersion

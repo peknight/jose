@@ -1,8 +1,13 @@
 package com.peknight.jose.jwk
 
-import com.peknight.codec.base.Base64Url
+import cats.data.NonEmptyList
+import com.peknight.codec.Codec
+import com.peknight.codec.base.{Base64, Base64Url}
+import com.peknight.codec.cursor.Cursor
+import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.EllipticCurve
+import org.http4s.Uri
 
 trait EllipticCurveJsonWebKey extends JsonWebKey:
   def keyType: KeyType = EllipticCurve
@@ -51,4 +56,28 @@ trait EllipticCurveJsonWebKey extends JsonWebKey:
    * curve).
    */
   def eccPrivateKey: Option[Base64Url]
+end EllipticCurveJsonWebKey
+object EllipticCurveJsonWebKey:
+  private[jwk] val memberNameMap: Map[String, String] =
+    JsonWebKey.memberNameMap ++ Map(
+      "curve" -> "crv",
+      "xCoordinate" -> "x",
+      "yCoordinate" -> "y",
+      "eccPrivateKey" -> "d",
+    )
+
+  private case class EllipticCurveJsonWebKey(
+    publicKeyUse: Option[PublicKeyUseType],
+    keyOperations: Option[Seq[KeyOperationType]],
+    algorithm: Option[JsonWebAlgorithm],
+    keyID: Option[KeyId],
+    x509URL: Option[Uri],
+    x509CertificateChain: Option[NonEmptyList[Base64]],
+    x509CertificateSHA1Thumbprint: Option[Base64Url],
+    x509CertificateSHA256Thumbprint: Option[Base64Url],
+    curve: Curve,
+    xCoordinate: Base64Url,
+    yCoordinate: Base64Url,
+    eccPrivateKey: Option[Base64Url]
+  ) extends com.peknight.jose.jwk.EllipticCurveJsonWebKey
 end EllipticCurveJsonWebKey
