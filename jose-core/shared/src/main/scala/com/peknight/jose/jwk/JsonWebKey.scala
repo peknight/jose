@@ -2,6 +2,8 @@ package com.peknight.jose.jwk
 
 import cats.Monad
 import cats.data.NonEmptyList
+import com.peknight.codec.circe.iso.codec
+import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64, Base64Url}
 import com.peknight.codec.configuration.CodecConfiguration
@@ -30,7 +32,7 @@ sealed trait JsonWebKey:
   def x509CertificateSHA1Thumbprint: Option[Base64Url]
   def x509CertificateSHA256Thumbprint: Option[Base64Url]
 end JsonWebKey
-object JsonWebKey:
+object JsonWebKey extends JsonWebKeyPlatform:
   private val memberNameMap: Map[String, String] =
     Map(
       "keyType" -> "kty",
@@ -131,4 +133,6 @@ object JsonWebKey:
       .withDiscriminator("kty")
       .withTransformConstructorNames(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
     Codec.derived[F, S, JsonWebKey]
+
+  given circeCodecJsonWebKey: io.circe.Codec[JsonWebKey] = codec[JsonWebKey]
 end JsonWebKey
