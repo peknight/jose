@@ -2,10 +2,10 @@ package com.peknight.jose.jwk
 
 import cats.Monad
 import cats.data.NonEmptyList
-import com.peknight.codec.circe.iso.codec
-import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64, Base64Url}
+import com.peknight.codec.circe.iso.codec
+import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.http4s.instances.uri.given
@@ -15,7 +15,7 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
-import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetSequence, RSA}
+import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
 import org.http4s.Uri
 
 /**
@@ -71,6 +71,7 @@ object JsonWebKey extends JsonWebKeyPlatform:
       "EllipticCurveJsonWebKey" -> EllipticCurve.name,
       "RSAJsonWebKey" -> RSA.name,
       "OctetSequenceJsonWebKey" -> OctetSequence.name,
+      "OctetKeyPairJsonWebKey" -> OctetKeyPair.name,
     )
 
   case class EllipticCurveJsonWebKey(
@@ -125,6 +126,22 @@ object JsonWebKey extends JsonWebKeyPlatform:
   ) extends JsonWebKey:
     val keyType: KeyType = OctetSequence
   end OctetSequenceJsonWebKey
+
+  case class OctetKeyPairJsonWebKey(
+    curve: String,
+    xCoordinate: Base64Url,
+    eccPrivateKey: Option[Base64Url],
+    publicKeyUse: Option[PublicKeyUseType],
+    keyOperations: Option[Seq[KeyOperationType]],
+    algorithm: Option[JsonWebAlgorithm],
+    keyID: Option[KeyId],
+    x509URL: Option[Uri],
+    x509CertificateChain: Option[NonEmptyList[Base64]],
+    x509CertificateSHA1Thumbprint: Option[Base64Url],
+    x509CertificateSHA256Thumbprint: Option[Base64Url]
+  ) extends JsonWebKey:
+    val keyType: KeyType = OctetKeyPair
+  end OctetKeyPairJsonWebKey
 
   given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S])
   : Codec[F, S, Cursor[S], JsonWebKey] =

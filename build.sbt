@@ -41,6 +41,7 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect-testing-scalatest" % catsEffectTestingScalaTestVersion % Test,
       "com.peknight" %%% "security-effect" % pekSecurityVersion % Test,
+      "com.peknight" %%% "security-bcprov" % pekSecurityVersion % Test,
       jwtCirce % Test,
       scalaJwk % Test,
       jose4j % Test,
