@@ -1,22 +1,22 @@
 package com.peknight.jose.jwk
 
 import cats.data.NonEmptyList
+import cats.syntax.either.*
 import com.peknight.codec.base.{Base64, Base64Url}
-import com.peknight.jose.error.{JsonWebKeyCreationError, NoSuchCurve}
+import com.peknight.jose.error.{JsonWebKeyCreationError, NoSuchCurve, UncheckedOctetKeyPairKeyType}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
-import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, RSAJsonWebKey}
+import com.peknight.jose.jwk.JsonWebKey.*
 import com.peknight.security.algorithm.Algorithm
-import com.peknight.security.key.agreement.{X25519, X448, XDH}
-import com.peknight.security.signature.{Ed25519, Ed448, EdDSA}
+import com.peknight.security.key.agreement.XDH
+import com.peknight.security.signature.EdDSA
 import org.http4s.Uri
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
-import java.security.{Key, PrivateKey, PublicKey}
 import java.security.interfaces.*
-import java.security.spec.EllipticCurve
-import javax.crypto.SecretKey
+import java.security.spec.{EllipticCurve, NamedParameterSpec}
+import java.security.{PrivateKey, PublicKey}
 
 trait JsonWebKeyPlatform:
 
@@ -94,7 +94,34 @@ trait JsonWebKeyPlatform:
         x509CertificateSHA256Thumbprint
       )
 
-  // def fromOctetKeyPairKey(publicKey: PublicKey, )
+  def fromOctetKeyPairKey(
+    publicKey: PublicKey,
+    privateKey: Option[PrivateKey] = None,
+    publicKeyUse: Option[PublicKeyUseType] = None,
+    keyOperations: Option[Seq[KeyOperationType]] = None,
+    algorithm: Option[JsonWebAlgorithm] = None,
+    keyID: Option[KeyId] = None,
+    x509URL: Option[Uri] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
+    x509CertificateSHA1Thumbprint: Option[Base64Url] = None,
+    x509CertificateSHA256Thumbprint: Option[Base64Url] = None
+  ): Either[JsonWebKeyCreationError, OctetKeyPairJsonWebKey] =
+    for
+      tuple <- octetKeyPairSubType(publicKey, privateKey)
+    yield
+      OctetKeyPairJsonWebKey(
+        tuple._1,
+        tuple._2,
+        tuple._3,
+        publicKeyUse,
+        keyOperations,
+        algorithm,
+        keyID,
+        x509URL,
+        x509CertificateChain,
+        x509CertificateSHA1Thumbprint,
+        x509CertificateSHA256Thumbprint
+      )
 
   private def encodeCoordinate(coordinate: BigInt, fieldSize: Int): Base64Url =
     val notPadded = toByteVectorUnsigned(coordinate)
@@ -117,6 +144,29 @@ trait JsonWebKeyPlatform:
 
   private val applicableKeyAlgorithms: Set[Algorithm] = Set(Ed448, Ed25519, EdDSA, X25519, X448, XDH)
 
-
+  private def octetKeyPairSubType(publicKey: PublicKey, privateKey: Option[PrivateKey])
+  : Either[JsonWebKeyCreationError, (OctetKeyPairAlgorithm, Base64Url, Option[Base64Url])] =
+    publicKey match
+      case xecPublicKey: XECPublicKey =>
+        xecPublicKey.getParams match
+          case namedParameterSpec: NamedParameterSpec =>
+            val either: Either[JsonWebKeyCreationError, (JsonWebKey.XDH, Int)] = namedParameterSpec.getName match
+              case X25519.algorithm =>
+                (X25519, 32).asRight
+              case X448.algorithm =>
+                (X448, 57).asRight
+              case _ => ???
+            ???
+          case _ => ???
+      case edECPublicKey: EdECPublicKey =>
+        val either: Either[JsonWebKeyCreationError, (JsonWebKey.EdDSA, Int)] =
+          edECPublicKey.getParams.getName match
+            case Ed25519.algorithm =>
+              (Ed25519, 32).asRight
+            case Ed448.algorithm =>
+              (Ed448, 57).asRight
+            case _ => ???
+        ???
+      case _ => UncheckedOctetKeyPairKeyType(publicKey.getClass).asLeft
 
 end JsonWebKeyPlatform

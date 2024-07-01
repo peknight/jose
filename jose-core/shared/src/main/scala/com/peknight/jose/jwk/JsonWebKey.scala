@@ -1,7 +1,7 @@
 package com.peknight.jose.jwk
 
-import cats.Monad
 import cats.data.NonEmptyList
+import cats.{Applicative, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64, Base64Url}
 import com.peknight.codec.circe.iso.codec
@@ -16,6 +16,7 @@ import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
+import com.peknight.security.algorithm.Algorithm
 import org.http4s.Uri
 
 /**
@@ -127,8 +128,24 @@ object JsonWebKey extends JsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
   end OctetSequenceJsonWebKey
 
+  sealed trait OctetKeyPairAlgorithm extends Algorithm
+  sealed trait XDH extends OctetKeyPairAlgorithm with com.peknight.security.key.agreement.XDH
+  case object X25519 extends XDH with com.peknight.security.key.agreement.X25519
+  case object X448 extends XDH with com.peknight.security.key.agreement.X448
+  sealed trait EdDSA extends OctetKeyPairAlgorithm with com.peknight.security.signature.EdDSA
+  case object Ed25519 extends EdDSA with com.peknight.security.signature.Ed25519
+  case object Ed448 extends EdDSA with com.peknight.security.signature.Ed448
+
+  given stringCodecOctetKeyPairAlgorithm[F[_]: Applicative]: Codec[F, String, String, OctetKeyPairAlgorithm] =
+    Codec.mapOption[F, String, String, OctetKeyPairAlgorithm](_.algorithm)(
+      t => List(X25519, X448, Ed25519, Ed448).find(_.algorithm == t)
+    )
+
+  given codecOctetKeyPairAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], OctetKeyPairAlgorithm] =
+    Codec.codecS[F, S, OctetKeyPairAlgorithm]
+
   case class OctetKeyPairJsonWebKey(
-    curve: String,
+    curve: OctetKeyPairAlgorithm,
     xCoordinate: Base64Url,
     eccPrivateKey: Option[Base64Url],
     publicKeyUse: Option[PublicKeyUseType],
