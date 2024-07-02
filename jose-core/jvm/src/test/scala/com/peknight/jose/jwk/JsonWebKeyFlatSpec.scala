@@ -6,7 +6,6 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
 import com.chatwork.scala.jwk.{Curve, ECJWK}
 import com.peknight.jose.jwa.ecc.`P-384`
-import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.security.bouncycastle.jce.ECNamedCurveTable
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.bouncycastle.signature.ECDSA
@@ -30,8 +29,10 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- IO.println(ECJWK.fromKeyPair(Curve.P_384, keyPair.getPublic.asInstanceOf, keyPair.getPrivate.asInstanceOf)
           .map(_.asJson.deepDropNullValues.noSpaces).fold(_ => "", identity))
         _ <- IO.println(JsonWebKey
-          .fromEllipticCurveKey(keyPair.getPublic.asInstanceOf, Some(keyPair.getPrivate).asInstanceOf)
-          .map(_.asInstanceOf[JsonWebKey].asJson.deepDropNullValues.noSpaces).fold(_ => "", identity))
+          .fromKeyPair(keyPair.getPublic, Some(keyPair.getPrivate))
+          .map(_.asJson.deepDropNullValues.noSpaces)
+          .fold(_ => "", identity)
+        )
       yield true
     run.asserting(assert)
   }
