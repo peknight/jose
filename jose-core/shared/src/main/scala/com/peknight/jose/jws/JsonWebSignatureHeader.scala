@@ -1,8 +1,7 @@
 package com.peknight.jose.jws
 
-import cats.{Id, Monad}
+import cats.Monad
 import cats.data.NonEmptyList
-import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64, Base64Url}
 import com.peknight.codec.circe.iso.codec
@@ -11,12 +10,13 @@ import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
+import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
 import com.peknight.jose.memberNameMap
-import io.circe.{Json, JsonObject}
+import io.circe.JsonObject
 import org.http4s.Uri
 
 case class JsonWebSignatureHeader(

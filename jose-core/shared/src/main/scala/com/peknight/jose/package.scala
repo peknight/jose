@@ -32,5 +32,11 @@ package object jose:
 
       // oct
       "keyValue" -> "k",
+
+      // JsonWebSignatureHeader
+      "jwkSetURL" -> "jku",
+      "type" -> "typ",
+      "contentType" -> "cty",
+      "critical" -> "crit",
     )
 end jose
