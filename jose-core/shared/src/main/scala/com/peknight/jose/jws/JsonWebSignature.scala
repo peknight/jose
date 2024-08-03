@@ -1,20 +1,20 @@
 package com.peknight.jose.jws
 
 import cats.Id
-import io.circe.Json
 import cats.parse.{Parser, Parser0}
 import com.peknight.codec.base.Base64Url
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.error.DecodingFailure
-import com.peknight.error.Error
+import io.circe.Json
 import scodec.bits.ByteVector
 
+import java.nio.charset.CharacterCodingException
+
 case class JsonWebSignature(header: JsonWebSignatureHeader, payload: ByteVector, signature: ByteVector):
-  def mkString: Either[Error, String] =
+  def mkString: Either[CharacterCodingException, String] =
     ByteVector.encodeUtf8(JsonWebSignatureHeader.codecJsonWebSignatureHeader[Id, Json].encode(header).deepDropNullValues.noSpaces)
       .map(headerBytes => s"${headerBytes.toBase64Url}.${payload.toBase64Url}.${signature.toBase64Url}")
-      .left.map(Error.apply)
 end JsonWebSignature
 
 object JsonWebSignature:
