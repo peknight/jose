@@ -5,7 +5,7 @@ import io.circe.JsonObject
 case class JsonWebTokenClaims(
                                issuer: Option[String],
                                subject: Option[String],
-                               audience: Option[String],
+                               audience: Option[Set[String]],
                                expirationTime: Option[Long],
                                notBefore: Option[Long],
                                issuedAt: Option[Long],
