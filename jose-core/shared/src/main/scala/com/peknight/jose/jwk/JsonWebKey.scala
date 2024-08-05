@@ -16,8 +16,8 @@ import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
-import com.peknight.jose.memberNameMap
 import com.peknight.security.algorithm.Algorithm
+import io.circe.Json
 import org.http4s.Uri
 
 /**
@@ -35,6 +35,31 @@ sealed trait JsonWebKey:
   def x509CertificateSHA256Thumbprint: Option[Base64Url]
 end JsonWebKey
 object JsonWebKey extends JsonWebKeyPlatform:
+  private val memberNameMap: Map[String, String] = com.peknight.jose.memberNameMap ++ Map(
+    "keyType" -> "kty",
+    "publicKeyUse" -> "use",
+    "keyOperations" -> "key_ops",
+
+    // EC
+    "curve" -> "crv",
+    "xCoordinate" -> "x",
+    "yCoordinate" -> "y",
+    "eccPrivateKey" -> "d",
+
+    // RSA
+    "modulus" -> "n",
+    "exponent" -> "e",
+    "privateExponent" -> "d",
+    "firstPrimeFactor" -> "p",
+    "secondPrimeFactor" -> "q",
+    "firstFactorCRTExponent" -> "dp",
+    "secondFactorCRTExponent" -> "dq",
+    "firstCRTCoefficient" -> "qi",
+    "otherPrimesInfo" -> "oth",
+
+    // oct
+    "keyValue" -> "k",
+  )
   private val constructorNameMap: Map[String, String] =
     Map(
       "EllipticCurveJsonWebKey" -> EllipticCurve.name,
@@ -135,6 +160,9 @@ object JsonWebKey extends JsonWebKeyPlatform:
       .withDiscriminator("kty")
       .withTransformConstructorNames(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
     Codec.derived[F, S, JsonWebKey]
+
+  given jsonCodecJsonWebKey[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebKey] =
+    codecJsonWebKey[F, Json]
 
   given circeCodecJsonWebKey: io.circe.Codec[JsonWebKey] = codec[JsonWebKey]
 end JsonWebKey

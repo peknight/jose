@@ -3,6 +3,7 @@ package com.peknight.jose.jws
 import cats.parse.{Parser, Parser0}
 import cats.{Id, Monad}
 import com.peknight.codec.base.Base64Url
+import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.cursor.Cursor
@@ -85,5 +86,10 @@ object JsonWebSignature:
         case ((None, Some(p), payload, signature)) => Right(apply(p, payload, signature))
         case ((None, None, payload, signature)) => Left(MissingField.label("header"))
       }
+
+  given jsonCodecJsonWebSignature[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebSignature] =
+    codecJsonWebSignature[F, Json]
+
+  given circeCodecJsonWebSignature: io.circe.Codec[JsonWebSignature] = codec[JsonWebSignature]
 
 end JsonWebSignature

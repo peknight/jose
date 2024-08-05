@@ -15,8 +15,7 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
-import com.peknight.jose.memberNameMap
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 import org.http4s.Uri
 
 case class JsonWebSignatureHeader(
@@ -34,6 +33,12 @@ case class JsonWebSignatureHeader(
                                    ext: Option[JsonObject] = None
                                  )
 object JsonWebSignatureHeader:
+  private val memberNameMap: Map[String, String] = com.peknight.jose.memberNameMap ++ Map(
+    "jwkSetURL" -> "jku",
+    "type" -> "typ",
+    "contentType" -> "cty",
+    "critical" -> "crit",
+  )
   given codecJsonWebSignatureHeader[F[_], S](using
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
@@ -42,6 +47,9 @@ object JsonWebSignatureHeader:
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withExtendedField("ext")
     Codec.derived[F, S, JsonWebSignatureHeader]
+
+  given jsonCodecJsonWebSignatureHeader[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebSignatureHeader] =
+    codecJsonWebSignatureHeader[F, Json]
 
   given circeCodecJsonWebSignatureHeader: io.circe.Codec[JsonWebSignatureHeader] =
     codec[JsonWebSignatureHeader]
