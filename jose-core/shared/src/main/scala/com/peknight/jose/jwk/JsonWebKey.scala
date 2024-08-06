@@ -34,7 +34,7 @@ sealed trait JsonWebKey:
   def x509CertificateSHA1Thumbprint: Option[Base64Url]
   def x509CertificateSHA256Thumbprint: Option[Base64Url]
 end JsonWebKey
-object JsonWebKey extends JsonWebKeyPlatform:
+object JsonWebKey extends JsonWebKeyCompanion:
   private val memberNameMap: Map[String, String] = com.peknight.jose.memberNameMap ++ Map(
     "keyType" -> "kty",
     "publicKeyUse" -> "use",
@@ -81,7 +81,7 @@ object JsonWebKey extends JsonWebKeyPlatform:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey:
+  ) extends JsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
   end EllipticCurveJsonWebKey
 
@@ -103,7 +103,7 @@ object JsonWebKey extends JsonWebKeyPlatform:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey:
+  ) extends JsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
   end RSAJsonWebKey
 
@@ -117,7 +117,7 @@ object JsonWebKey extends JsonWebKeyPlatform:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey:
+  ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
   end OctetSequenceJsonWebKey
 
@@ -149,7 +149,7 @@ object JsonWebKey extends JsonWebKeyPlatform:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey:
+  ) extends JsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
   end OctetKeyPairJsonWebKey
 

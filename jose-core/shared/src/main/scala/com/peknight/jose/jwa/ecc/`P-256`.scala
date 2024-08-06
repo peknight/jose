@@ -7,4 +7,4 @@ trait `P-256` extends Curve:
   def std: ECGenParameterSpecName = secp256r1
   def name: String = "P-256"
 end `P-256`
-object `P-256` extends `P-256` with `P-256Platform`
+object `P-256` extends `P-256` with `P-256Companion`

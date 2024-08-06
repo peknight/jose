@@ -1,3 +1,3 @@
 package com.peknight.jose.jwa.ecc
 
-trait CurvePlatform
+trait `P-384Companion`

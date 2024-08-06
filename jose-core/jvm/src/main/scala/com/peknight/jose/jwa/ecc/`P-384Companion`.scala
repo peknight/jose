@@ -3,7 +3,7 @@ package com.peknight.jose.jwa.ecc
 import java.math.BigInteger
 import java.security.spec.{ECFieldFp, ECParameterSpec, ECPoint, EllipticCurve}
 
-trait `P-384Platform` extends ECParameterSpecPlatform:
+trait `P-384Companion` extends ECParameterSpecCompanion:
   val ecParameterSpec: ECParameterSpec =
     new ECParameterSpec(
       new EllipticCurve(
@@ -18,4 +18,4 @@ trait `P-384Platform` extends ECParameterSpecPlatform:
       new BigInteger("39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643"),
       1
     )
-end `P-384Platform`
+end `P-384Companion`

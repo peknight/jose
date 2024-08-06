@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 
 trait JWEEncryptionAlgorithm extends EncryptionAlgorithm
 object JWEEncryptionAlgorithm:
-  val values: List[JWEEncryptionAlgorithm] = AESCBCHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
+  val values: List[JWEEncryptionAlgorithm] = AESHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
   given stringCodecJWEEncryptionAlgorithm[F[_]: Applicative]: Codec[F, String, String, JWEEncryptionAlgorithm] =
     JsonWebAlgorithm.stringCodecAlgorithm[F, JWEEncryptionAlgorithm](values)
   given codecJWEEncryptionAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], JWEEncryptionAlgorithm] =

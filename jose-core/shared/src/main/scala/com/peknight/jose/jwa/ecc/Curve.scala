@@ -14,7 +14,7 @@ trait Curve:
   def name: String
   def oid: Option[ObjectIdentifier] = std.oid
 end Curve
-object Curve extends CurvePlatform:
+object Curve extends CurveCompanion:
   val values: List[Curve] = List(`P-256`, `P-256K`, `P-384`, `P-521`, prime256v1)
   given stringCodecCurve[F[_]: Applicative]: Codec[F, String, String, Curve] =
     Codec.applicative[F, String, String, Curve](_.name)(

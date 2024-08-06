@@ -22,7 +22,7 @@ import java.util.Optional
 import scala.jdk.OptionConverters.*
 import scala.reflect.ClassTag
 
-trait JsonWebKeyPlatform:
+trait JsonWebKeyCompanion:
 
   def fromKey(
     key: Key,
@@ -291,4 +291,4 @@ trait JsonWebKeyPlatform:
     else bytes ++ ByteVector.fill(length - bytes.length)(0)
 
   private val applicableKeyAlgorithms: Set[Algorithm] = Set(Ed448, Ed25519, EdDSA, X25519, X448, XDH)
-end JsonWebKeyPlatform
+end JsonWebKeyCompanion

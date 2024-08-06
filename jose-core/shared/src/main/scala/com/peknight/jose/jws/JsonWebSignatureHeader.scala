@@ -15,6 +15,7 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
+import com.peknight.jose.{JoseHeader, memberNameMap}
 import io.circe.{Json, JsonObject}
 import org.http4s.Uri
 
@@ -31,14 +32,8 @@ case class JsonWebSignatureHeader(
                                    contentType: Option[String] = None,
                                    critical: Option[List[String]] = None,
                                    ext: Option[JsonObject] = None
-                                 )
+                                 ) extends JoseHeader
 object JsonWebSignatureHeader:
-  private val memberNameMap: Map[String, String] = com.peknight.jose.memberNameMap ++ Map(
-    "jwkSetURL" -> "jku",
-    "type" -> "typ",
-    "contentType" -> "cty",
-    "critical" -> "crit",
-  )
   given codecJsonWebSignatureHeader[F[_], S](using
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]

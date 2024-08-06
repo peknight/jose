@@ -1,3 +1,3 @@
 package com.peknight.jose.jwa.ecc
 
-trait `P-384Platform`
+trait `P-521Companion`
