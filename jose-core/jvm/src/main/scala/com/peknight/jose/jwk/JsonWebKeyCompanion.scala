@@ -4,10 +4,11 @@ import cats.data.NonEmptyList
 import cats.syntax.either.*
 import cats.syntax.option.*
 import com.peknight.codec.base.{Base64, Base64Url}
-import com.peknight.jose.error.*
+import com.peknight.jose.error.jwk.*
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.*
+import com.peknight.jose.key.OctetKeyPairOps
 import com.peknight.security.algorithm.Algorithm
 import com.peknight.security.key.agreement.XDH
 import com.peknight.security.signature.EdDSA
@@ -16,10 +17,8 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 import java.security.interfaces.*
-import java.security.spec.{EllipticCurve, NamedParameterSpec}
+import java.security.spec.EllipticCurve
 import java.security.{Key, PrivateKey, PublicKey}
-import java.util.Optional
-import scala.jdk.OptionConverters.*
 import scala.reflect.ClassTag
 
 trait JsonWebKeyCompanion:
@@ -36,7 +35,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64Url] = None,
     x509CertificateSHA256Thumbprint: Option[Base64Url] = None
-  ): Either[JsonWebKeyCreationError, JsonWebKey] =
+  ): Either[JsonWebKeyError, JsonWebKey] =
     key match
       case publicKey: PublicKey =>
         fromKeyPair(publicKey, None, otherPrimesInfo, curve, publicKeyUse, keyOperations, algorithm, keyID, x509URL,
@@ -60,26 +59,26 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64Url] = None,
     x509CertificateSHA256Thumbprint: Option[Base64Url] = None
-  ): Either[JsonWebKeyCreationError, JsonWebKey] =
+  ): Either[JsonWebKeyError, JsonWebKey] =
     publicKey match
       case rsaPublicKey: RSAPublicKey =>
         privateKey match
           case Some(rsaPrivateKey: RSAPrivateKey) =>
             fromRSAKey(rsaPublicKey, Some(rsaPrivateKey), otherPrimesInfo, publicKeyUse, keyOperations, algorithm,
               keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint
-            ).asRight[JsonWebKeyCreationError]
-          case Some(privKey) => MismatchedKeyPair[RSAPrivateKey].asLeft
+            ).asRight[JsonWebKeyError]
+          case Some(privKey) => MismatchedKeyPair(using ClassTag(privKey.getClass)).asLeft
           case None =>
             fromRSAKey(rsaPublicKey, None, otherPrimesInfo, publicKeyUse, keyOperations, algorithm,
               keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint
-            ).asRight[JsonWebKeyCreationError]
+            ).asRight[JsonWebKeyError]
       case ecPublicKey: ECPublicKey =>
         privateKey match
           case Some(ecPrivateKey: ECPrivateKey) =>
             fromEllipticCurveKey(ecPublicKey, Some(ecPrivateKey), curve, publicKeyUse, keyOperations, algorithm, keyID,
               x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint
             )
-          case Some(privKey) => MismatchedKeyPair[ECPrivateKey].asLeft
+          case Some(privKey) => MismatchedKeyPair(using ClassTag(privKey.getClass)).asLeft
           case None =>
             fromEllipticCurveKey(ecPublicKey, None, curve, publicKeyUse, keyOperations, algorithm, keyID,
               x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint
@@ -140,10 +139,10 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64Url] = None,
     x509CertificateSHA256Thumbprint: Option[Base64Url] = None
-  ): Either[JsonWebKeyCreationError, EllipticCurveJsonWebKey] =
+  ): Either[JsonWebKeyError, EllipticCurveJsonWebKey] =
     val ellipticCurve: EllipticCurve = ecPublicKey.getParams.getCurve
     for
-      curve <- Curve.curveMap.get(ellipticCurve).orElse(curve).toRight[JsonWebKeyCreationError](NoSuchCurve)
+      curve <- Curve.curveMap.get(ellipticCurve).orElse(curve).toRight[JsonWebKeyError](NoSuchCurve)
       fieldSize = ellipticCurve.getField.getFieldSize
       xCoordinate = encodeCoordinate(BigInt(ecPublicKey.getW.getAffineX), fieldSize)
       yCoordinate = encodeCoordinate(BigInt(ecPublicKey.getW.getAffineY), fieldSize)
@@ -175,14 +174,21 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64Url] = None,
     x509CertificateSHA256Thumbprint: Option[Base64Url] = None
-  ): Either[JsonWebKeyCreationError, OctetKeyPairJsonWebKey] =
+  ): Either[JsonWebKeyError, OctetKeyPairJsonWebKey] =
     for
-      tuple <- octetKeyPairSubType(publicKey, privateKey)
+      keyPairOps <- OctetKeyPairOps.getKeyPairOps(publicKey)
+      curve <- keyPairOps.getAlgorithm(publicKey)
+      publicKeyBytes <- keyPairOps.rawPublicKey(publicKey)
+      xCoordinate = Base64Url.fromByteVector(publicKeyBytes)
+      privateKeyBytes <- privateKey.fold(none[ByteVector].asRight[JsonWebKeyError])(
+        privateK => keyPairOps.rawPrivateKey(privateK).map(_.some)
+      )
+      eccPrivateKey = privateKeyBytes.map(Base64Url.fromByteVector)
     yield
       OctetKeyPairJsonWebKey(
-        tuple._1,
-        tuple._2,
-        tuple._3,
+        curve,
+        xCoordinate,
+        eccPrivateKey,
         publicKeyUse,
         keyOperations,
         algorithm,
@@ -234,61 +240,6 @@ trait JsonWebKeyCompanion:
       val startDst = bitLen / 8 - src.length
       ByteVector.fill(startDst)(0) ++ src
   }
-
-  private def octetKeyPairSubType(publicKey: PublicKey, privateKey: Option[PrivateKey])
-  : Either[JsonWebKeyCreationError, (OctetKeyPairAlgorithm, Base64Url, Option[Base64Url])] =
-    publicKey match
-      case xecPublicKey: XECPublicKey =>
-        xecPublicKey.getParams match
-          case namedParameterSpec: NamedParameterSpec =>
-            val xdhPrimeByteLengthEither: Either[JsonWebKeyCreationError, (JsonWebKey.XDH, BigInt, Int)] =
-              namedParameterSpec.getName match
-                case X25519.algorithm => (X25519, X25519.prime, 32).asRight
-                case X448.algorithm => (X448, X448.prime, 57).asRight
-                case name => UnsupportedKeyAlgorithm(name).asLeft
-            for
-              tuple <- xdhPrimeByteLengthEither
-              eccPrivateKey <- rawOctetKeyPairPrivateKey[XECPrivateKey](privateKey)(_.getScalar)
-              (xdh, prime, byteLength) = tuple
-              xCoordinate = Base64Url.fromByteVector(adjustByteVectorLength(
-                ByteVector(BigInt(xecPublicKey.getU).mod(prime).toByteArray).reverse,
-                byteLength
-              ))
-            yield (xdh, xCoordinate, eccPrivateKey)
-          case params => UncheckedParameterSpec(using scala.reflect.ClassTag(params.getClass)).asLeft
-      case edECPublicKey: EdECPublicKey =>
-        val edDSAByteLengthEither: Either[JsonWebKeyCreationError, (JsonWebKey.EdDSA, Int)] =
-          edECPublicKey.getParams.getName match
-            case Ed25519.algorithm => (Ed25519, 32).asRight
-            case Ed448.algorithm => (Ed448, 57).asRight
-            case name => UnsupportedKeyAlgorithm(name).asLeft
-        for
-          tuple <- edDSAByteLengthEither
-          eccPrivateKey <- rawOctetKeyPairPrivateKey[EdECPrivateKey](privateKey)(_.getBytes)
-          (edDSA, byteLength) = tuple
-          edECPoint = edECPublicKey.getPoint
-          yReversedBytes = adjustByteVectorLength(ByteVector(edECPoint.getY.toByteArray).reverse, byteLength)
-          byteToOrWith = if edECPoint.isXOdd then -128.toByte else 0.toByte
-          xCoordinate = Base64Url.fromByteVector(yReversedBytes.lastOption.fold(yReversedBytes)(
-            last => yReversedBytes.init :+ (last | byteToOrWith).toByte
-          ))
-        yield (edDSA, xCoordinate, eccPrivateKey)
-      case _ => UncheckedOctetKeyPairKeyType(using ClassTag(publicKey.getClass)).asLeft
-
-  private def rawOctetKeyPairPrivateKey[A](privateKey: Option[PrivateKey])(bytes: A => Optional[Array[Byte]])
-                                          (using classTag: ClassTag[A])
-  : Either[JsonWebKeyCreationError, Option[Base64Url]] =
-    privateKey match
-      case Some(privateKey: A) =>
-        Base64Url.fromByteVector(bytes(privateKey).toScala.fold(ByteVector.empty)(ByteVector.apply))
-          .some.asRight[JsonWebKeyCreationError]
-      case Some(privateKey) => MismatchedKeyPair[A].asLeft[Option[Base64Url]]
-      case None => none[Base64Url].asRight[JsonWebKeyCreationError]
-
-  private def adjustByteVectorLength(bytes: ByteVector, length: Int): ByteVector =
-    if bytes.length > length then bytes.take(length)
-    else if bytes.length == length then bytes
-    else bytes ++ ByteVector.fill(length - bytes.length)(0)
 
   private val applicableKeyAlgorithms: Set[Algorithm] = Set(Ed448, Ed25519, EdDSA, X25519, X448, XDH)
 end JsonWebKeyCompanion

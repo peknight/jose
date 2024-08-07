@@ -1,3 +1,0 @@
-package com.peknight.jose.error
-
-trait JsonWebSignatureEncodingError extends JsonWebSignatureError

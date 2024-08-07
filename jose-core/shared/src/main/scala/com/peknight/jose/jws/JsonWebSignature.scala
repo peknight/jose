@@ -11,7 +11,7 @@ import com.peknight.codec.error.{DecodingFailure, MissingField}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
-import com.peknight.jose.error.{CharacterCodingError, JsonWebSignatureEncodingError}
+import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
@@ -45,7 +45,7 @@ case class JsonWebSignature private (
           h <- decode[Id, JsonWebSignatureHeader](headerJsonString)
         yield h
 
-  def getProtectedHeader: Either[JsonWebSignatureEncodingError, Base64Url] =
+  def getProtectedHeader: Either[JsonWebSignatureError, Base64Url] =
     headerEither match
       case Left(Right(p)) => Right(p)
       case Right((_, p)) => Right(p)
@@ -54,7 +54,7 @@ case class JsonWebSignature private (
           case Right(bytes) => Right(Base64Url.fromByteVector(bytes))
           case Left(e) => Left(CharacterCodingError(e))
 
-  def compact: Either[JsonWebSignatureEncodingError, String] =
+  def compact: Either[JsonWebSignatureError, String] =
     getProtectedHeader.map(h => s"${h.value}.${payload.value}.${signature.value}")
 end JsonWebSignature
 
