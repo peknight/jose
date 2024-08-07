@@ -1,21 +1,34 @@
 package com.peknight.jose.key
 
+import cats.effect.Sync
 import cats.syntax.either.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedPrivateKey, UncheckedPublicKey, UnsupportedKey}
-import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
+import com.peknight.jose.jwk.JsonWebKey.{OctetKeyPairAlgorithm, XDH, EdDSA}
+import com.peknight.security.KeyFactory
+import com.peknight.security.key.factory.KeyFactoryAlgorithm
+import com.peknight.security.provider.Provider
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPublicKey, XECPublicKey}
-import java.security.{PrivateKey, PublicKey}
+import java.security.{PrivateKey, PublicKey, KeyFactory as JKeyFactory}
 import scala.reflect.ClassTag
 
-trait OctetKeyPairOps[PublicK: ClassTag, PrivateK: ClassTag, Algorithm <: OctetKeyPairAlgorithm]:
+trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : ClassTag, Algorithm <: OctetKeyPairAlgorithm]:
+
+  def keyFactoryAlgorithm: KeyFactoryAlgorithm
+
+  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider]): F[PublicK]
+
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider]): F[PrivateK]
 
   def rawTypedPublicKey(publicKey: PublicK): Either[JsonWebKeyError, ByteVector]
 
   def rawTypedPrivateKey(privateKey: PrivateK): ByteVector
 
   def getTypedAlgorithm(publicKey: PublicK): Either[JsonWebKeyError, Algorithm]
+
+  def keyFactory[F[_] : Sync](provider: Option[Provider]): F[JKeyFactory] =
+    KeyFactory.getInstance[F](keyFactoryAlgorithm, provider)
 
   def rawPublicKey(publicKey: PublicKey): Either[JsonWebKeyError, ByteVector] =
     checkPublicKeyType(publicKey).flatMap(rawTypedPublicKey)
@@ -47,4 +60,9 @@ object OctetKeyPairOps:
       case _: XECPublicKey => XDHKeyOps.asRight
       case _: EdECPublicKey => EdDSAKeyOps.asRight
       case _ => UnsupportedKey(publicKey.getAlgorithm)(using ClassTag(publicKey.getClass)).asLeft
+
+  def getKeyPairOps(curve: OctetKeyPairAlgorithm): OctetKeyPairOps[?, ?, ?] =
+    curve match
+      case _: XDH => XDHKeyOps
+      case _: EdDSA => EdDSAKeyOps
 end OctetKeyPairOps
