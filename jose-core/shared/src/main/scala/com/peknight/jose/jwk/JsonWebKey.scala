@@ -69,6 +69,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
       "OctetKeyPairJsonWebKey" -> OctetKeyPair.name,
     )
 
+  sealed trait PublicJsonWebKey extends JsonWebKey with PublicJsonWebKeyPlatform
+
   case class EllipticCurveJsonWebKey(
     curve: Curve,
     xCoordinate: Base64Url,
@@ -82,7 +84,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey with EllipticCurveJsonWebKeyPlatform:
+  ) extends PublicJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
   end EllipticCurveJsonWebKey
 
@@ -104,7 +106,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey with RSAJsonWebKeyPlatform:
+  ) extends PublicJsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
   end RSAJsonWebKey
 
@@ -150,7 +152,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]],
     x509CertificateSHA1Thumbprint: Option[Base64Url],
     x509CertificateSHA256Thumbprint: Option[Base64Url]
-  ) extends JsonWebKey with OctetKeyPairJsonWebKeyPlatform:
+  ) extends PublicJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
   end OctetKeyPairJsonWebKey
 
