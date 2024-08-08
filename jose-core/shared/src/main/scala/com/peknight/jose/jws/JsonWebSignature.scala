@@ -11,6 +11,7 @@ import com.peknight.codec.error.{DecodingFailure, MissingField}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.jose.JoseHeader
 import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
@@ -18,11 +19,11 @@ import scodec.bits.ByteVector
 import java.nio.charset.CharacterCodingException
 
 case class JsonWebSignature private (
-  headerEither: Either[Either[JsonWebSignatureHeader, Base64UrlNoPad], (JsonWebSignatureHeader, Base64UrlNoPad)],
+  headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
   payload: Base64UrlNoPad,
   signature: Base64UrlNoPad
 ):
-  def header: Option[JsonWebSignatureHeader] =
+  def header: Option[JoseHeader] =
     headerEither match
       case Left(Left(h)) => Some(h)
       case Right((h, _)) => Some(h)
@@ -34,7 +35,7 @@ case class JsonWebSignature private (
       case Right((_, p)) => Some(p)
       case _ => None
 
-  def getUnprotectedHeader: Either[DecodingFailure, JsonWebSignatureHeader] =
+  def getUnprotectedHeader: Either[DecodingFailure, JoseHeader] =
     headerEither match
       case Left(Left(h)) => Right(h)
       case Right((h, _)) => Right(h)
@@ -42,7 +43,7 @@ case class JsonWebSignature private (
         for
           headerBytes <- p.decode[Id]
           headerJsonString <- headerBytes.decodeUtf8.left.map(DecodingFailure.apply)
-          h <- decode[Id, JsonWebSignatureHeader](headerJsonString)
+          h <- decode[Id, JoseHeader](headerJsonString)
         yield h
 
   def getProtectedHeader: Either[JsonWebSignatureError, Base64UrlNoPad] =
@@ -59,13 +60,13 @@ case class JsonWebSignature private (
 end JsonWebSignature
 
 object JsonWebSignature:
-  def apply(header: JsonWebSignatureHeader, payload: Base64UrlNoPad, signature: Base64UrlNoPad): JsonWebSignature =
+  def apply(header: JoseHeader, payload: Base64UrlNoPad, signature: Base64UrlNoPad): JsonWebSignature =
     JsonWebSignature(Left(Left(header)), payload, signature)
 
   def apply(`protected`: Base64UrlNoPad, payload: Base64UrlNoPad, signature: Base64UrlNoPad): JsonWebSignature =
     JsonWebSignature(Left(Right(`protected`)), payload, signature)
 
-  def apply(header: JsonWebSignatureHeader, `protected`: Base64UrlNoPad, payload: Base64UrlNoPad, signature: Base64UrlNoPad)
+  def apply(header: JoseHeader, `protected`: Base64UrlNoPad, payload: Base64UrlNoPad, signature: Base64UrlNoPad)
   : JsonWebSignature =
     JsonWebSignature(Right((header, `protected`)), payload, signature)
 
@@ -79,7 +80,7 @@ object JsonWebSignature:
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebSignature] =
-    Codec.forProduct[F, S, JsonWebSignature, (Option[JsonWebSignatureHeader], Option[Base64UrlNoPad], Base64UrlNoPad, Base64UrlNoPad)]
+    Codec.forProduct[F, S, JsonWebSignature, (Option[JoseHeader], Option[Base64UrlNoPad], Base64UrlNoPad, Base64UrlNoPad)]
       (("header", "protected", "payload", "signature"))(jws => (jws.header, jws.`protected`, jws.payload, jws.signature)) {
         case ((Some(h), Some(p), payload, signature)) => Right(apply(h, p, payload, signature))
         case ((Some(h), None, payload, signature)) => Right(apply(h, payload, signature))

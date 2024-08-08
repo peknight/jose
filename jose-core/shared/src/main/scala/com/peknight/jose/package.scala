@@ -1,6 +1,7 @@
 package com.peknight
 
 package object jose:
+  val jwtType: String = "JWT"
   private[jose] val memberNameMap: Map[String, String] =
     Map(
       "algorithm" -> "alg",
@@ -15,5 +16,8 @@ package object jose:
       "type" -> "typ",
       "contentType" -> "cty",
       "critical" -> "crit",
+      "encryptionAlgorithm" -> "enc",
+      "compressionAlgorithm" -> "zip",
     )
+
 end jose

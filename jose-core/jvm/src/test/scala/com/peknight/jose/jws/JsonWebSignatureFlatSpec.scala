@@ -2,8 +2,9 @@ package com.peknight.jose.jws
 
 import cats.Id
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.circe.parser.ParserOps.decode
+import com.peknight.codec.syntax.encoder.asS
+import com.peknight.jose.JoseHeader
 import com.peknight.jose.jwa.signature.HS256
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwt.JsonWebTokenClaims
@@ -15,7 +16,7 @@ import java.time.Instant
 
 class JsonWebSignatureFlatSpec extends AnyFlatSpec:
   "JsonWebSignature" should "succeed" in {
-    val header = JsonWebSignatureHeader(`type` = Some("JWT"), algorithm = Some(HS256))
+    val header = JoseHeader.jwtHeader(HS256)
     println(s"header: $header")
     val headerJsonString = header.asS[Id, Json].deepDropNullValues.noSpaces
     println(s"headerJsonString: $headerJsonString")
@@ -40,6 +41,8 @@ class JsonWebSignatureFlatSpec extends AnyFlatSpec:
       """.stripMargin
     val jwk = decode[Id, JsonWebKey](jwkJsonString)
     println(s"jwk: $jwk")
+    val origin = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
+
     assert(true)
   }
 end JsonWebSignatureFlatSpec
