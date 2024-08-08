@@ -104,7 +104,7 @@ trait JsonWebKeyCompanion:
   ): RSAJsonWebKey =
     def mapCrt(f: RSAPrivateCrtKey => BigInteger): Option[Base64Url] =
       rsaPrivateKey.flatMap {
-        case d: RSAPrivateCrtKey => Some(Base64Url.fromBigInt(BigInt(f(d))))
+        case d: RSAPrivateCrtKey => Option(f(d)).map(b => Base64Url.fromBigInt(BigInt(b)))
         case _ => None
       }
     RSAJsonWebKey(

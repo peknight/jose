@@ -2,14 +2,11 @@ package com.peknight.jose.key
 
 import cats.effect.Sync
 import cats.syntax.either.*
-import cats.syntax.flatMap.*
-import cats.syntax.functor.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UnsupportedKeyAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey.{Ed25519, Ed448, EdDSA}
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.NamedParameterSpec
-import com.peknight.security.syntax.keyFactory.{generatePrivateF, generatePublicF}
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPrivateKey, EdECPublicKey}
@@ -21,25 +18,18 @@ object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey, EdDSA]
 
   def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider]): F[EdECPublicKey] =
     val xIsOdd = publicKeyBytes.lastOption.map(_ & -128).exists(_ != 0)
-    val ep = new EdECPoint(xIsOdd, BigInt(1,
-      publicKeyBytes.lastOption
-        .fold(publicKeyBytes)(last => publicKeyBytes.init :+ (last & 127).toByte)
-        .reverse.toArray
+    val ep = new EdECPoint(xIsOdd, BigIntOps.fromBytes(publicKeyBytes.lastOption
+      .fold(publicKeyBytes)(last => publicKeyBytes.init :+ (last & 127).toByte)
+      .reverse
     ).bigInteger)
     val keySpec = new EdECPublicKeySpec(NamedParameterSpec(algorithm), ep)
-    for
-      factory <- keyFactory[F](provider)
-      publicKey <- factory.generatePublicF[F](keySpec)
-    yield
-      publicKey.asInstanceOf[EdECPublicKey]
+    generatePublicKey[F, EdECPublicKey](keySpec, provider)
 
   def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider]): F[EdECPrivateKey] =
-    val privateKeySpec = new EdECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray)
-    for
-      factory <- keyFactory[F](provider)
-      privateKey <- factory.generatePrivateF[F](privateKeySpec)
-    yield
-      privateKey.asInstanceOf[EdECPrivateKey]
+    generatePrivateKey[F, EdECPrivateKey](
+      new EdECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
+      provider
+    )
 
   def rawTypedPublicKey(edECPublicKey: EdECPublicKey): Either[JsonWebKeyError, ByteVector] =
     for

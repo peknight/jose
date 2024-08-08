@@ -4,18 +4,15 @@ import cats.effect.Sync
 import cats.syntax.either.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedPrivateKey, UncheckedPublicKey, UnsupportedKey}
 import com.peknight.jose.jwk.JsonWebKey.{OctetKeyPairAlgorithm, XDH, EdDSA}
-import com.peknight.security.KeyFactory
-import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.provider.Provider
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPublicKey, XECPublicKey}
-import java.security.{PrivateKey, PublicKey, KeyFactory as JKeyFactory}
+import java.security.{PrivateKey, PublicKey}
 import scala.reflect.ClassTag
 
-trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : ClassTag, Algorithm <: OctetKeyPairAlgorithm]:
-
-  def keyFactoryAlgorithm: KeyFactoryAlgorithm
+trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : ClassTag, Algorithm <: OctetKeyPairAlgorithm]
+  extends KeyPairOps:
 
   def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider]): F[PublicK]
 
@@ -26,9 +23,6 @@ trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : 
   def rawTypedPrivateKey(privateKey: PrivateK): ByteVector
 
   def getTypedAlgorithm(publicKey: PublicK): Either[JsonWebKeyError, Algorithm]
-
-  def keyFactory[F[_] : Sync](provider: Option[Provider]): F[JKeyFactory] =
-    KeyFactory.getInstance[F](keyFactoryAlgorithm, provider)
 
   def rawPublicKey(publicKey: PublicKey): Either[JsonWebKeyError, ByteVector] =
     checkPublicKeyType(publicKey).flatMap(rawTypedPublicKey)
