@@ -6,8 +6,8 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.option.*
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.jose.jwa.ecc.`P-384`
-import com.peknight.jose.jwk.JsonWebKey.PublicJsonWebKey
-import com.peknight.jose.key.{EllipticCurveKeyOps, RSAKeyOps}
+import com.peknight.jose.jwk.JsonWebKey.{OctetSequenceJsonWebKey, PublicJsonWebKey}
+import com.peknight.jose.key.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.provider.Provider
 import com.peknight.security.{SecureRandom, Security}
@@ -34,8 +34,8 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       jose4jJwkEither = decode[Id, JsonWebKey](jose4jJwk.toJson(OutputControlLevel.INCLUDE_PRIVATE))
     yield
       (joseJwkEither, jose4jJwkEither, restoredKeyPair) match
-        case (Right(joseEcJwk), Right(jose4jEcJwk), Some(Right(restored))) =>
-          joseEcJwk == jose4jEcJwk &&
+        case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored))) =>
+          joseJwk == jose4jJwk &&
             restored.getPublic.equals(keyPair.getPublic) &&
             restored.getPrivate.equals(keyPair.getPrivate)
         case _ => false
@@ -50,5 +50,24 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     testKeyPair((provider, random) =>
       RSAKeyOps.generateKeyPair[IO](1024, Some(provider), Some(random))
     ).asserting(assert)
+  }
+
+  "JsonWebKey" should "succeed with AES" in {
+    val run =
+      for
+        secureRandom <- SecureRandom[IO]
+        key <- AESKeyOps.generateKey[IO](256, secureRandom)
+        joseJwkEither = JsonWebKey.fromKey(key)
+        restoredKey <- joseJwkEither match
+          case Right(joseJwk: OctetSequenceJsonWebKey) => joseJwk.toKey[IO].map(_.some)
+          case _ => IO(None)
+        jose4jJwk = org.jose4j.jwk.JsonWebKey.Factory.newJwk(key).asInstanceOf[org.jose4j.jwk.OctetSequenceJsonWebKey]
+        jose4jJwkEither = decode[Id, JsonWebKey](jose4jJwk.toJson(OutputControlLevel.INCLUDE_PRIVATE))
+      yield
+        (joseJwkEither, jose4jJwkEither, restoredKey) match
+          case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored))) =>
+            joseJwk == jose4jJwk && restored.equals(key)
+          case _ => false
+    run.asserting(assert)
   }
 end JsonWebKeyFlatSpec
