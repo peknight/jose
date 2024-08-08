@@ -3,7 +3,7 @@ package com.peknight.jose.jwe
 import cats.Monad
 import cats.data.NonEmptyList
 import com.peknight.codec.Decoder.decodeOptionAOU
-import com.peknight.codec.base.{Base64, Base64Url}
+import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
@@ -29,9 +29,9 @@ case class JsonWebEncryptionHeader(
                                     jwk: Option[JsonWebKey] = None,
                                     keyID: Option[KeyId] = None,
                                     x509URL: Option[Uri] = None,
-                                    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
-                                    x509CertificateSHA1Thumbprint: Option[Base64Url] = None,
-                                    x509CertificateSHA256Thumbprint: Option[Base64Url] = None,
+                                    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+                                    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
+                                    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
                                     `type`: Option[String] = None,
                                     contentType: Option[String] = None,
                                     critical: Option[List[String]] = None,

@@ -2,7 +2,7 @@ package com.peknight.jose.jws
 
 import cats.parse.{Parser, Parser0}
 import cats.{Id, Monad}
-import com.peknight.codec.base.Base64Url
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.codec.circe.sum.jsonType.given
@@ -18,9 +18,9 @@ import scodec.bits.ByteVector
 import java.nio.charset.CharacterCodingException
 
 case class JsonWebSignature private (
-  headerEither: Either[Either[JsonWebSignatureHeader, Base64Url], (JsonWebSignatureHeader, Base64Url)],
-  payload: Base64Url,
-  signature: Base64Url
+  headerEither: Either[Either[JsonWebSignatureHeader, Base64UrlNoPad], (JsonWebSignatureHeader, Base64UrlNoPad)],
+  payload: Base64UrlNoPad,
+  signature: Base64UrlNoPad
 ):
   def header: Option[JsonWebSignatureHeader] =
     headerEither match
@@ -28,7 +28,7 @@ case class JsonWebSignature private (
       case Right((h, _)) => Some(h)
       case _ => None
 
-  def `protected`: Option[Base64Url] =
+  def `protected`: Option[Base64UrlNoPad] =
     headerEither match
       case Left(Right(p)) => Some(p)
       case Right((_, p)) => Some(p)
@@ -45,13 +45,13 @@ case class JsonWebSignature private (
           h <- decode[Id, JsonWebSignatureHeader](headerJsonString)
         yield h
 
-  def getProtectedHeader: Either[JsonWebSignatureError, Base64Url] =
+  def getProtectedHeader: Either[JsonWebSignatureError, Base64UrlNoPad] =
     headerEither match
       case Left(Right(p)) => Right(p)
       case Right((_, p)) => Right(p)
       case Left(Left(h)) =>
         ByteVector.encodeUtf8(h.asS[Id, Json].deepDropNullValues.noSpaces) match
-          case Right(bytes) => Right(Base64Url.fromByteVector(bytes))
+          case Right(bytes) => Right(Base64UrlNoPad.fromByteVector(bytes))
           case Left(e) => Left(CharacterCodingError(e))
 
   def compact: Either[JsonWebSignatureError, String] =
@@ -59,18 +59,18 @@ case class JsonWebSignature private (
 end JsonWebSignature
 
 object JsonWebSignature:
-  def apply(header: JsonWebSignatureHeader, payload: Base64Url, signature: Base64Url): JsonWebSignature =
+  def apply(header: JsonWebSignatureHeader, payload: Base64UrlNoPad, signature: Base64UrlNoPad): JsonWebSignature =
     JsonWebSignature(Left(Left(header)), payload, signature)
 
-  def apply(`protected`: Base64Url, payload: Base64Url, signature: Base64Url): JsonWebSignature =
+  def apply(`protected`: Base64UrlNoPad, payload: Base64UrlNoPad, signature: Base64UrlNoPad): JsonWebSignature =
     JsonWebSignature(Left(Right(`protected`)), payload, signature)
 
-  def apply(header: JsonWebSignatureHeader, `protected`: Base64Url, payload: Base64Url, signature: Base64Url)
+  def apply(header: JsonWebSignatureHeader, `protected`: Base64UrlNoPad, payload: Base64UrlNoPad, signature: Base64UrlNoPad)
   : JsonWebSignature =
     JsonWebSignature(Right((header, `protected`)), payload, signature)
 
   val jsonWebSignatureParser: Parser0[JsonWebSignature] =
-    ((Base64Url.baseParser <* Parser.char('.')) ~ (Base64Url.baseParser <* Parser.char('.')) ~ Base64Url.baseParser)
+    ((Base64UrlNoPad.baseParser <* Parser.char('.')) ~ (Base64UrlNoPad.baseParser <* Parser.char('.')) ~ Base64UrlNoPad.baseParser)
       .map { case ((p, payload), signature) =>
         JsonWebSignature(Left(Right(p)), payload, signature)
       }
@@ -79,7 +79,7 @@ object JsonWebSignature:
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebSignature] =
-    Codec.forProduct[F, S, JsonWebSignature, (Option[JsonWebSignatureHeader], Option[Base64Url], Base64Url, Base64Url)]
+    Codec.forProduct[F, S, JsonWebSignature, (Option[JsonWebSignatureHeader], Option[Base64UrlNoPad], Base64UrlNoPad, Base64UrlNoPad)]
       (("header", "protected", "payload", "signature"))(jws => (jws.header, jws.`protected`, jws.payload, jws.signature)) {
         case ((Some(h), Some(p), payload, signature)) => Right(apply(h, p, payload, signature))
         case ((Some(h), None, payload, signature)) => Right(apply(h, payload, signature))

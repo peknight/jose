@@ -5,28 +5,30 @@ import cats.syntax.either.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UnsupportedKeyAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey.{Ed25519, Ed448, EdDSA}
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
+import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.NamedParameterSpec
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPrivateKey, EdECPublicKey}
 import java.security.spec.{EdECPoint, EdECPrivateKeySpec, EdECPublicKeySpec}
+import java.security.{PrivateKey, PublicKey}
 import scala.jdk.OptionConverters.*
 
 object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey, EdDSA]:
-  def keyFactoryAlgorithm: KeyFactoryAlgorithm = com.peknight.security.signature.EdDSA
+  def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = com.peknight.security.signature.EdDSA
 
-  def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider]): F[EdECPublicKey] =
+  def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider] = None): F[PublicKey] =
     val xIsOdd = publicKeyBytes.lastOption.map(_ & -128).exists(_ != 0)
     val ep = new EdECPoint(xIsOdd, BigIntOps.fromBytes(publicKeyBytes.lastOption
       .fold(publicKeyBytes)(last => publicKeyBytes.init :+ (last & 127).toByte)
       .reverse
     ).bigInteger)
     val keySpec = new EdECPublicKeySpec(NamedParameterSpec(algorithm), ep)
-    generatePublicKey[F, EdECPublicKey](keySpec, provider)
+    generatePublicKey[F](keySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider]): F[EdECPrivateKey] =
-    generatePrivateKey[F, EdECPrivateKey](
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider] = None): F[PrivateKey] =
+    generatePrivateKey[F](
       new EdECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
       provider
     )

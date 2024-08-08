@@ -5,19 +5,21 @@ import cats.syntax.either.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedParameterSpec, UnsupportedKeyAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey.{X25519, X448, XDH}
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
+import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.NamedParameterSpec
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{XECPrivateKey, XECPublicKey}
 import java.security.spec.{XECPrivateKeySpec, XECPublicKeySpec, NamedParameterSpec as JNamedParameterSpec}
+import java.security.{PrivateKey, PublicKey}
 import scala.jdk.OptionConverters.*
 import scala.reflect.ClassTag
 
 object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
-  def keyFactoryAlgorithm: KeyFactoryAlgorithm = com.peknight.security.key.agreement.XDH
+  def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = com.peknight.security.key.agreement.XDH
 
-  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider]): F[XECPublicKey] =
+  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider] = None): F[PublicKey] =
     val reversedBytes = publicKeyBytes.reverse
     val numBits =
       algorithm match
@@ -30,10 +32,10 @@ object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
         head => (head & ((1 << numBitsMod8) - 1)).toByte +: reversedBytes.tail
       )).bigInteger
     )
-    generatePublicKey[F, XECPublicKey](keySpec, provider)
+    generatePublicKey[F](keySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider]): F[XECPrivateKey] =
-    generatePrivateKey[F, XECPrivateKey](
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider] = None): F[PrivateKey] =
+    generatePrivateKey[F](
       new XECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
       provider
     )

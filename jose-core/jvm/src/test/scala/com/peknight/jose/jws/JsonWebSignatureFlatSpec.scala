@@ -1,7 +1,7 @@
 package com.peknight.jose.jws
 
 import cats.Id
-import com.peknight.codec.base.Base64Url
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.jose.jwa.signature.HS256
@@ -19,7 +19,7 @@ class JsonWebSignatureFlatSpec extends AnyFlatSpec:
     println(s"header: $header")
     val headerJsonString = header.asS[Id, Json].deepDropNullValues.noSpaces
     println(s"headerJsonString: $headerJsonString")
-    val headerBase64 = ByteVector.encodeUtf8(headerJsonString).map(Base64Url.fromByteVector)
+    val headerBase64 = ByteVector.encodeUtf8(headerJsonString).map(Base64UrlNoPad.fromByteVector)
     println(s"headerBase64: $headerBase64")
     val jwtClaims = JsonWebTokenClaims(
       issuer = Some("joe"),
@@ -29,7 +29,7 @@ class JsonWebSignatureFlatSpec extends AnyFlatSpec:
     println(s"jwtClaims: $jwtClaims")
     val jwtClaimsJsonString = jwtClaims.asS[Id, Json].deepDropNullValues.noSpaces
     println(s"jwtClaimsJsonString: $jwtClaimsJsonString")
-    val jwtClaimsBase64 = ByteVector.encodeUtf8(jwtClaimsJsonString).map(Base64Url.fromByteVector)
+    val jwtClaimsBase64 = ByteVector.encodeUtf8(jwtClaimsJsonString).map(Base64UrlNoPad.fromByteVector)
     println(s"jwtClaimsBase64: $jwtClaimsBase64")
     val jwkJsonString =
       s"""

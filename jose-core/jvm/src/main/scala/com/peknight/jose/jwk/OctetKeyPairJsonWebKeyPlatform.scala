@@ -13,8 +13,8 @@ import com.peknight.security.provider.Provider
 
 import java.security.{PrivateKey, PublicKey}
 
-trait OctetKeyPairJsonWebKeyPlatform { self: OctetKeyPairJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider]): F[Either[DecodingFailure, PublicKey]] =
+trait OctetKeyPairJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: OctetKeyPairJsonWebKey =>
+  def toPublicKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, PublicKey]] =
     self.xCoordinate.decode[F].flatMap {
       case Right(publicKeyBytes) =>
         OctetKeyPairOps.getKeyPairOps(self.curve)
@@ -23,7 +23,7 @@ trait OctetKeyPairJsonWebKeyPlatform { self: OctetKeyPairJsonWebKey =>
       case Left(error) => error.asLeft[PublicKey].pure[F]
     }
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider]): F[Either[DecodingFailure, Option[PrivateKey]]] =
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decode[F].flatMap {
         case Right(privateKeyBytes) =>

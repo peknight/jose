@@ -9,7 +9,7 @@ import com.peknight.security.error.UnknownAlgorithm
 import com.peknight.security.oid.ObjectIdentifier
 import com.peknight.security.spec.ECGenParameterSpecName
 
-trait Curve:
+trait Curve derives CanEqual:
   def std: ECGenParameterSpecName
   def name: String
   def oid: Option[ObjectIdentifier] = std.oid

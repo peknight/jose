@@ -3,7 +3,6 @@ package com.peknight.jose.jwk
 import cats.data.EitherT
 import cats.syntax.either.*
 import cats.syntax.option.*
-import com.peknight.generic.tuple.syntax.mapN
 import cats.syntax.functor.*
 import cats.syntax.applicative.*
 import cats.effect.Sync
@@ -11,11 +10,10 @@ import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.jose.key.{BigIntOps, RSAKeyOps}
 import com.peknight.security.provider.Provider
+import java.security.{PrivateKey, PublicKey}
 
-import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
-
-trait RSAJsonWebKeyPlatform { self: RSAJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider]): F[Either[DecodingFailure, RSAPublicKey]] =
+trait RSAJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: RSAJsonWebKey =>
+  def toPublicKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, PublicKey]] =
     val eitherT =
       for
         modulus <- EitherT(self.modulus.decode[F])
@@ -27,8 +25,8 @@ trait RSAJsonWebKeyPlatform { self: RSAJsonWebKey =>
         rsaPublicKey
     eitherT.value
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider]): F[Either[DecodingFailure, Option[RSAPrivateKey]]] =
-    self.privateExponent.fold(none[RSAPrivateKey].asRight[DecodingFailure].pure[F]) { privateExponent =>
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
+    self.privateExponent.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { privateExponent =>
       val eitherT =
         for
           modulus <- EitherT(self.modulus.decode[F])
