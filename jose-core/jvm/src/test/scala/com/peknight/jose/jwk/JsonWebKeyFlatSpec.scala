@@ -26,6 +26,9 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       secureRandom <- SecureRandom[IO]
       keyPair <- generateKeyPair(BouncyCastleProvider, secureRandom)
       joseJwkEither = JsonWebKey.fromKeyPair(keyPair)
+      checkResult <- joseJwkEither match
+        case Right(joseJwk: PublicJsonWebKey) => joseJwk.checkJsonWebKey[IO](Some(BouncyCastleProvider)).map(_.isRight)
+        case _ => IO(false)
       restoredKeyPair <- joseJwkEither match
         case Right(joseJwk: PublicJsonWebKey) => joseJwk.toKeyPair[IO](Some(BouncyCastleProvider)).map(_.some)
         case _ => IO(None)
@@ -33,8 +36,8 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       _ = jose4jJwk.setPrivateKey(keyPair.getPrivate)
       jose4jJwkEither = decode[Id, JsonWebKey](jose4jJwk.toJson(OutputControlLevel.INCLUDE_PRIVATE))
     yield
-      (joseJwkEither, jose4jJwkEither, restoredKeyPair) match
-        case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored))) =>
+      (joseJwkEither, jose4jJwkEither, restoredKeyPair, checkResult) match
+        case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored)), true) =>
           joseJwk == jose4jJwk &&
             restored.getPublic.equals(keyPair.getPublic) &&
             restored.getPrivate.equals(keyPair.getPrivate)

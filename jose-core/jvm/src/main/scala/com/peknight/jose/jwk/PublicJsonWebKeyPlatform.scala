@@ -1,7 +1,7 @@
 package com.peknight.jose.jwk
 
 import cats.Apply
-import cats.data.NonEmptyList
+import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
@@ -29,13 +29,29 @@ trait PublicJsonWebKeyPlatform { self: PublicJsonWebKey =>
       toPrivateKey[F](provider).map(_.flatMap(_.toRight(DecodingFailure(MissingPrivateKey))))
     )(new KeyPair(_, _))
 
-  def checkForBareKeyCertMismatch[F[_]: Sync](publicKey: PublicKey, leafCertificate: Option[X509Certificate])
-  : Either[JsonWebKeyError, PublicKey] =
+  def isBareKeyCertMatched(publicKey: PublicKey, leafCertificate: Option[X509Certificate]): Boolean =
+    leafCertificate.flatMap(cert => Option(cert.getPublicKey)).forall(_.equals(publicKey))
+
+  def checkJsonWebKeyTyped[F[_]: Sync]: F[Either[DecodingFailure, Unit]] =
+    ().asRight[DecodingFailure].pure[F]
+
+  def checkJsonWebKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, Unit]] =
+    val eitherT =
+      for
+        publicKey <- EitherT(toPublicKey[F](provider))
+        leafCertificate <- EitherT(getLeafCertificate[F])
+        _ <- EitherT(checkBareKeyCertMatched(publicKey, leafCertificate).left.map(DecodingFailure.apply).pure[F])
+        _ <- EitherT(checkJsonWebKeyTyped[F])
+      yield ()
+    eitherT.value
+
+  def checkBareKeyCertMatched(publicKey: PublicKey, leafCertificate: Option[X509Certificate])
+  : Either[JsonWebKeyError, Unit] =
     leafCertificate match
       case Some(cert) =>
-        if Option(cert.getPublicKey).forall(_.equals(publicKey)) then publicKey.asRight
+        if Option(cert.getPublicKey).forall(_.equals(publicKey)) then ().asRight
         else BareKeyCertMismatch(publicKey, cert).asLeft
-      case None => publicKey.asRight
+      case None => ().asRight
 
   def certificateChain[F[_]: Sync]: F[Either[DecodingFailure, Option[NonEmptyList[X509Certificate]]]] =
     X509Ops.certificateFactoryF[F].flatMap(certFactory =>

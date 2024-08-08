@@ -44,4 +44,17 @@ trait EllipticCurveJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: E
     }
 
   private def getEcParameterSpec: Option[ECParameterSpec] = Curve.curveList.find(_ == self.curve).map(_.ecParameterSpec)
+
+  override def checkJsonWebKeyTyped[F[_]: Sync]: F[Either[DecodingFailure, Unit]] =
+    val eitherT =
+      for
+        xCoordinate <- EitherT(self.xCoordinate.decode[F])
+        yCoordinate <- EitherT(self.yCoordinate.decode[F])
+        spec <- EitherT(getEcParameterSpec.toRight(DecodingFailure(NoSuchCurve)).pure[F])
+        _ <- EitherT(EllipticCurveKeyOps.checkPointOnCurve(
+          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), spec
+        ).left.map(DecodingFailure.apply).pure[F])
+      yield
+        ()
+    eitherT.value
 }
