@@ -12,23 +12,23 @@ import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPrivateKey, EdECPublicKey}
 import java.security.spec.{EdECPoint, EdECPrivateKeySpec, EdECPublicKeySpec}
-import java.security.{PrivateKey, PublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 import scala.jdk.OptionConverters.*
 
 object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey, EdDSA]:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = com.peknight.security.signature.EdDSA
 
-  def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider] = None): F[PublicKey] =
+  def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider | JProvider] = None): F[PublicKey] =
     val xIsOdd = publicKeyBytes.lastOption.map(_ & -128).exists(_ != 0)
     val ep = new EdECPoint(xIsOdd, BigIntOps.fromBytes(publicKeyBytes.lastOption
       .fold(publicKeyBytes)(last => publicKeyBytes.init :+ (last & 127).toByte)
       .reverse
     ).bigInteger)
     val keySpec = new EdECPublicKeySpec(NamedParameterSpec(algorithm), ep)
-    generatePublicKey[F](keySpec, provider)
+    generatePublic[F](keySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider] = None): F[PrivateKey] =
-    generatePrivateKey[F](
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider | JProvider] = None): F[PrivateKey] =
+    generatePrivate[F](
       new EdECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
       provider
     )

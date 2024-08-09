@@ -8,29 +8,24 @@ import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedPrivateKey, Unchec
 import com.peknight.jose.jwk.JsonWebKey.{EdDSA, OctetKeyPairAlgorithm, XDH}
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.{NamedParameterSpec, NamedParameterSpecName}
-import com.peknight.security.syntax.keyPairGenerator.{generateKeyPairF, initializeF}
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPublicKey, XECPublicKey}
-import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom}
+import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
 import scala.reflect.ClassTag
 
 trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : ClassTag, Algorithm <: OctetKeyPairAlgorithm]
   extends KeyPairOps:
 
-  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider] = None)
+  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider | JProvider] = None)
   : F[PublicKey]
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider] = None)
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider | JProvider] = None)
   : F[PrivateKey]
 
-  def generateKeyPair[F[_]: Sync](name: NamedParameterSpecName, provider: Option[Provider] = None, secureRandom: Option[SecureRandom]): F[KeyPair] =
-    for
-      generator <- keyPairGenerator[F](provider)
-      _ <- generator.initializeF[F](NamedParameterSpec(name), secureRandom)
-      keyPair <- generator.generateKeyPairF[F]
-    yield
-      keyPair
+  def generateKeyPair[F[_]: Sync](name: NamedParameterSpecName, provider: Option[Provider | JProvider] = None,
+                                  random: Option[SecureRandom] = None): F[KeyPair] =
+    paramsGenerateKeyPair[F](NamedParameterSpec(name), provider, random)
 
   def rawTypedPublicKey(publicKey: PublicK): Either[JsonWebKeyError, ByteVector]
 

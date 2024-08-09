@@ -69,7 +69,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
       "OctetKeyPairJsonWebKey" -> OctetKeyPair.name,
     )
 
-  sealed trait PublicJsonWebKey extends JsonWebKey with PublicJsonWebKeyPlatform
+  sealed trait AsymmetricJsonWebKey extends JsonWebKey with AsymmetricJsonWebKeyPlatform
 
   case class EllipticCurveJsonWebKey(
     curve: Curve,
@@ -84,7 +84,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
-  ) extends PublicJsonWebKey with EllipticCurveJsonWebKeyPlatform:
+  ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
   end EllipticCurveJsonWebKey
 
@@ -106,7 +106,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
-  ) extends PublicJsonWebKey with RSAJsonWebKeyPlatform:
+  ) extends AsymmetricJsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
   end RSAJsonWebKey
 
@@ -125,7 +125,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
   end OctetSequenceJsonWebKey
 
   sealed trait OctetKeyPairAlgorithm extends Algorithm with NamedParameterSpecName
-  sealed trait XDH extends OctetKeyPairAlgorithm with com.peknight.security.key.agreement.XDH 
+  sealed trait XDH extends OctetKeyPairAlgorithm with com.peknight.security.key.agreement.XDH
   case object X25519 extends XDH with com.peknight.security.key.agreement.X25519
   case object X448 extends XDH with com.peknight.security.key.agreement.X448
   sealed trait EdDSA extends OctetKeyPairAlgorithm with com.peknight.security.signature.EdDSA
@@ -152,7 +152,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
-  ) extends PublicJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
+  ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
   end OctetKeyPairJsonWebKey
 

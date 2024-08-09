@@ -12,14 +12,15 @@ import scodec.bits.ByteVector
 
 import java.security.interfaces.{XECPrivateKey, XECPublicKey}
 import java.security.spec.{XECPrivateKeySpec, XECPublicKeySpec, NamedParameterSpec as JNamedParameterSpec}
-import java.security.{PrivateKey, PublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 import scala.jdk.OptionConverters.*
 import scala.reflect.ClassTag
 
 object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = com.peknight.security.key.agreement.XDH
 
-  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider] = None): F[PublicKey] =
+  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider | JProvider] = None)
+  : F[PublicKey] =
     val reversedBytes = publicKeyBytes.reverse
     val numBits =
       algorithm match
@@ -32,10 +33,11 @@ object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
         head => (head & ((1 << numBitsMod8) - 1)).toByte +: reversedBytes.tail
       )).bigInteger
     )
-    generatePublicKey[F](keySpec, provider)
+    generatePublic[F](keySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider] = None): F[PrivateKey] =
-    generatePrivateKey[F](
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider | JProvider] = None)
+  : F[PrivateKey] =
+    generatePrivate[F](
       new XECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
       provider
     )

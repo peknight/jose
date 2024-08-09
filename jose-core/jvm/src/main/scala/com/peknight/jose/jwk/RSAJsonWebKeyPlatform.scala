@@ -10,10 +10,10 @@ import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.jose.key.{BigIntOps, RSAKeyOps}
 import com.peknight.security.provider.Provider
-import java.security.{PrivateKey, PublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
-trait RSAJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: RSAJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, PublicKey]] =
+trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJsonWebKey =>
+  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
     val eitherT =
       for
         modulus <- EitherT(self.modulus.decode[F])
@@ -25,7 +25,7 @@ trait RSAJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: RSAJsonWebK
         rsaPublicKey
     eitherT.value
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
     self.privateExponent.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { privateExponent =>
       val eitherT =
         for

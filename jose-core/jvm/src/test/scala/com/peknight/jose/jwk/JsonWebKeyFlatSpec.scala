@@ -6,7 +6,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.option.*
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.jose.jwa.ecc.`P-384`
-import com.peknight.jose.jwk.JsonWebKey.{OctetSequenceJsonWebKey, PublicJsonWebKey}
+import com.peknight.jose.jwk.JsonWebKey.{OctetSequenceJsonWebKey, AsymmetricJsonWebKey}
 import com.peknight.jose.key.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.provider.Provider
@@ -27,10 +27,10 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       keyPair <- generateKeyPair(BouncyCastleProvider, secureRandom)
       joseJwkEither = JsonWebKey.fromKeyPair(keyPair)
       checkResult <- joseJwkEither match
-        case Right(joseJwk: PublicJsonWebKey) => joseJwk.checkJsonWebKey[IO](Some(BouncyCastleProvider)).map(_.isRight)
+        case Right(joseJwk: AsymmetricJsonWebKey) => joseJwk.checkJsonWebKey[IO](Some(BouncyCastleProvider)).map(_.isRight)
         case _ => IO(false)
       restoredKeyPair <- joseJwkEither match
-        case Right(joseJwk: PublicJsonWebKey) => joseJwk.toKeyPair[IO](Some(BouncyCastleProvider)).map(_.some)
+        case Right(joseJwk: AsymmetricJsonWebKey) => joseJwk.toKeyPair[IO](Some(BouncyCastleProvider)).map(_.some)
         case _ => IO(None)
       jose4jJwk = org.jose4j.jwk.JsonWebKey.Factory.newJwk(keyPair.getPublic).asInstanceOf[org.jose4j.jwk.PublicJsonWebKey]
       _ = jose4jJwk.setPrivateKey(keyPair.getPrivate)
@@ -45,13 +45,13 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   "JsonWebKey" should "succeed with EC" in {
     testKeyPair((provider, random) =>
-      EllipticCurveKeyOps.generateKeyPair[IO](`P-384`.ecParameterSpec, Some(provider), Some(random))
+      EllipticCurveKeyOps.paramsGenerateKeyPair[IO](`P-384`.ecParameterSpec, Some(provider), Some(random))
     ).asserting(assert)
   }
 
   "JsonWebKey" should "succeed with RSA" in {
     testKeyPair((provider, random) =>
-      RSAKeyOps.generateKeyPair[IO](1024, Some(provider), Some(random))
+      RSAKeyOps.keySizeGenerateKeyPair[IO](1024, Some(provider), Some(random))
     ).asserting(assert)
   }
 

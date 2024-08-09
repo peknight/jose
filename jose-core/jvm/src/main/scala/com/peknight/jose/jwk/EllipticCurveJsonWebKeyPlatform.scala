@@ -14,10 +14,10 @@ import com.peknight.jose.key.{BigIntOps, EllipticCurveKeyOps}
 import com.peknight.security.provider.Provider
 
 import java.security.spec.ECParameterSpec
-import java.security.{PrivateKey, PublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
-trait EllipticCurveJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, PublicKey]] =
+trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
+  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
     val eitherT =
       for
         xCoordinate <- EitherT(self.xCoordinate.decode[F])
@@ -30,7 +30,7 @@ trait EllipticCurveJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: E
         ecPublicKey
     eitherT.value
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { eccPrivateKey =>
       val eitherT =
         for

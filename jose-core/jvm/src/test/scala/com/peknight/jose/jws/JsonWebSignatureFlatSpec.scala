@@ -1,20 +1,28 @@
 package com.peknight.jose.jws
 
 import cats.Id
+import cats.syntax.either.*
+import cats.data.EitherT
+import cats.effect.IO
+import com.peknight.security.crypto.Mac
+import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.ParserOps.decode
+import com.peknight.codec.error.{DecodingFailure, WrongClassTag}
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.jose.JoseHeader
 import com.peknight.jose.jwa.signature.HS256
 import com.peknight.jose.jwk.JsonWebKey
+import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
 import com.peknight.jose.jwt.JsonWebTokenClaims
+import com.peknight.security.mac.HmacSHA256
 import io.circe.{Json, JsonObject}
-import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 import java.time.Instant
 
-class JsonWebSignatureFlatSpec extends AnyFlatSpec:
+class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebSignature" should "succeed" in {
     val header = JoseHeader.jwtHeader(HS256)
     println(s"header: $header")
@@ -39,10 +47,17 @@ class JsonWebSignatureFlatSpec extends AnyFlatSpec:
          |  "k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
          |}
       """.stripMargin
-    val jwk = decode[Id, JsonWebKey](jwkJsonString)
-    println(s"jwk: $jwk")
     val origin = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
-
-    assert(true)
+    val eitherT =
+      for
+        jwk <- EitherT(decode[IO, JsonWebKey](jwkJsonString))
+        key <- jwk match
+          case jwk: OctetSequenceJsonWebKey => EitherT(jwk.toKey[IO])
+          case _ => EitherT(IO(Left(WrongClassTag[OctetSequenceJsonWebKey])))
+        _ = println(jwk)
+        _ = println(key)
+        _ <- Mac.mac(HmacSHA256, key, input = Some(ByteVector.ut origin))
+      yield true
+    eitherT.value.map(_.getOrElse(false)).asserting(assert)
   }
 end JsonWebSignatureFlatSpec

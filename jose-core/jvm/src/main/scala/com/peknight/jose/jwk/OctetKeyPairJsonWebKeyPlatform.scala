@@ -11,10 +11,10 @@ import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairJsonWebKey
 import com.peknight.jose.key.OctetKeyPairOps
 import com.peknight.security.provider.Provider
 
-import java.security.{PrivateKey, PublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
-trait OctetKeyPairJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: OctetKeyPairJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, PublicKey]] =
+trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: OctetKeyPairJsonWebKey =>
+  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
     self.xCoordinate.decode[F].flatMap {
       case Right(publicKeyBytes) =>
         OctetKeyPairOps.getKeyPairOps(self.curve)
@@ -23,7 +23,7 @@ trait OctetKeyPairJsonWebKeyPlatform extends PublicJsonWebKeyPlatform { self: Oc
       case Left(error) => error.asLeft[PublicKey].pure[F]
     }
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decode[F].flatMap {
         case Right(privateKeyBytes) =>

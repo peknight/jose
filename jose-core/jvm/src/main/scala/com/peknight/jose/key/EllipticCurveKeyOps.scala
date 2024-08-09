@@ -9,30 +9,21 @@ import com.peknight.security.ecc.EC
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
-import com.peknight.security.syntax.keyPairGenerator.{generateKeyPairF, initializeF}
 
 import java.security.spec.*
-import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom}
+import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
 
 object EllipticCurveKeyOps extends KeyPairOps:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = EC
 
-  def toPublicKey[F[_]: Sync](x: BigInt, y: BigInt, spec: ECParameterSpec, provider: Option[Provider] = None)
+  def toPublicKey[F[_]: Sync](x: BigInt, y: BigInt, spec: ECParameterSpec, provider: Option[Provider | JProvider] = None)
   : F[PublicKey] =
     val w = new ECPoint(x.bigInteger, y.bigInteger)
     val ecPublicKeySpec = new ECPublicKeySpec(w, spec)
-    generatePublicKey[F](ecPublicKeySpec, provider)
+    generatePublic[F](ecPublicKeySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](d: BigInt, spec: ECParameterSpec, provider: Option[Provider] = None): F[PrivateKey] =
-    generatePrivateKey[F](new ECPrivateKeySpec(d.bigInteger, spec), provider)
-
-  def generateKeyPair[F[_]: Sync](spec: ECParameterSpec, provider: Option[Provider] = None,
-                                  secureRandom: Option[SecureRandom] = None): F[KeyPair] =
-    for
-      generator <- keyPairGenerator[F](provider)
-      _ <- generator.initializeF[F](spec, secureRandom)
-      keyPair <- generator.generateKeyPairF[F]
-    yield keyPair
+  def toPrivateKey[F[_]: Sync](d: BigInt, spec: ECParameterSpec, provider: Option[Provider | JProvider] = None): F[PrivateKey] =
+    generatePrivate[F](new ECPrivateKeySpec(d.bigInteger, spec), provider)
 
   def isPointOnCurve(x: BigInt, y: BigInt, ecParameterSpec: ECParameterSpec): Boolean =
     val curve = ecParameterSpec.getCurve

@@ -11,8 +11,8 @@ import java.security.SecureRandom
 import javax.crypto.spec.SecretKeySpec as JSecretKeySpec
 
 object AESKeyOps:
-  def generateKey[F[_]: Sync](keyLengthInBits: Int, secureRandom: SecureRandom): F[JSecretKeySpec] =
-    secureRandom.nextBytesF[F](keyLengthInBits / 8).map(secretKeySpec)
+  def generateKey[F[_]: Sync](keyLengthInBits: Int, random: SecureRandom): F[JSecretKeySpec] =
+    random.nextBytesF[F](keyLengthInBits / 8).map(secretKeySpec)
 
   def secretKeySpec(key: ByteVector): JSecretKeySpec = SecretKeySpec(key, AES)
 end AESKeyOps
