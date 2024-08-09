@@ -10,7 +10,7 @@ import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.codec.error.{DecodingFailure, WrongClassTag}
 import com.peknight.codec.syntax.encoder.asS
-import com.peknight.jose.JoseHeader
+import com.peknight.jose.{JoseHeader, jwtType}
 import com.peknight.jose.jwa.signature.HS256
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
@@ -54,9 +54,9 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         key <- jwk match
           case jwk: OctetSequenceJsonWebKey => EitherT(jwk.toKey[IO])
           case _ => EitherT(IO(Left(WrongClassTag[OctetSequenceJsonWebKey])))
-        _ = println(jwk)
-        _ = println(key)
-        _ <- Mac.mac(HmacSHA256, key, input = Some(ByteVector.ut origin))
+        input <- EitherT(IO(ByteVector.encodeUtf8(origin).left.map(DecodingFailure.apply)))
+        result <- EitherT(Mac.mac[IO](HmacSHA256, key, input = Some(input)).map(_.asRight))
+        _ = println(result.toBase64UrlNoPad)
       yield true
     eitherT.value.map(_.getOrElse(false)).asserting(assert)
   }
