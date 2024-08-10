@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.security.mac.HmacSHA
 import com.peknight.security.oid.ObjectIdentifier
 
-trait HmacSHAAlgorithm extends JWSAlgorithm with HmacSHAAlgorithmPlatform:
+trait HmacSHAAlgorithm extends JWSAlgorithm:
   def mac: HmacSHA
   def algorithm: String = s"HS${mac.digest.bitLength}"
   override def oid: Option[ObjectIdentifier] = mac.oid

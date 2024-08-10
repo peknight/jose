@@ -1,8 +1,9 @@
 package com.peknight.jose.jws
 
 import cats.parse.{Parser, Parser0}
+import cats.syntax.either.*
 import cats.{Id, Monad}
-import com.peknight.codec.base.Base64UrlNoPad
+import com.peknight.codec.base.{Base, Base64UrlNoPad, BaseAlphabetPlatform}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.codec.circe.sum.jsonType.given
@@ -13,10 +14,12 @@ import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.jose.JoseHeader
 import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError}
+import com.peknight.jose.jws.JsonWebSignature.{concat, fromBase, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
 import java.nio.charset.CharacterCodingException
+import scala.reflect.ClassTag
 
 case class JsonWebSignature private (
   headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
@@ -39,24 +42,16 @@ case class JsonWebSignature private (
     headerEither match
       case Left(Left(h)) => Right(h)
       case Right((h, _)) => Right(h)
-      case Left(Right(p)) =>
-        for
-          headerBytes <- p.decode[Id]
-          headerJsonString <- headerBytes.decodeUtf8.left.map(DecodingFailure.apply)
-          h <- decode[Id, JoseHeader](headerJsonString)
-        yield h
+      case Left(Right(p)) => fromBase[JoseHeader](p)
 
   def getProtectedHeader: Either[JsonWebSignatureError, Base64UrlNoPad] =
     headerEither match
       case Left(Right(p)) => Right(p)
       case Right((_, p)) => Right(p)
-      case Left(Left(h)) =>
-        ByteVector.encodeUtf8(h.asS[Id, Json].deepDropNullValues.noSpaces) match
-          case Right(bytes) => Right(Base64UrlNoPad.fromByteVector(bytes))
-          case Left(e) => Left(CharacterCodingError(e))
+      case Left(Left(h)) => toBase(h, Base64UrlNoPad)
 
   def compact: Either[JsonWebSignatureError, String] =
-    getProtectedHeader.map(h => s"${h.value}.${payload.value}.${signature.value}")
+    getProtectedHeader.map(h => s"${concat(h, payload)}.${signature.value}")
 end JsonWebSignature
 
 object JsonWebSignature:
@@ -93,4 +88,18 @@ object JsonWebSignature:
 
   given circeCodecJsonWebSignature: io.circe.Codec[JsonWebSignature] = codec[JsonWebSignature]
 
+  def toBase[T, B <: Base : ClassTag](t: T, base: BaseAlphabetPlatform[?, B])(using Encoder[Id, Json, T])
+  : Either[JsonWebSignatureError, B] =
+    ByteVector.encodeUtf8(t.asS[Id, Json].deepDropNullValues.noSpaces) match
+      case Right(bytes) => base.fromByteVector(bytes).asRight
+      case Left(error) => CharacterCodingError(error).asLeft
+
+  def fromBase[T](b: Base)(using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] =
+    for
+      bytes <- b.decode[Id]
+      jsonString <- bytes.decodeUtf8.left.map(DecodingFailure.apply)
+      t <- decode[Id, T](jsonString)
+    yield t
+
+  def concat(header: Base64UrlNoPad, payload: Base64UrlNoPad): String = s"${header.value}.${payload.value}"
 end JsonWebSignature

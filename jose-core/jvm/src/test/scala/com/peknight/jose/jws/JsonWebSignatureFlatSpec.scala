@@ -1,20 +1,20 @@
 package com.peknight.jose.jws
 
 import cats.Id
-import cats.syntax.either.*
 import cats.data.EitherT
 import cats.effect.IO
-import com.peknight.security.crypto.Mac
 import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.syntax.either.*
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.ParserOps.decode
 import com.peknight.codec.error.{DecodingFailure, WrongClassTag}
 import com.peknight.codec.syntax.encoder.asS
-import com.peknight.jose.{JoseHeader, jwtType}
+import com.peknight.jose.JoseHeader
 import com.peknight.jose.jwa.signature.HS256
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
 import com.peknight.jose.jwt.JsonWebTokenClaims
+import com.peknight.security.crypto.Mac
 import com.peknight.security.mac.HmacSHA256
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -48,6 +48,8 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |}
       """.stripMargin
     val origin = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
+    val jwsRawString = "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ."
+    println(JsonWebSignature.jsonWebSignatureParser.parseAll(jwsRawString))
     val eitherT =
       for
         jwk <- EitherT(decode[IO, JsonWebKey](jwkJsonString))
@@ -55,7 +57,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           case jwk: OctetSequenceJsonWebKey => EitherT(jwk.toKey[IO])
           case _ => EitherT(IO(Left(WrongClassTag[OctetSequenceJsonWebKey])))
         input <- EitherT(IO(ByteVector.encodeUtf8(origin).left.map(DecodingFailure.apply)))
-        result <- EitherT(Mac.mac[IO](HmacSHA256, key, input = Some(input)).map(_.asRight))
+        result <- EitherT(Mac.mac[IO](HmacSHA256, key, input).map(_.asRight))
         _ = println(result.toBase64UrlNoPad)
       yield true
     eitherT.value.map(_.getOrElse(false)).asserting(assert)
