@@ -10,7 +10,7 @@ import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.error.jwk.NoSuchCurve
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
-import com.peknight.jose.key.{BigIntOps, EllipticCurveKeyOps}
+import com.peknight.jose.jwk.ops.{BigIntOps, EllipticCurveKeyOps}
 import com.peknight.security.provider.Provider
 
 import java.security.spec.ECParameterSpec

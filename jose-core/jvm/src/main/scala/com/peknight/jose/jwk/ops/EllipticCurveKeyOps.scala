@@ -1,9 +1,7 @@
-package com.peknight.jose.key
+package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*
-import cats.syntax.flatMap.*
-import cats.syntax.functor.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, PointNotOnCurve}
 import com.peknight.security.ecc.EC
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
@@ -11,7 +9,7 @@ import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
 
 import java.security.spec.*
-import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 object EllipticCurveKeyOps extends KeyPairOps:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = EC

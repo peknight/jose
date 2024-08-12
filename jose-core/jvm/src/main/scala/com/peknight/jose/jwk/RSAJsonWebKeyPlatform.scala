@@ -8,7 +8,7 @@ import cats.syntax.applicative.*
 import cats.effect.Sync
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
-import com.peknight.jose.key.{BigIntOps, RSAKeyOps}
+import com.peknight.jose.jwk.ops.{BigIntOps, RSAKeyOps}
 import com.peknight.security.provider.Provider
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 

@@ -1,4 +1,4 @@
-package com.peknight.jose.key
+package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import com.peknight.security.key.factory.KeyFactoryAlgorithm

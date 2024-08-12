@@ -4,7 +4,7 @@ import cats.Applicative
 import cats.syntax.functor.*
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
-import com.peknight.jose.key.AESKeyOps
+import com.peknight.jose.jwk.ops.AESKeyOps
 
 import javax.crypto.spec.SecretKeySpec as JSecretKeySpec
 

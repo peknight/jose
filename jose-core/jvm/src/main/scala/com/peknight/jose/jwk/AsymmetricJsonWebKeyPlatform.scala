@@ -14,7 +14,7 @@ import com.peknight.codec.base.Base
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.error.jwk.{BareKeyCertMismatch, JsonWebKeyError, MissingPrivateKey}
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.key.X509Ops
+import com.peknight.jose.jwk.ops.X509Ops
 import com.peknight.security.provider.Provider
 
 import java.security.cert.{CertificateFactory, X509Certificate}

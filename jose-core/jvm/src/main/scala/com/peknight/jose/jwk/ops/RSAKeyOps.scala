@@ -1,15 +1,13 @@
-package com.peknight.jose.key
+package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
-import cats.syntax.flatMap.*
-import cats.syntax.functor.*
 import com.peknight.security.cipher.RSA
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
 
 import java.security.spec.{RSAPrivateCrtKeySpec, RSAPrivateKeySpec, RSAPublicKeySpec}
-import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 object RSAKeyOps extends KeyPairOps:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = RSA

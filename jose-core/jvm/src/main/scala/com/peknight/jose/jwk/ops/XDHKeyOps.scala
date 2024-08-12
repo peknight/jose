@@ -1,4 +1,4 @@
-package com.peknight.jose.key
+package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*

@@ -13,7 +13,7 @@ import com.peknight.security.mgf.{MGF, MGF1}
 import com.peknight.security.oid.ObjectIdentifier
 import com.peknight.security.signature.DigestWithEncryption
 
-trait `RSASSA-PSSAlgorithm` extends JWSAlgorithm:
+trait `RSASSA-PSSAlgorithm` extends JWSAlgorithm with `RSASSA-PSSAlgorithmPlatform`:
   def digest: `SHA-2`
   def mgf: MGF = MGF1
   val signature: DigestWithEncryption = digest.withEncryption(RSA, Some(mgf))

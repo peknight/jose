@@ -13,7 +13,7 @@ import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError,
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{HmacSHAAlgorithm, none}
 import com.peknight.jose.jws.JsonWebSignature.{concat, toBase}
-import com.peknight.security.crypto.Mac
+import com.peknight.jose.jws.ops.HmacSHAOps
 import com.peknight.security.provider.Provider
 import io.circe.Json
 import scodec.bits.ByteVector
@@ -41,7 +41,7 @@ trait JsonWebSignatureCompanion:
       case (None, _) => ByteVector.empty.asRight.pure
       case (Some(`none`), _) => ByteVector.empty.asRight.pure
       case (Some(algo: HmacSHAAlgorithm), Some(k)) =>
-        Mac.mac[F](algo.mac, k, input, provider).map(_.asRight)
+        HmacSHAOps.sign[F](algo, k, input, provider).map(_.asRight)
       case (Some(algo: HmacSHAAlgorithm), None) => MissingKey.asLeft.pure
       case _ => ???
 end JsonWebSignatureCompanion

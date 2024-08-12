@@ -8,7 +8,7 @@ import cats.syntax.functor.*
 import cats.syntax.option.*
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairJsonWebKey
-import com.peknight.jose.key.OctetKeyPairOps
+import com.peknight.jose.jwk.ops.OctetKeyPairOps
 import com.peknight.security.provider.Provider
 
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}

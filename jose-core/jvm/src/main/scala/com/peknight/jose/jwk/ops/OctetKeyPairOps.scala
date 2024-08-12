@@ -1,9 +1,7 @@
-package com.peknight.jose.key
+package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*
-import cats.syntax.flatMap.*
-import cats.syntax.functor.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedPrivateKey, UncheckedPublicKey, UnsupportedKey}
 import com.peknight.jose.jwk.JsonWebKey.{EdDSA, OctetKeyPairAlgorithm, XDH}
 import com.peknight.security.provider.Provider

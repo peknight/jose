@@ -8,7 +8,7 @@ import com.peknight.jose.error.jwk.*
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.*
-import com.peknight.jose.key.{BigIntOps, OctetKeyPairOps}
+import com.peknight.jose.jwk.ops.{BigIntOps, OctetKeyPairOps}
 import com.peknight.security.algorithm.Algorithm
 import com.peknight.security.key.agreement.XDH
 import com.peknight.security.signature.EdDSA
