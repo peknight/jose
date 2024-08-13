@@ -18,6 +18,9 @@ package object jose:
       "critical" -> "crit",
       "encryptionAlgorithm" -> "enc",
       "compressionAlgorithm" -> "zip",
+
+      // rfc7797
+      "base64UrlEncodePayload" -> "b64",
     )
 
 end jose

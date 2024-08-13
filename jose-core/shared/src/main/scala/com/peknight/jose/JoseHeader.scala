@@ -35,6 +35,8 @@ case class JoseHeader(
                        `type`: Option[String] = None,
                        contentType: Option[String] = None,
                        critical: Option[List[String]] = None,
+                       // rfc7797
+                       base64UrlEncodePayload: Option[Boolean] = None,
                        ext: Option[JsonObject] = None
                      )
 object JoseHeader:

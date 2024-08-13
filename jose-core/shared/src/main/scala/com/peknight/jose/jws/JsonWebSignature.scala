@@ -21,6 +21,10 @@ import scodec.bits.ByteVector
 import java.nio.charset.CharacterCodingException
 import scala.reflect.ClassTag
 
+/**
+ * https://datatracker.ietf.org/doc/html/rfc7515
+ * TODO https://datatracker.ietf.org/doc/html/rfc7797#section-3
+ */
 case class JsonWebSignature private (
   headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
   payload: Base64UrlNoPad,
