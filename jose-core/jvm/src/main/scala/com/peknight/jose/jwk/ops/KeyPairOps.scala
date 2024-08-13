@@ -1,10 +1,9 @@
 package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
-import com.peknight.security.key.factory.KeyFactoryAlgorithm
-import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
+import com.peknight.security.key.factory.{KeyFactory, KeyFactoryAlgorithm}
+import com.peknight.security.key.pair.{KeyPairGenerator, KeyPairGeneratorAlgorithm}
 import com.peknight.security.provider.Provider
-import com.peknight.security.{KeyFactory, KeyPairGenerator}
 
 import java.security.spec.{AlgorithmParameterSpec, KeySpec}
 import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}

@@ -3,7 +3,7 @@ package com.peknight.jose.jwk.ops
 import cats.effect.Sync
 import cats.syntax.functor.*
 import com.peknight.io.ByteArrayInputStream
-import com.peknight.security.cert.CertificateFactory
+import com.peknight.security.certificate.factory.CertificateFactory
 import com.peknight.security.certificate.factory.X509
 import com.peknight.security.provider.Provider
 import scodec.bits.ByteVector

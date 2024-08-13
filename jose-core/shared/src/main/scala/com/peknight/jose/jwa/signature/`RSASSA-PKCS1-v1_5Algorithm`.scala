@@ -9,8 +9,7 @@ import com.peknight.security.cipher.RSA
 import com.peknight.security.digest.`SHA-2`
 import com.peknight.security.signature.DigestWithEncryption
 
-trait `RSASSA-PKCS1-v1_5Algorithm` extends JWSAlgorithm:
-  def digest: `SHA-2`
+trait `RSASSA-PKCS1-v1_5Algorithm` extends RSASSAAlgorithm:
   def signature: DigestWithEncryption = digest.withEncryption(RSA)
   def algorithm: String = s"RS${digest.bitLength}"
 end `RSASSA-PKCS1-v1_5Algorithm`

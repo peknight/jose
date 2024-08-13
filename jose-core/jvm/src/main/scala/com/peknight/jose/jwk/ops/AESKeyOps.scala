@@ -3,7 +3,7 @@ package com.peknight.jose.jwk.ops
 import cats.effect.Sync
 import cats.syntax.functor.*
 import com.peknight.security.cipher.AES
-import com.peknight.security.crypto.spec.SecretKeySpec
+import com.peknight.security.spec.SecretKeySpec
 import com.peknight.security.syntax.secureRandom.nextBytesF
 import scodec.bits.ByteVector
 

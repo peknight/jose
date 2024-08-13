@@ -10,7 +10,8 @@ import com.peknight.jose.jwk.JsonWebKey.{OctetSequenceJsonWebKey, AsymmetricJson
 import com.peknight.jose.jwk.ops.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.provider.Provider
-import com.peknight.security.{SecureRandom, Security}
+import com.peknight.security.Security
+import com.peknight.security.random.SecureRandom
 import org.jose4j.jwk.JsonWebKey.OutputControlLevel
 import org.scalatest.flatspec.AsyncFlatSpec
 
