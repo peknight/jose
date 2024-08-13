@@ -1,4 +1,4 @@
-package com.peknight.jose.error.jwk
+package com.peknight.jose.error
 
 import com.peknight.error.Error
 
@@ -10,7 +10,7 @@ trait UncheckedPublicKey[A] extends UncheckedKey[A]:
 end UncheckedPublicKey
 object UncheckedPublicKey:
   private case class UncheckedPublicKey[A](algorithm: String, keyType: ClassTag[A])
-    extends com.peknight.jose.error.jwk.UncheckedPublicKey[A]
-  def apply[A](algorithm: String)(using keyType: ClassTag[A]): com.peknight.jose.error.jwk.UncheckedPublicKey[A] =
+    extends com.peknight.jose.error.UncheckedPublicKey[A]
+  def apply[A](algorithm: String)(using keyType: ClassTag[A]): com.peknight.jose.error.UncheckedPublicKey[A] =
     UncheckedPublicKey[A](algorithm, keyType)
 end UncheckedPublicKey

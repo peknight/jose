@@ -16,6 +16,7 @@ import com.peknight.security.signature.DigestWithEncryption
 trait `RSASSA-PSSAlgorithm` extends RSASSAAlgorithm with `RSASSA-PSSAlgorithmPlatform`:
   def mgf: MGF = MGF1
   def signature: DigestWithEncryption = digest.withEncryption(RSA, Some(mgf))
+  def saltLength: Int = digest.outputLength / 8
   def requirement: Requirement = Optional
   def algorithm: String = s"PS${digest.bitLength}"
   override def oid: Option[ObjectIdentifier] = Some(ObjectIdentifier.unsafeFromString("1.2.840.113549.1.1.10"))

@@ -1,7 +1,5 @@
 package com.peknight.jose.error.jws
 
-import com.peknight.jose.jwa.JsonWebAlgorithm
-
 case class InvalidRSAKeyLength(bitLength: Int, minimumLength: Int)
   extends InvalidKeyLength:
   override def lowPriorityMessage: Option[String] =

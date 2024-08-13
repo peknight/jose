@@ -7,13 +7,10 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
 import com.peknight.codec.error.DecodingFailure
-import com.peknight.jose.error.jwk.NoSuchCurve
-import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import com.peknight.jose.jwk.ops.{BigIntOps, EllipticCurveKeyOps}
 import com.peknight.security.provider.Provider
 
-import java.security.spec.ECParameterSpec
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
@@ -22,9 +19,8 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
       for
         xCoordinate <- EitherT(self.xCoordinate.decode[F])
         yCoordinate <- EitherT(self.yCoordinate.decode[F])
-        spec <- EitherT(getEcParameterSpec.toRight(DecodingFailure(NoSuchCurve)).pure[F])
         ecPublicKey <- EitherT(EllipticCurveKeyOps.toPublicKey[F](
-          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), spec, provider
+          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), self.curve.ecParameterSpec, provider
         ).map(_.asRight))
       yield
         ecPublicKey
@@ -35,24 +31,20 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
       val eitherT =
         for
           eccPrivateKey <- EitherT(eccPrivateKey.decode[F])
-          spec <- EitherT(getEcParameterSpec.toRight(DecodingFailure(NoSuchCurve)).pure[F])
           ecPrivateKey <- EitherT(EllipticCurveKeyOps.toPrivateKey[F](
-            BigIntOps.fromBytes(eccPrivateKey), spec, provider
+            BigIntOps.fromBytes(eccPrivateKey), self.curve.ecParameterSpec, provider
           ).map(_.asRight))
         yield ecPrivateKey
       eitherT.value.map(_.map(_.some))
     }
-
-  private def getEcParameterSpec: Option[ECParameterSpec] = Curve.curveList.find(_ == self.curve).map(_.ecParameterSpec)
 
   override def checkJsonWebKeyTyped[F[_]: Sync]: F[Either[DecodingFailure, Unit]] =
     val eitherT =
       for
         xCoordinate <- EitherT(self.xCoordinate.decode[F])
         yCoordinate <- EitherT(self.yCoordinate.decode[F])
-        spec <- EitherT(getEcParameterSpec.toRight(DecodingFailure(NoSuchCurve)).pure[F])
         _ <- EitherT(EllipticCurveKeyOps.checkPointOnCurve(
-          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), spec
+          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), self.curve.ecParameterSpec
         ).left.map(DecodingFailure.apply).pure[F])
       yield
         ()

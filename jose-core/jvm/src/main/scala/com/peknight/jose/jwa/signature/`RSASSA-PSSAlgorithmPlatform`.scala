@@ -5,5 +5,5 @@ import java.security.spec.PSSParameterSpec
 trait `RSASSA-PSSAlgorithmPlatform` { self: `RSASSA-PSSAlgorithm` =>
   def toPSSParameterSpec: PSSParameterSpec =
     new PSSParameterSpec(self.digest.algorithm, self.mgf.mgf, self.mgf.toMGFParameterSpec(self.digest),
-      self.digest.outputLength / 8, PSSParameterSpec.TRAILER_FIELD_BC)
+      self.saltLength, PSSParameterSpec.TRAILER_FIELD_BC)
 }

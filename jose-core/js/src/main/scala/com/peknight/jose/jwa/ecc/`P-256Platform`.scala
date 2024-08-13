@@ -1,3 +1,3 @@
 package com.peknight.jose.jwa.ecc
 
-trait `P-256KCompanion`
+trait `P-256Platform`

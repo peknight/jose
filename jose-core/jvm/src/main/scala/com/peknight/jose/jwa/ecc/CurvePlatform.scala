@@ -2,6 +2,6 @@ package com.peknight.jose.jwa.ecc
 
 import java.security.spec.ECParameterSpec
 
-trait ECParameterSpecCompanion:
+trait CurvePlatform:
   def ecParameterSpec: ECParameterSpec
-end ECParameterSpecCompanion
+end CurvePlatform

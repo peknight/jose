@@ -9,13 +9,12 @@ import com.peknight.security.error.UnknownAlgorithm
 import com.peknight.security.oid.ObjectIdentifier
 import com.peknight.security.spec.ECGenParameterSpecName
 
-trait Curve derives CanEqual:
+trait Curve extends CurvePlatform derives CanEqual:
   def std: ECGenParameterSpecName
   def name: String
   def oid: Option[ObjectIdentifier] = std.oid
 end Curve
 object Curve extends CurveCompanion:
-  val values: List[Curve] = List(`P-256`, `P-256K`, `P-384`, `P-521`, prime256v1)
   given stringCodecCurve[F[_]: Applicative]: Codec[F, String, String, Curve] =
     Codec.applicative[F, String, String, Curve](_.name)(
       name => values.find(_.name == name).toRight(DecodingFailure(UnknownAlgorithm(name)))

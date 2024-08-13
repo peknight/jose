@@ -25,7 +25,7 @@ case class JsonWebSignature private (
   headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
   payload: Base64UrlNoPad,
   signature: Base64UrlNoPad
-):
+) extends JsonWebSignaturePlatform:
   def header: Option[JoseHeader] =
     headerEither match
       case Left(Left(h)) => Some(h)
@@ -54,7 +54,7 @@ case class JsonWebSignature private (
     getProtectedHeader.map(h => s"${concat(h, payload)}.${signature.value}")
 end JsonWebSignature
 
-object JsonWebSignature:
+object JsonWebSignature extends JsonWebSignatureCompanion:
   def apply(header: JoseHeader, payload: Base64UrlNoPad, signature: Base64UrlNoPad): JsonWebSignature =
     JsonWebSignature(Left(Left(header)), payload, signature)
 
@@ -102,4 +102,7 @@ object JsonWebSignature:
     yield t
 
   def concat(header: Base64UrlNoPad, payload: Base64UrlNoPad): String = s"${header.value}.${payload.value}"
+
+  def toBytes(header: Base64UrlNoPad, payload: Base64UrlNoPad): Either[JsonWebSignatureError, ByteVector] =
+    ByteVector.encodeUtf8(concat(header, payload)).left.map(CharacterCodingError.apply)
 end JsonWebSignature

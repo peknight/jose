@@ -7,10 +7,13 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.security.digest.MessageDigestAlgorithm
+import com.peknight.security.signature.{DigestWithEncryption, ECDSA}
 
 trait ECDSAAlgorithm extends JWSAlgorithm:
   def curve: Curve
   def digest: MessageDigestAlgorithm
+  def signature: DigestWithEncryption = digest.withEncryption(ECDSA)
+  def signatureByteLength: Int = curve.std.bitLength / 4
   def algorithm: String = s"ES${digest.bitLength}"
 end ECDSAAlgorithm
 object ECDSAAlgorithm:

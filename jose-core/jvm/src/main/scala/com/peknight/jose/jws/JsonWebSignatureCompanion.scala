@@ -5,43 +5,56 @@ import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
-import cats.syntax.functor.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.JoseHeader
-import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError, MissingKey}
+import com.peknight.jose.error.jws.*
 import com.peknight.jose.jwa.JsonWebAlgorithm
-import com.peknight.jose.jwa.signature.{HmacSHAAlgorithm, none}
-import com.peknight.jose.jws.JsonWebSignature.{concat, toBase}
-import com.peknight.jose.jws.ops.HmacSHAOps
+import com.peknight.jose.jwa.signature.none
+import com.peknight.jose.jws.JsonWebSignature.{toBase, toBytes}
+import com.peknight.jose.jws.ops.{NoneOps, SignatureOps}
 import com.peknight.security.provider.Provider
 import io.circe.Json
 import scodec.bits.ByteVector
 
-import java.security.{Key, Provider as JProvider}
+import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait JsonWebSignatureCompanion:
-  def sign[F[_], A](header: JoseHeader, payload: A, key: Option[Key] = None,
-                    provider: Option[Provider | JProvider] = None)
+  def sign[F[_], A](header: JoseHeader, payload: A, key: Option[Key] = None, doKeyValidation: Boolean = true,
+                    useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
+                    random: Option[SecureRandom] = None)
                    (using Sync[F], Encoder[Id, Json, A]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
     val eitherT =
       for
         p <- EitherT(toBase(header, Base64UrlNoPad).pure[F])
         payload <- EitherT(toBase(payload, Base64UrlNoPad).pure[F])
-        input <- EitherT(ByteVector.encodeUtf8(concat(p, payload)).left.map(CharacterCodingError.apply).pure[F])
-        sig <- EitherT(handleSign[F](input, header.algorithm, key, provider))
+        input <- EitherT(toBytes(p, payload).pure[F])
+        sig <- EitherT(handleSign[F](header.algorithm, key, input, doKeyValidation, useLegacyName, provider, random))
       yield
         JsonWebSignature(header, p, payload, Base64UrlNoPad.fromByteVector(sig))
     eitherT.value
 
-  def handleSign[F[_]: Sync](input: ByteVector, algorithm: Option[JsonWebAlgorithm], key: Option[Key],
-                             provider: Option[Provider | JProvider] = None)
+  def handleSign[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
+                             doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+                             provider: Option[Provider | JProvider] = None, random: Option[SecureRandom] = None)
   : F[Either[JsonWebSignatureError, ByteVector]] =
-    (algorithm, key) match
-      case (None, _) => ByteVector.empty.asRight.pure
-      case (Some(`none`), _) => ByteVector.empty.asRight.pure
-      case (Some(algo: HmacSHAAlgorithm), Some(k)) =>
-        HmacSHAOps.sign[F](algo, k, input, provider).map(_.asRight)
-      case (Some(algo: HmacSHAAlgorithm), None) => MissingKey.asLeft.pure
-      case _ => ???
+    algorithm match
+      case Some(`none`) | None => NoneOps.sign(key, data, doKeyValidation).pure[F]
+      case Some(algo) =>
+        key match
+          case Some(k) => SignatureOps.getSignatureOps(algo).map(_.sign[F](algo, k, data, doKeyValidation,
+            useLegacyName, provider, random)).fold(_.asLeft.pure[F], identity)
+          case None => MissingKey.asLeft.pure[F]
+
+  def handleVerify[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
+                               signed: ByteVector, doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+                               provider: Option[Provider | JProvider] = None)
+  : F[Either[JsonWebSignatureError, Boolean]] =
+    algorithm match
+      case Some(`none`) | None => NoneOps.verify(key, data, signed, doKeyValidation).pure[F]
+      case Some(algo) =>
+        key match
+          case Some(k) => SignatureOps.getSignatureOps(algo).map(_.verify[F](algo, k, data, signed, doKeyValidation,
+            useLegacyName, provider)).fold(_.asLeft.pure[F], identity)
+          case None => MissingKey.asLeft.pure[F]
 end JsonWebSignatureCompanion
