@@ -88,11 +88,17 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   given circeCodecJsonWebSignature: io.circe.Codec[JsonWebSignature] = codec[JsonWebSignature]
 
+  def concat(header: Base64UrlNoPad, payload: Base64UrlNoPad): String = s"${header.value}.${payload.value}"
+
+  def toBytes(header: Base64UrlNoPad, payload: Base64UrlNoPad): Either[JsonWebSignatureError, ByteVector] =
+    ByteVector.encodeUtf8(concat(header, payload)).left.map(CharacterCodingError.apply)
+
+  def toBytes[T](t: T)(using Encoder[Id, Json, T]): Either[JsonWebSignatureError, ByteVector] =
+    ByteVector.encodeUtf8(t.asS[Id, Json].deepDropNullValues.noSpaces).left.map(CharacterCodingError.apply)
+
   def toBase[T, B <: Base : ClassTag](t: T, base: BaseAlphabetPlatform[?, B])(using Encoder[Id, Json, T])
   : Either[JsonWebSignatureError, B] =
-    ByteVector.encodeUtf8(t.asS[Id, Json].deepDropNullValues.noSpaces) match
-      case Right(bytes) => base.fromByteVector(bytes).asRight
-      case Left(error) => CharacterCodingError(error).asLeft
+    toBytes[T](t).map(base.fromByteVector)
 
   def fromBase[T](b: Base)(using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] =
     for
@@ -100,9 +106,4 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
       jsonString <- bytes.decodeUtf8.left.map(DecodingFailure.apply)
       t <- decode[Id, T](jsonString)
     yield t
-
-  def concat(header: Base64UrlNoPad, payload: Base64UrlNoPad): String = s"${header.value}.${payload.value}"
-
-  def toBytes(header: Base64UrlNoPad, payload: Base64UrlNoPad): Either[JsonWebSignatureError, ByteVector] =
-    ByteVector.encodeUtf8(concat(header, payload)).left.map(CharacterCodingError.apply)
 end JsonWebSignature

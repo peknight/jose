@@ -20,18 +20,26 @@ import scodec.bits.ByteVector
 import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait JsonWebSignatureCompanion:
-  def sign[F[_], A](header: JoseHeader, payload: A, key: Option[Key] = None, doKeyValidation: Boolean = true,
-                    useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
-                    random: Option[SecureRandom] = None)
-                   (using Sync[F], Encoder[Id, Json, A]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
+  def signJson[F[_], A](header: JoseHeader, payload: A, key: Option[Key] = None, doKeyValidation: Boolean = true,
+                        useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
+                        random: Option[SecureRandom] = None)
+                       (using Sync[F], Encoder[Id, Json, A]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
+    toBytes(payload) match
+      case Left(error) => error.asLeft.pure[F]
+      case Right(payload) => sign[F](header, payload, key, doKeyValidation, useLegacyName, provider, random)
+
+  def sign[F[_]](header: JoseHeader, payload: ByteVector, key: Option[Key] = None, doKeyValidation: Boolean = true,
+                 useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
+                 random: Option[SecureRandom] = None)
+                (using Sync[F]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
     val eitherT =
       for
-        p <- EitherT(toBase(header, Base64UrlNoPad).pure[F])
-        payload <- EitherT(toBase(payload, Base64UrlNoPad).pure[F])
-        input <- EitherT(toBytes(p, payload).pure[F])
+        headerBase <- EitherT(toBase(header, Base64UrlNoPad).pure[F])
+        payloadBase = Base64UrlNoPad.fromByteVector(payload)
+        input <- EitherT(toBytes(headerBase, payloadBase).pure[F])
         sig <- EitherT(handleSign[F](header.algorithm, key, input, doKeyValidation, useLegacyName, provider, random))
       yield
-        JsonWebSignature(header, p, payload, Base64UrlNoPad.fromByteVector(sig))
+        JsonWebSignature(header, headerBase, payloadBase, Base64UrlNoPad.fromByteVector(sig))
     eitherT.value
 
   def handleSign[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
