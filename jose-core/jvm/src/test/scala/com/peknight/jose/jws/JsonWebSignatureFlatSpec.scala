@@ -3,45 +3,48 @@ package com.peknight.jose.jws
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.codec.circe.parser.ParserOps.decode
-import com.peknight.codec.error.WrongClassTag
 import com.peknight.jose.JoseHeader
+import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.HS256
 import com.peknight.jose.jwk.JsonWebKey
-import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
+import com.peknight.jose.jwk.ops.AESKeyOps
 import com.peknight.jose.jwt.JsonWebTokenClaims
+import com.peknight.security.random.SecureRandom
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
 
+import java.security.{Key, KeyPair}
 import java.time.Instant
 
 class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebSignature" should "succeed" in {
-    val header = JoseHeader.jwtHeader(HS256)
-    val jwtClaims = JsonWebTokenClaims(
-      issuer = Some("joe"),
-      expirationTime = Some(Instant.ofEpochSecond(1300819380)),
-      ext = Some(JsonObject("http://example.com/is_root" -> Json.True))
-    )
-    val jwkJsonString =
-      s"""
-         |{
-         |  "kty":"oct",
-         |  "k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
-         |}
-      """.stripMargin
+
+  private val jwtClaims = JsonWebTokenClaims(
+    issuer = Some("joe"),
+    expirationTime = Some(Instant.ofEpochSecond(1300819380)),
+    ext = Some(JsonObject("http://example.com/is_root" -> Json.True))
+  )
+
+  def test(algorithm: JsonWebAlgorithm, key: Key): IO[Boolean] = test(algorithm, key, key)
+
+  def test(algorithm: JsonWebAlgorithm, keyPair: KeyPair): IO[Boolean] =
+    test(algorithm, keyPair.getPrivate, keyPair.getPublic)
+
+  def test(algorithm: JsonWebAlgorithm, signingKey: Key, verificationKey: Key): IO[Boolean] =
     val eitherT =
       for
-        jwk <- EitherT(decode[IO, JsonWebKey](jwkJsonString))
-        _ = println(jwk)
-        key <- jwk match
-          case jwk: OctetSequenceJsonWebKey => EitherT(jwk.toKey[IO])
-          case _ => EitherT(IO(Left(WrongClassTag[OctetSequenceJsonWebKey])))
-        signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](header, jwtClaims, Some(key)))
-        _ = println(signature)
-        result <- EitherT(signature.verify[IO](Some(key)))
-        _ = println(result)
-      yield true
-    eitherT.value.map(_.getOrElse(false)).asserting(assert)
+        signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader.jwtHeader(algorithm),
+          jwtClaims, Some(signingKey)))
+        verify <- EitherT(signature.verify[IO](Some(verificationKey)))
+      yield verify
+    eitherT.value.map(_.getOrElse(false))
+
+  "JsonWebSignature" should "succeed with HmacSHA2" in {
+    val run =
+      for
+        random <- SecureRandom.getInstanceStrong[IO]
+        key <- AESKeyOps.generateKey[IO](256, random)
+        res <- test(HS256, key)
+      yield res
+    run.asserting(assert)
   }
 end JsonWebSignatureFlatSpec

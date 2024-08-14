@@ -69,7 +69,9 @@ object JsonWebKey extends JsonWebKeyCompanion:
       "OctetKeyPairJsonWebKey" -> OctetKeyPair.name,
     )
 
-  sealed trait AsymmetricJsonWebKey extends JsonWebKey with AsymmetricJsonWebKeyPlatform
+  sealed trait AsymmetricJsonWebKey extends JsonWebKey with AsymmetricJsonWebKeyPlatform:
+    def excludePrivate: AsymmetricJsonWebKey
+  end AsymmetricJsonWebKey
 
   case class EllipticCurveJsonWebKey(
     curve: Curve,
@@ -86,6 +88,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
   ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
+    def excludePrivate: EllipticCurveJsonWebKey = copy(eccPrivateKey = None)
   end EllipticCurveJsonWebKey
 
   case class RSAJsonWebKey(
@@ -108,6 +111,14 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
   ) extends AsymmetricJsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
+    def excludePrivate: RSAJsonWebKey = copy(
+      privateExponent = None,
+      firstPrimeFactor = None,
+      secondPrimeFactor = None,
+      firstFactorCRTExponent = None,
+      secondFactorCRTExponent = None,
+      firstCRTCoefficient = None
+    )
   end RSAJsonWebKey
 
   case class OctetSequenceJsonWebKey(
@@ -154,6 +165,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
   ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
+    def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
   end OctetKeyPairJsonWebKey
 
   given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S])
