@@ -38,7 +38,30 @@ case class JoseHeader(
                        // rfc7797
                        base64UrlEncodePayload: Option[Boolean] = None,
                        ext: Option[JsonObject] = None
-                     )
+                     ):
+  def isBase64UrlEncodePayload: Boolean = base64UrlEncodePayload.getOrElse(true)
+  def base64UrlEncodePayload(b64: Boolean): JoseHeader =
+    val label = "b64"
+    if b64 then
+      copy(critical = removeCritical(label), base64UrlEncodePayload = None)
+    else
+      copy(critical = addCritical(label), base64UrlEncodePayload = Some(false))
+  end base64UrlEncodePayload
+
+  def addExt(label: String, value: Json): JoseHeader =
+    copy(critical = addCritical(label),
+      ext = Some(ext.map(_.add(label, value)).getOrElse(JsonObject(label -> value)))
+    )
+
+  def removeExt(label: String): JoseHeader =
+    copy(critical = removeCritical(label), ext = ext.map(_.remove(label)).filterNot(_.isEmpty))
+
+  private def addCritical(label: String): Option[List[String]] =
+    Some(critical.map(crit => if crit.contains(label) then crit else crit :+ label).getOrElse(List(label)))
+
+  private def removeCritical(label: String): Option[List[String]] =
+    critical.map(_.filterNot(_ == label)).filterNot(_.isEmpty)
+end JoseHeader
 object JoseHeader:
   def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(jwtType))
   given codecJoseHeader[F[_], S](using

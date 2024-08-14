@@ -11,7 +11,7 @@ import com.peknight.jose.JoseHeader
 import com.peknight.jose.error.jws.*
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.none
-import com.peknight.jose.jws.JsonWebSignature.{toBase, toBytes}
+import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, toBase, toBytes}
 import com.peknight.jose.jws.ops.{NoneOps, SignatureOps}
 import com.peknight.security.provider.Provider
 import io.circe.Json
@@ -24,22 +24,29 @@ trait JsonWebSignatureCompanion:
                         useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
                         random: Option[SecureRandom] = None)
                        (using Sync[F], Encoder[Id, Json, A]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
-    toBytes(payload) match
+    encodePayloadJson(payload, header.isBase64UrlEncodePayload) match
       case Left(error) => error.asLeft.pure[F]
       case Right(payload) => sign[F](header, payload, key, doKeyValidation, useLegacyName, provider, random)
 
-  def sign[F[_]](header: JoseHeader, payload: ByteVector, key: Option[Key] = None, doKeyValidation: Boolean = true,
+  def signBytes[F[_]](header: JoseHeader, payload: ByteVector, key: Option[Key] = None, doKeyValidation: Boolean = true,
+                      useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
+                      random: Option[SecureRandom] = None)
+                     (using Sync[F]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
+    encodePayload(payload, header.isBase64UrlEncodePayload) match
+      case Left(error) => error.asLeft.pure[F]
+      case Right(payload) => sign[F](header, payload, key, doKeyValidation, useLegacyName, provider, random)
+
+  def sign[F[_]](header: JoseHeader, payload: String, key: Option[Key] = None, doKeyValidation: Boolean = true,
                  useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None,
                  random: Option[SecureRandom] = None)
                 (using Sync[F]): F[Either[JsonWebSignatureError, JsonWebSignature]] =
     val eitherT =
       for
         headerBase <- EitherT(toBase(header, Base64UrlNoPad).pure[F])
-        payloadBase = Base64UrlNoPad.fromByteVector(payload)
-        input <- EitherT(toBytes(headerBase, payloadBase).pure[F])
+        input <- EitherT(toBytes(headerBase, payload).pure[F])
         sig <- EitherT(handleSign[F](header.algorithm, key, input, doKeyValidation, useLegacyName, provider, random))
       yield
-        JsonWebSignature(header, headerBase, payloadBase, Base64UrlNoPad.fromByteVector(sig))
+        JsonWebSignature(header, headerBase, payload, Base64UrlNoPad.fromByteVector(sig))
     eitherT.value
 
   def handleSign[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
