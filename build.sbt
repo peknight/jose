@@ -46,6 +46,7 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
       jwtCirce % Test,
       scalaJwk % Test,
       jose4j % Test,
+      logbackClassic % Test,
     ),
   )
 
@@ -61,6 +62,8 @@ val pekExtVersion = pekVersion
 val jwtCirceVersion = "10.0.1"
 val scalaJwkVersion = "1.2.24"
 val jose4jVersion = "0.9.6"
+val logbackVersion = "1.5.6"
 val jwtCirce = "com.github.jwt-scala" %% "jwt-circe" % jwtCirceVersion
 val scalaJwk = "com.chatwork" %% "scala-jwk" % scalaJwkVersion
 val jose4j = "org.bitbucket.b_c" % "jose4j" % jose4jVersion
+val logbackClassic = "ch.qos.logback" % "logback-classic" % logbackVersion
