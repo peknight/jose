@@ -35,6 +35,7 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
       "com.peknight" %%% "codec-base" % pekCodecVersion,
       "com.peknight" %%% "codec-http4s" % pekCodecVersion,
       "com.peknight" %%% "io-core" % pekIoVersion,
+      "com.peknight" %%% "cats-parse-ext" % pekExtVersion,
       "com.peknight" %%% "commons-string" % pekCommonsVersion,
     ),
   )

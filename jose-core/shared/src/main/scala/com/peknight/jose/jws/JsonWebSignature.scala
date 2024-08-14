@@ -4,6 +4,7 @@ import cats.parse.{Parser, Parser0}
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.{Id, Monad}
+import com.peknight.cats.parse.ext.syntax.parser.flatMapE0
 import com.peknight.codec.base.{Base, Base64UrlNoPad, BaseAlphabetPlatform}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.ParserOps.decode
@@ -80,10 +81,11 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
     JsonWebSignature(Right((header, `protected`)), payload, signature)
 
   val jsonWebSignatureParser: Parser0[JsonWebSignature] =
-    ((Base64UrlNoPad.baseParser <* Parser.char('.')) ~ Parser.anyChar.rep0.string.backtrack ~ (Parser.char('.') *> Base64UrlNoPad.baseParser))
-      .map { case ((p, payload), signature) =>
-        JsonWebSignature(Left(Right(p)), payload, signature)
-      }
+    (Base64UrlNoPad.baseParser ~ (Parser.char('.') *> Parser.charsWhile0(_ != '.')).rep(2)).flatMapE0 {
+      case (headerBase, nel) =>
+        val payload = nel.init.mkString(".")
+        Base64UrlNoPad.baseParser.parseAll(nel.last).map(signature => JsonWebSignature(headerBase, payload, signature))
+    }
 
   given codecJsonWebSignature[F[_], S](using
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
