@@ -11,7 +11,7 @@ import com.peknight.security.provider.Provider
 import java.security.{Key, Provider as JProvider}
 
 trait JsonWebSignaturePlatform { self: JsonWebSignature =>
-  def verify[F[_]: Sync](key: Option[Key], doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+  def verify[F[_]: Sync](key: Option[Key] = None, doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
                          provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Boolean]] =
     val eitherT =
       for
