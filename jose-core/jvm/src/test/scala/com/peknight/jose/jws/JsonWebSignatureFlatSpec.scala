@@ -9,8 +9,8 @@ import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.*
 import com.peknight.jose.jwk.ops.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
-import com.peknight.jose.jwt.JsonWebTokenClaims
-import com.peknight.jose.{JoseHeader, jwtType}
+import com.peknight.jose.jwt.{JsonWebToken, JsonWebTokenClaims}
+import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.random.SecureRandom
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -49,7 +49,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   private def signWithJose4j(signature: JsonWebSignature, key: Key): IO[String] = IO {
     val jose4jJws = new org.jose4j.jws.JsonWebSignature()
     signature.getUnprotectedHeader.toOption.flatMap(_.algorithm).map(_.algorithm).foreach(jose4jJws.setAlgorithmHeaderValue)
-    jose4jJws.setHeader("typ", jwtType)
+    jose4jJws.setHeader("typ", JsonWebToken.`type`)
     signature.decodePayload.map(_.toArray).foreach(jose4jJws.setPayloadBytes)
     jose4jJws.setKey(key)
     jose4jJws.sign()

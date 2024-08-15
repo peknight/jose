@@ -1,4 +1,4 @@
-package com.peknight.jose
+package com.peknight.jose.jwx
 
 import cats.Monad
 import cats.data.NonEmptyList
@@ -17,6 +17,7 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.JWECompressionAlgorithm
 import com.peknight.jose.jwa.encryption.JWEEncryptionAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
+import com.peknight.jose.jwt.JsonWebToken
 import com.peknight.jose.memberNameMap
 import io.circe.{Json, JsonObject}
 import org.http4s.Uri
@@ -63,7 +64,7 @@ case class JoseHeader(
     critical.map(_.filterNot(_ == label)).filterNot(_.isEmpty)
 end JoseHeader
 object JoseHeader:
-  def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(jwtType))
+  def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))
   given codecJoseHeader[F[_], S](using
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]

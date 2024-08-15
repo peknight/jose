@@ -1,7 +1,7 @@
 package com.peknight.jose.jwa.encryption
 
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.Optional
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.cipher.mode.CBC
 import com.peknight.security.cipher.{AES, AES_192}
 import com.peknight.security.mac.{HmacSHA2, HmacSHA384}

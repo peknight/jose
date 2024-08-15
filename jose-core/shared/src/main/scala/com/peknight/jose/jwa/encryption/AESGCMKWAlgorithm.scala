@@ -4,10 +4,10 @@ import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.Optional
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.encryption.HeaderParam.{iv, tag}
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.cipher.AESWrap
 
 trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm:

@@ -4,8 +4,8 @@ import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.{Optional, Required, `Recommended+`}
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.{Optional, Required, `Recommended+`}
 
 enum KeyType(val name: String, val requirement: Requirement):
   case EllipticCurve extends KeyType("EC", `Recommended+`)

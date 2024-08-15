@@ -4,9 +4,9 @@ import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.Recommended
 import com.peknight.jose.jwa.JsonWebAlgorithm
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.Recommended
 
 trait DirectEncryptionAlgorithm extends KeyManagementAlgorithm:
   def algorithm: String = "dir"

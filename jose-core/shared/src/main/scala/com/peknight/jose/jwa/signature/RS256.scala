@@ -1,7 +1,7 @@
 package com.peknight.jose.jwa.signature
 
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.Recommended
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.Recommended
 import com.peknight.security.digest.{`SHA-256`, `SHA-2`}
 import com.peknight.security.oid.ObjectIdentifier
 

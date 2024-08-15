@@ -1,7 +1,7 @@
 package com.peknight.jose.jwa.encryption
 
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.Recommended
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.Recommended
 import com.peknight.security.cipher.{AESWrap, AESWrap_256}
 import com.peknight.security.oid.ObjectIdentifier
 

@@ -1,7 +1,6 @@
 package com.peknight
 
 package object jose:
-  val jwtType: String = "JWT"
   private[jose] val memberNameMap: Map[String, String] =
     Map(
       "algorithm" -> "alg",

@@ -1,8 +1,8 @@
 package com.peknight.jose.jwa.signature
 
-import com.peknight.jose.Requirement
-import com.peknight.jose.Requirement.`Recommended+`
 import com.peknight.jose.jwa.ecc.{Curve, `P-256K`}
+import com.peknight.jose.jwx.Requirement
+import com.peknight.jose.jwx.Requirement.`Recommended+`
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
 import com.peknight.security.oid.ObjectIdentifier
 
