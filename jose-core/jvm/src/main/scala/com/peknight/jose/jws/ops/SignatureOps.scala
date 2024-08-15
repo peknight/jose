@@ -72,5 +72,6 @@ object SignatureOps:
       case algorithm: HmacSHAAlgorithm => HmacSHAOps.asRight
       case algorithm: `RSASSA-PKCS1-v1_5Algorithm` => `RSASSA-PKCS1-v1_5Ops`.asRight
       case algorithm: `RSASSA-PSSAlgorithm` => `RSASSA-PSSOps`.asRight
+      case algorithm: EdDSA => EdDSAOps.asRight
       case _ => UnsupportedSignatureAlgorithm(algorithm).asLeft
 end SignatureOps

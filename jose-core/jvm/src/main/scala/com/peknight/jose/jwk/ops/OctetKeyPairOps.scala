@@ -2,10 +2,13 @@ package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*
-import com.peknight.jose.error.jwk.{JsonWebKeyError, UnsupportedKey}
+import com.peknight.jose.error.jwk.{JsonWebKeyError, UnsupportedKey, UnsupportedKeyAlgorithm}
 import com.peknight.jose.error.{UncheckedPrivateKey, UncheckedPublicKey}
-import com.peknight.jose.jwk.JsonWebKey.{EdDSA, OctetKeyPairAlgorithm, XDH}
+import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
+import com.peknight.security.algorithm.Algorithm
+import com.peknight.security.key.agreement.XDH
 import com.peknight.security.provider.Provider
+import com.peknight.security.signature.EdDSA
 import com.peknight.security.spec.{NamedParameterSpec, NamedParameterSpecName}
 import scodec.bits.ByteVector
 
@@ -13,13 +16,13 @@ import java.security.interfaces.{EdECPublicKey, XECPublicKey}
 import java.security.{KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
 import scala.reflect.ClassTag
 
-trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : ClassTag, Algorithm <: OctetKeyPairAlgorithm]
+trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : ClassTag]
   extends KeyPairOps:
 
-  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider | JProvider] = None)
+  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: NamedParameterSpecName, provider: Option[Provider | JProvider] = None)
   : F[PublicKey]
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: Algorithm, provider: Option[Provider | JProvider] = None)
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: NamedParameterSpecName, provider: Option[Provider | JProvider] = None)
   : F[PrivateKey]
 
   def generateKeyPair[F[_]: Sync](name: NamedParameterSpecName, provider: Option[Provider | JProvider] = None,
@@ -30,7 +33,7 @@ trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : 
 
   def rawTypedPrivateKey(privateKey: PrivateK): ByteVector
 
-  def getTypedAlgorithm(publicKey: PublicK): Either[JsonWebKeyError, Algorithm]
+  def getTypedAlgorithm(publicKey: PublicK): Either[JsonWebKeyError, OctetKeyPairAlgorithm]
 
   def rawPublicKey(publicKey: PublicKey): Either[JsonWebKeyError, ByteVector] =
     checkPublicKeyType(publicKey).flatMap(rawTypedPublicKey)
@@ -38,7 +41,7 @@ trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : 
   def rawPrivateKey(privateKey: PrivateKey): Either[JsonWebKeyError, ByteVector] =
     checkPrivateKeyType(privateKey).map(rawTypedPrivateKey)
 
-  def getAlgorithm(publicKey: PublicKey): Either[JsonWebKeyError, Algorithm] =
+  def getAlgorithm(publicKey: PublicKey): Either[JsonWebKeyError, OctetKeyPairAlgorithm] =
     checkPublicKeyType(publicKey).flatMap(getTypedAlgorithm)
 
   def checkPublicKeyType(publicKey: PublicKey): Either[JsonWebKeyError, PublicK] =
@@ -57,14 +60,15 @@ trait OctetKeyPairOps[PublicK <: PublicKey : ClassTag, PrivateK <: PrivateKey : 
     else bytes ++ ByteVector.fill(length - bytes.length)(0)
 end OctetKeyPairOps
 object OctetKeyPairOps:
-  def getKeyPairOps(publicKey: PublicKey): Either[JsonWebKeyError, OctetKeyPairOps[?, ?, ?]] =
+  def getKeyPairOps(publicKey: PublicKey): Either[JsonWebKeyError, OctetKeyPairOps[?, ?]] =
     publicKey match
       case _: XECPublicKey => XDHKeyOps.asRight
       case _: EdECPublicKey => EdDSAKeyOps.asRight
       case _ => UnsupportedKey(publicKey.getAlgorithm)(using ClassTag(publicKey.getClass)).asLeft
 
-  def getKeyPairOps(curve: OctetKeyPairAlgorithm): OctetKeyPairOps[?, ?, ?] =
+  def getKeyPairOps(curve: Algorithm): Either[JsonWebKeyError, OctetKeyPairOps[?, ?]] =
     curve match
-      case _: XDH => XDHKeyOps
-      case _: EdDSA => EdDSAKeyOps
+      case _: XDH => XDHKeyOps.asRight
+      case _: EdDSA => EdDSAKeyOps.asRight
+      case _ => UnsupportedKeyAlgorithm(curve.algorithm).asLeft
 end OctetKeyPairOps

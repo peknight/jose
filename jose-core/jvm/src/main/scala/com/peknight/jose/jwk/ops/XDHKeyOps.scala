@@ -3,11 +3,12 @@ package com.peknight.jose.jwk.ops
 import cats.effect.Sync
 import cats.syntax.either.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedParameterSpec, UnsupportedKeyAlgorithm}
-import com.peknight.jose.jwk.JsonWebKey.{X25519, X448, XDH}
+import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
+import com.peknight.security.key.agreement.{X25519, X448, XDH}
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
-import com.peknight.security.spec.NamedParameterSpec
+import com.peknight.security.spec.{NamedParameterSpec, NamedParameterSpecName}
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{XECPrivateKey, XECPublicKey}
@@ -16,11 +17,12 @@ import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 import scala.jdk.OptionConverters.*
 import scala.reflect.ClassTag
 
-object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
+object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey]:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = com.peknight.security.key.agreement.XDH
 
-  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider | JProvider] = None)
-  : F[PublicKey] =
+  def toPublicKey[F[_]: Sync](publicKeyBytes: ByteVector, algorithm: NamedParameterSpecName,
+                              provider: Option[Provider | JProvider] = None): F[PublicKey] =
+    given CanEqual[NamedParameterSpecName, NamedParameterSpecName] = CanEqual.derived
     val reversedBytes = publicKeyBytes.reverse
     val numBits =
       algorithm match
@@ -35,8 +37,8 @@ object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
     )
     generatePublic[F](keySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: XDH, provider: Option[Provider | JProvider] = None)
-  : F[PrivateKey] =
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: NamedParameterSpecName,
+                               provider: Option[Provider | JProvider] = None): F[PrivateKey] =
     generatePrivate[F](
       new XECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
       provider
@@ -52,7 +54,7 @@ object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey, XDH]:
   def rawTypedPrivateKey(xecPrivateKey: XECPrivateKey): ByteVector =
     xecPrivateKey.getScalar.toScala.fold(ByteVector.empty)(ByteVector.apply)
 
-  def getTypedAlgorithm(xecPublicKey: XECPublicKey): Either[JsonWebKeyError, XDH] =
+  def getTypedAlgorithm(xecPublicKey: XECPublicKey): Either[JsonWebKeyError, OctetKeyPairAlgorithm] =
     handlePublicKey(xecPublicKey) {
       case X25519.algorithm => X25519
       case X448.algorithm => X448

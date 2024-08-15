@@ -10,7 +10,7 @@ import com.peknight.security.signature.Signature
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
-import java.security.{PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
+import java.security.{SecureRandom, Provider as JProvider}
 
 object `RSASSA-PKCS1-v1_5Ops` extends RSASSAOps[`RSASSA-PKCS1-v1_5Algorithm`]:
   def typedSign[F[_] : Sync](algorithm: `RSASSA-PKCS1-v1_5Algorithm`, key: RSAPrivateKey, data: ByteVector,

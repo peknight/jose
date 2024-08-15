@@ -10,8 +10,8 @@ import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.*
 import com.peknight.jose.jwk.ops.{BigIntOps, OctetKeyPairOps}
 import com.peknight.security.algorithm.Algorithm
-import com.peknight.security.key.agreement.XDH
-import com.peknight.security.signature.EdDSA
+import com.peknight.security.key.agreement.{X25519, X448, XDH}
+import com.peknight.security.signature.{Ed25519, Ed448, EdDSA}
 import org.http4s.Uri
 import scodec.bits.ByteVector
 

@@ -17,9 +17,10 @@ trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self
   def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
     self.xCoordinate.decode[F].flatMap {
       case Right(publicKeyBytes) =>
-        OctetKeyPairOps.getKeyPairOps(self.curve)
-          .toPublicKey[F](publicKeyBytes, self.curve.asInstanceOf, provider)
-          .map(_.asRight[DecodingFailure])
+        OctetKeyPairOps.getKeyPairOps(self.curve) match
+          case Right(keyPairOps) => keyPairOps.toPublicKey[F](publicKeyBytes, self.curve.asInstanceOf, provider)
+            .map(_.asRight[DecodingFailure])
+          case Left(error) => DecodingFailure(error).asLeft[PublicKey].pure[F]
       case Left(error) => error.asLeft[PublicKey].pure[F]
     }
 
@@ -27,9 +28,10 @@ trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self
     self.eccPrivateKey.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decode[F].flatMap {
         case Right(privateKeyBytes) =>
-          OctetKeyPairOps.getKeyPairOps(self.curve)
-            .toPrivateKey[F](privateKeyBytes, self.curve.asInstanceOf, provider)
-            .map(_.some.asRight[DecodingFailure])
+          OctetKeyPairOps.getKeyPairOps(self.curve) match
+            case Right(keyPairOps) => keyPairOps .toPrivateKey[F](privateKeyBytes, self.curve.asInstanceOf, provider)
+              .map(_.some.asRight[DecodingFailure])
+            case Left(error) => DecodingFailure(error).asLeft[Option[PrivateKey]].pure[F]
         case Left(error) => error.asLeft[Option[PrivateKey]].pure[F]
       }
     }

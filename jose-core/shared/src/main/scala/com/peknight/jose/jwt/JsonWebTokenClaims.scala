@@ -21,7 +21,7 @@ case class JsonWebTokenClaims(
                                notBefore: Option[Instant] = None,
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
-                               ext: Option[JsonObject] = None
+                               content: Option[JsonObject] = None
                              )
 object JsonWebTokenClaims:
   private val memberNameMap: Map[String, String] =
@@ -47,7 +47,7 @@ object JsonWebTokenClaims:
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
     given CodecConfiguration = CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-      .withExtendedField("ext")
+      .withExtendedField("content")
     given Codec[F, S, Cursor[S], Instant] =
       Codec[F, S, Cursor[S], Instant](using
         Encoder[F, S, Long].contramap[Instant](_.getEpochSecond),

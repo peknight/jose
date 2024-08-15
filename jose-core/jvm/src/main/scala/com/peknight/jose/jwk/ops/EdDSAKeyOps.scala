@@ -3,11 +3,12 @@ package com.peknight.jose.jwk.ops
 import cats.effect.Sync
 import cats.syntax.either.*
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UnsupportedKeyAlgorithm}
-import com.peknight.jose.jwk.JsonWebKey.{Ed25519, Ed448, EdDSA}
+import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm
 import com.peknight.security.provider.Provider
-import com.peknight.security.spec.NamedParameterSpec
+import com.peknight.security.signature.{Ed25519, Ed448, EdDSA}
+import com.peknight.security.spec.{NamedParameterSpec, NamedParameterSpecName}
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPrivateKey, EdECPublicKey}
@@ -15,10 +16,11 @@ import java.security.spec.{EdECPoint, EdECPrivateKeySpec, EdECPublicKeySpec}
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 import scala.jdk.OptionConverters.*
 
-object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey, EdDSA]:
+object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey]:
   def keyAlgorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm = com.peknight.security.signature.EdDSA
 
-  def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider | JProvider] = None): F[PublicKey] =
+  def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: NamedParameterSpecName,
+                               provider: Option[Provider | JProvider] = None): F[PublicKey] =
     val xIsOdd = publicKeyBytes.lastOption.map(_ & -128).exists(_ != 0)
     val ep = new EdECPoint(xIsOdd, BigIntOps.fromBytes(publicKeyBytes.lastOption
       .fold(publicKeyBytes)(last => publicKeyBytes.init :+ (last & 127).toByte)
@@ -27,7 +29,8 @@ object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey, EdDSA]
     val keySpec = new EdECPublicKeySpec(NamedParameterSpec(algorithm), ep)
     generatePublic[F](keySpec, provider)
 
-  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: EdDSA, provider: Option[Provider | JProvider] = None): F[PrivateKey] =
+  def toPrivateKey[F[_]: Sync](privateKeyBytes: ByteVector, algorithm: NamedParameterSpecName,
+                               provider: Option[Provider | JProvider] = None): F[PrivateKey] =
     generatePrivate[F](
       new EdECPrivateKeySpec(NamedParameterSpec(algorithm), privateKeyBytes.toArray),
       provider
@@ -45,7 +48,7 @@ object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey, EdDSA]
   def rawTypedPrivateKey(edEcPrivateKey: EdECPrivateKey): ByteVector =
     edEcPrivateKey.getBytes.toScala.fold(ByteVector.empty)(ByteVector.apply)
 
-  def getTypedAlgorithm(edECPublicKey: EdECPublicKey): Either[JsonWebKeyError, EdDSA] =
+  def getTypedAlgorithm(edECPublicKey: EdECPublicKey): Either[JsonWebKeyError, OctetKeyPairAlgorithm] =
     handlePublicKey(edECPublicKey) {
       case Ed25519.algorithm => Ed25519
       case Ed448.algorithm => Ed448

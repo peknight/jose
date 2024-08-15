@@ -17,6 +17,8 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
 import com.peknight.security.algorithm.Algorithm
+import com.peknight.security.key.agreement.{X25519, X448}
+import com.peknight.security.signature.{Ed25519, Ed448}
 import com.peknight.security.spec.NamedParameterSpecName
 import io.circe.Json
 import org.http4s.Uri
@@ -135,13 +137,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     val keyType: KeyType = OctetSequence
   end OctetSequenceJsonWebKey
 
-  sealed trait OctetKeyPairAlgorithm extends Algorithm with NamedParameterSpecName
-  sealed trait XDH extends OctetKeyPairAlgorithm with com.peknight.security.key.agreement.XDH
-  case object X25519 extends XDH with com.peknight.security.key.agreement.X25519
-  case object X448 extends XDH with com.peknight.security.key.agreement.X448
-  sealed trait EdDSA extends OctetKeyPairAlgorithm with com.peknight.security.signature.EdDSA
-  case object Ed25519 extends EdDSA with com.peknight.security.signature.Ed25519
-  case object Ed448 extends EdDSA with com.peknight.security.signature.Ed448
+  type OctetKeyPairAlgorithm = Algorithm & NamedParameterSpecName
 
   given stringCodecOctetKeyPairAlgorithm[F[_]: Applicative]: Codec[F, String, String, OctetKeyPairAlgorithm] =
     Codec.mapOption[F, String, String, OctetKeyPairAlgorithm](_.algorithm)(
