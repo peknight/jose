@@ -22,7 +22,6 @@ object ECDSAOps extends SignatureOps[ECDSAAlgorithm, ECPrivateKey, ECPublicKey]:
     Signature.sign[F](algorithm.signature, key, data, provider = provider, random = random)
       .map(derEncodedBytes => convertDERToConcatenated(derEncodedBytes, algorithm.signatureByteLength))
 
-
   def typedVerify[F[_] : Sync](algorithm: ECDSAAlgorithm, key: ECPublicKey, data: ByteVector, signed: ByteVector,
                                useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None)
   : F[Either[JsonWebSignatureError, Boolean]] =
@@ -37,9 +36,9 @@ object ECDSAOps extends SignatureOps[ECDSAAlgorithm, ECPrivateKey, ECPublicKey]:
       if r.mod(orderN) == BigInt(0) || s.mod(orderN) == BigInt(0) then false.asRight.pure[F]
       else
         convertConcatenatedToDER(signed) match
-          case Left(error) => error.asLeft.pure[F]
           case Right(signed) => Signature.publicKeyVerify[F](algorithm.signature, key, data, signed, provider)
             .map(_.asRight)
+          case Left(error) => error.asLeft.pure[F]
   end typedVerify
 
   def typedValidateSigningKey(algorithm: ECDSAAlgorithm, key: ECPrivateKey): Either[JsonWebSignatureError, Unit] =
@@ -93,7 +92,7 @@ object ECDSAOps extends SignatureOps[ECDSAAlgorithm, ECPrivateKey, ECPublicKey]:
     def getBytes(rawBytes: ByteVector): ByteVector = rawBytes.init.dropWhile(_ == 0) :+ rawBytes.last
     def getLength(bytes: ByteVector): Long = if bytes.head < 0 then bytes.length + 1 else bytes.length
     val rBytes = getBytes(leftHalf(concatenatedSignatureBytes))
-    val sBytes = getBytes(leftHalf(concatenatedSignatureBytes))
+    val sBytes = getBytes(rightHalf(concatenatedSignatureBytes))
     val rLength = getLength(rBytes)
     val sLength = getLength(sBytes)
     val len = rLength + sLength + 4

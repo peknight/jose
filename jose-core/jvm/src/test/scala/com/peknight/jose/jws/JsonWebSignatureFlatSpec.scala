@@ -1,17 +1,20 @@
 package com.peknight.jose.jws
 
+import cats.Id
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.either.*
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.*
-import com.peknight.jose.jwk.ops.{AESKeyOps, RSAKeyOps}
+import com.peknight.jose.jwk.ops.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.jose.jwt.JsonWebTokenClaims
 import com.peknight.jose.{JoseHeader, jwtType}
 import com.peknight.security.random.SecureRandom
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
+import scodec.bits.ByteVector
 
 import java.security.{Key, KeyPair}
 import java.time.Instant
@@ -24,23 +27,23 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     ext = Some(JsonObject("http://example.com/is_root" -> Json.True))
   )
 
-  def testKey(algorithm: JsonWebAlgorithm, key: Key): IO[Boolean] =
-    testKeys(algorithm, key, key)
+  def testKey(algorithm: JsonWebAlgorithm, key: Key, checkEquals: Boolean = true): IO[Boolean] =
+    testKeys(algorithm, key, key, checkEquals)
 
-  def testKeyPair(algorithm: JsonWebAlgorithm, keyPair: KeyPair): IO[Boolean] =
-    testKeys(algorithm, keyPair.getPrivate, keyPair.getPublic)
+  def testKeyPair(algorithm: JsonWebAlgorithm, keyPair: KeyPair, checkEquals: Boolean = true): IO[Boolean] =
+    testKeys(algorithm, keyPair.getPrivate, keyPair.getPublic, checkEquals)
 
-  def testKeys(algorithm: JsonWebAlgorithm, signingKey: Key, verificationKey: Key): IO[Boolean] =
+  def testKeys(algorithm: JsonWebAlgorithm, signingKey: Key, verificationKey: Key, checkEquals: Boolean = true): IO[Boolean] =
     val eitherT =
       for
         signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader.jwtHeader(algorithm),
           jwtClaims, Some(signingKey)))
-        _ = println(signature.compact)
         verify <- EitherT(signature.verify[IO](Some(verificationKey)))
-        _ = println(verify)
         jose4jSignature <- EitherT(signWithJose4j(signature, signingKey).map(_.asRight))
-        _ = println(jose4jSignature)
-      yield verify && signature.signature.value == jose4jSignature
+        verify4j <- EitherT(JsonWebSignature.handleVerify[IO](Some(algorithm), Some(verificationKey),
+          signature.getProtectedHeader.flatMap(h => JsonWebSignature.toBytes(h, signature.payload)).getOrElse(ByteVector.empty),
+          Base64UrlNoPad.unsafeFromString(jose4jSignature).decode[Id].getOrElse(ByteVector.empty)))
+      yield verify && verify4j && (!checkEquals || signature.signature.value == jose4jSignature)
     eitherT.value.map(_.getOrElse(false))
 
   private def signWithJose4j(signature: JsonWebSignature, key: Key): IO[String] = IO {
@@ -50,7 +53,6 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     signature.decodePayload.map(_.toArray).foreach(jose4jJws.setPayloadBytes)
     jose4jJws.setKey(key)
     jose4jJws.sign()
-    println(jose4jJws.getCompactSerialization)
     jose4jJws.getEncodedSignature
   }
 
@@ -77,19 +79,19 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         keyPair <- RSAKeyOps.keySizeGenerateKeyPair[IO](2048)
-        res <- testKeyPair(PS256, keyPair)
+        res <- testKeyPair(PS256, keyPair, false)
       yield res
     run.asserting(assert)
   }
 
-  // "JsonWebSignature" should "succeed with ES256" in {
-  //   val run =
-  //     for
-  //       keyPair <- EllipticCurveKeyOps.paramsGenerateKeyPair[IO](ES256.curve.ecParameterSpec)
-  //       res <- testKeyPair(ES256, keyPair)
-  //     yield res.map(_._2).getOrElse(false)
-  //   run.asserting(assert)
-  // }
+  "JsonWebSignature" should "succeed with ES256" in {
+    val run =
+      for
+        keyPair <- EllipticCurveKeyOps.paramsGenerateKeyPair[IO](ES256.curve.ecParameterSpec)
+        res <- testKeyPair(ES256, keyPair, false)
+      yield res
+    run.asserting(assert)
+  }
 
   "JsonWebSignature" should "succeed with none" in {
     val eitherT =
