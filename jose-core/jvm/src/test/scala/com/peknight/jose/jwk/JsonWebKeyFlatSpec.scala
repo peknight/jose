@@ -4,7 +4,7 @@ import cats.Id
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.option.*
-import com.peknight.codec.circe.parser.ParserOps.decode
+import com.peknight.codec.circe.parser.decode
 import com.peknight.jose.jwa.ecc.`P-384`
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, OctetSequenceJsonWebKey}
 import com.peknight.jose.jwk.ops.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}

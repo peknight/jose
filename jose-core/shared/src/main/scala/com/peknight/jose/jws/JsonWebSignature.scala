@@ -7,7 +7,7 @@ import cats.{Id, Monad}
 import com.peknight.cats.parse.ext.syntax.parser.flatMapE0
 import com.peknight.codec.base.{Base, Base64UrlNoPad, BaseAlphabetPlatform}
 import com.peknight.codec.circe.iso.codec
-import com.peknight.codec.circe.parser.ParserOps.decode
+import com.peknight.codec.circe.parser.decode
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{DecodingFailure, MissingField}
