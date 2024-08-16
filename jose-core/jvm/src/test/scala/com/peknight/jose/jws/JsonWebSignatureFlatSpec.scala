@@ -97,9 +97,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val eitherT =
       for
         signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader.jwtHeader(none), jwtClaims))
-        _ = println(signature)
         verify <- EitherT(signature.verify[IO]())
-        _ = println(verify)
       yield verify
     eitherT.value.map(_.getOrElse(false)).asserting(assert)
   }
