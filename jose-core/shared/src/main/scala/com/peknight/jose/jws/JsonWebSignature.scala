@@ -15,7 +15,6 @@ import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError}
-import com.peknight.jose.jws.JsonWebSignature.{concat, fromBase, toBase}
 import com.peknight.jose.jwx.JoseHeader
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
@@ -31,42 +30,10 @@ case class JsonWebSignature private (
   headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
   payload: String,
   signature: Base64UrlNoPad
-) extends JsonWebSignaturePlatform:
-  def header: Option[JoseHeader] =
-    headerEither match
-      case Left(Left(h)) => Some(h)
-      case Right((h, _)) => Some(h)
-      case _ => None
-
-  def `protected`: Option[Base64UrlNoPad] =
-    headerEither match
-      case Left(Right(p)) => Some(p)
-      case Right((_, p)) => Some(p)
-      case _ => None
-
-  def getUnprotectedHeader: Either[DecodingFailure, JoseHeader] =
-    headerEither match
-      case Left(Left(h)) => Right(h)
-      case Right((h, _)) => Right(h)
-      case Left(Right(p)) => fromBase[JoseHeader](p)
-
-  def getProtectedHeader: Either[JsonWebSignatureError, Base64UrlNoPad] =
-    headerEither match
-      case Left(Right(p)) => Right(p)
-      case Right((_, p)) => Right(p)
-      case Left(Left(h)) => toBase(h, Base64UrlNoPad)
-
-  def isBase64UrlEncodePayload: Either[DecodingFailure, Boolean] =
-    getUnprotectedHeader.map(_.isBase64UrlEncodePayload)
-
-  def decodePayload: Either[DecodingFailure, ByteVector] =
-    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayload(payload, b64))
-
-  def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] =
-    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadJson(payload, b64))
-
-  def compact: Either[JsonWebSignatureError, String] =
-    getProtectedHeader.map(h => s"${concat(h, payload)}.${signature.value}")
+) extends Signature with JsonWebSignaturePlatform:
+  def decodePayload: Either[DecodingFailure, ByteVector] = decodePayload(payload)
+  def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] = decodePayloadJson(payload)
+  def compact: Either[JsonWebSignatureError, String] = compact(payload)
 end JsonWebSignature
 
 object JsonWebSignature extends JsonWebSignatureCompanion:
