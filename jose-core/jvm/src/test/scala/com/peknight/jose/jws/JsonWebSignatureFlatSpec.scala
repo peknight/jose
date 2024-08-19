@@ -8,9 +8,10 @@ import cats.syntax.either.*
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.*
-import com.peknight.jose.jwk.ops.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
+import com.peknight.jose.jwk.ops.{EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.jose.jwt.{JsonWebToken, JsonWebTokenClaims}
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.security.cipher.AES
 import com.peknight.security.random.SecureRandom
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -59,8 +60,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebSignature" should "succeed with HS256" in {
     val run =
       for
-        random <- SecureRandom.getInstanceStrong[IO]
-        key <- AESKeyOps.generateKey[IO](256, random)
+        key <- AES.keySizeGenerateKey[IO](256)
         res <- testKey(HS256, key)
       yield res
     run.asserting(assert)
@@ -87,7 +87,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebSignature" should "succeed with ES256" in {
     val run =
       for
-        keyPair <- EllipticCurveKeyOps.paramsGenerateKeyPair[IO](ES256.curve.ecParameterSpec)
+        keyPair <- EllipticCurveKeyOps.paramsGenerateKeyPair[IO](ES256.curve.std.ecParameterSpec)
         res <- testKeyPair(ES256, keyPair, false)
       yield res
     run.asserting(assert)

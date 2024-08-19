@@ -20,7 +20,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
         xCoordinate <- EitherT(self.xCoordinate.decode[F])
         yCoordinate <- EitherT(self.yCoordinate.decode[F])
         ecPublicKey <- EitherT(EllipticCurveKeyOps.toPublicKey[F](
-          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), self.curve.ecParameterSpec, provider
+          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), self.curve.std.ecParameterSpec, provider
         ).map(_.asRight))
       yield
         ecPublicKey
@@ -32,7 +32,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
         for
           eccPrivateKey <- EitherT(eccPrivateKey.decode[F])
           ecPrivateKey <- EitherT(EllipticCurveKeyOps.toPrivateKey[F](
-            BigIntOps.fromBytes(eccPrivateKey), self.curve.ecParameterSpec, provider
+            BigIntOps.fromBytes(eccPrivateKey), self.curve.std.ecParameterSpec, provider
           ).map(_.asRight))
         yield ecPrivateKey
       eitherT.value.map(_.map(_.some))
@@ -44,7 +44,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
         xCoordinate <- EitherT(self.xCoordinate.decode[F])
         yCoordinate <- EitherT(self.yCoordinate.decode[F])
         _ <- EitherT(EllipticCurveKeyOps.checkPointOnCurve(
-          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), self.curve.ecParameterSpec
+          BigIntOps.fromBytes(xCoordinate), BigIntOps.fromBytes(yCoordinate), self.curve.std.ecParameterSpec
         ).left.map(DecodingFailure.apply).pure[F])
       yield
         ()

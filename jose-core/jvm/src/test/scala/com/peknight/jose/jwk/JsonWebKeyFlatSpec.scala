@@ -7,9 +7,10 @@ import cats.syntax.option.*
 import com.peknight.codec.circe.parser.decode
 import com.peknight.jose.jwa.ecc.`P-384`
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, OctetSequenceJsonWebKey}
-import com.peknight.jose.jwk.ops.{AESKeyOps, EllipticCurveKeyOps, RSAKeyOps}
+import com.peknight.jose.jwk.ops.{EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.security.Security
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
+import com.peknight.security.cipher.AES
 import com.peknight.security.provider.Provider
 import com.peknight.security.random.SecureRandom
 import org.jose4j.jwk.JsonWebKey.OutputControlLevel
@@ -46,7 +47,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   "JsonWebKey" should "succeed with EC" in {
     testKeyPair((provider, random) =>
-      EllipticCurveKeyOps.paramsGenerateKeyPair[IO](`P-384`.ecParameterSpec, Some(provider), Some(random))
+      EllipticCurveKeyOps.paramsGenerateKeyPair[IO](`P-384`.std.ecParameterSpec, Some(provider), Some(random))
     ).asserting(assert)
   }
 
@@ -59,8 +60,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKey" should "succeed with AES" in {
     val run =
       for
-        secureRandom <- SecureRandom[IO]
-        key <- AESKeyOps.generateKey[IO](256, secureRandom)
+        key <- AES.keySizeGenerateKey[IO](256)
         joseJwkEither = JsonWebKey.fromKey(key)
         restoredKey <- joseJwkEither match
           case Right(joseJwk: OctetSequenceJsonWebKey) => joseJwk.toKey[IO].map(_.some)

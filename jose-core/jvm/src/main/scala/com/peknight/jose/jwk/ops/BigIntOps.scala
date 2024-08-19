@@ -16,16 +16,13 @@ object BigIntOps:
     if notPadded.length >= minLength then notPadded
     else ByteVector.fill(minLength - notPadded.length)(0) ++ notPadded
   def toBytesUnsigned(bigInt: BigInt): ByteVector =
-    val bitLen = ((bigInt.bitLength + 7) >> 3) << 3
-    val bigBytes = ByteVector(bigInt.toByteArray)
-    if bigInt.bitLength % 8 != 0 && (bigInt.bitLength / 8) + 1 == bitLen / 8 then
-      bigBytes
+    val twosComplementBytes = ByteVector(bigInt.toByteArray)
+    if bigInt.bitLength % 8 == 0 && twosComplementBytes.length > 1 && twosComplementBytes.head == 0 then
+      twosComplementBytes.tail
     else
-      val src = if bigInt.bitLength % 8 == 0 then bigBytes.tail else bigBytes
-      val startDst = bitLen / 8 - src.length
-      ByteVector.fill(startDst)(0) ++ src
+      twosComplementBytes
   def toBase[A <: Alphabet, B <: Base](bigInt: BigInt, minLength: Int, platform: BaseAlphabetPlatform[A, B]): B =
     platform.fromByteVector(toBytes(bigInt, minLength))
   def toBase[A <: Alphabet, B <: Base](bigInt: BigInt, platform: BaseAlphabetPlatform[A, B]): B =
-    platform.fromByteVector(BigIntOps.toBytesUnsigned(bigInt))
+    platform.fromByteVector(toBytesUnsigned(bigInt))
 end BigIntOps
