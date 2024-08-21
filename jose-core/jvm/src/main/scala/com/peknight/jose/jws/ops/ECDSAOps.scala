@@ -4,7 +4,7 @@ import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import com.peknight.commons.bigint.syntax.byteVector.toUnsignedBigInt
+import com.peknight.scodec.bits.ext.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.error.jws.{InvalidECDSAKey, InvalidECDSASignatureFormat, JsonWebSignatureError}
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwa.signature.ECDSAAlgorithm

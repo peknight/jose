@@ -2,9 +2,9 @@ package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*
-import com.peknight.commons.bigint.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedParameterSpec, UnsupportedKeyAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
+import com.peknight.scodec.bits.ext.syntax.byteVector.toUnsignedBigInt
 import com.peknight.security.key.agreement.{X25519, X448, XDH}
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
 import com.peknight.security.key.pair.KeyPairGeneratorAlgorithm

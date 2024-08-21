@@ -7,9 +7,9 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
 import com.peknight.codec.error.DecodingFailure
-import com.peknight.commons.bigint.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.jose.jwk.ops.RSAKeyOps
+import com.peknight.scodec.bits.ext.syntax.byteVector.toUnsignedBigInt
 import com.peknight.security.provider.Provider
 
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
