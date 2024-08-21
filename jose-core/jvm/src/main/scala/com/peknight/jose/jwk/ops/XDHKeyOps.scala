@@ -2,6 +2,7 @@ package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*
+import com.peknight.commons.bigint.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UncheckedParameterSpec, UnsupportedKeyAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
 import com.peknight.security.key.agreement.{X25519, X448, XDH}
@@ -31,9 +32,9 @@ object XDHKeyOps extends OctetKeyPairOps[XECPublicKey, XECPrivateKey]:
     val numBitsMod8 = numBits % 8
     val keySpec = new XECPublicKeySpec(
       NamedParameterSpec(algorithm),
-      BigIntOps.fromBytes(reversedBytes.headOption.filter(_ => numBitsMod8 != 0).fold(reversedBytes)(
+      reversedBytes.headOption.filter(_ => numBitsMod8 != 0).fold(reversedBytes)(
         head => (head & ((1 << numBitsMod8) - 1)).toByte +: reversedBytes.tail
-      )).bigInteger
+      ).toUnsignedBigInt.bigInteger
     )
     generatePublic[F](keySpec, provider)
 

@@ -2,6 +2,7 @@ package com.peknight.jose.jwk.ops
 
 import cats.effect.Sync
 import cats.syntax.either.*
+import com.peknight.commons.bigint.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.error.jwk.{JsonWebKeyError, UnsupportedKeyAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey.OctetKeyPairAlgorithm
 import com.peknight.security.key.factory.KeyFactoryAlgorithm
@@ -22,10 +23,10 @@ object EdDSAKeyOps extends OctetKeyPairOps[EdECPublicKey, EdECPrivateKey]:
   def toPublicKey[F[_] : Sync](publicKeyBytes: ByteVector, algorithm: NamedParameterSpecName,
                                provider: Option[Provider | JProvider] = None): F[PublicKey] =
     val xIsOdd = publicKeyBytes.lastOption.map(_ & -128).exists(_ != 0)
-    val ep = new EdECPoint(xIsOdd, BigIntOps.fromBytes(publicKeyBytes.lastOption
+    val ep = new EdECPoint(xIsOdd, publicKeyBytes.lastOption
       .fold(publicKeyBytes)(last => publicKeyBytes.init :+ (last & 127).toByte)
-      .reverse
-    ).bigInteger)
+      .reverse.toUnsignedBigInt.bigInteger
+    )
     val keySpec = new EdECPublicKeySpec(NamedParameterSpec(algorithm), ep)
     generatePublic[F](keySpec, provider)
 

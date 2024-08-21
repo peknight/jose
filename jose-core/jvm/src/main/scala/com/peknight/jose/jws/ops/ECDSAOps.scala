@@ -4,10 +4,10 @@ import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
+import com.peknight.commons.bigint.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.error.jws.{InvalidECDSAKey, InvalidECDSASignatureFormat, JsonWebSignatureError}
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwa.signature.ECDSAAlgorithm
-import com.peknight.jose.jwk.ops.BigIntOps
 import com.peknight.security.provider.Provider
 import com.peknight.security.signature.Signature
 import scodec.bits.ByteVector
@@ -29,8 +29,8 @@ object ECDSAOps extends SignatureOps[ECDSAAlgorithm, ECPrivateKey, ECPublicKey]:
     else
       val rBytes = leftHalf(signed)
       val sBytes = rightHalf(signed)
-      val r = BigIntOps.fromBytes(rBytes)
-      val s = BigIntOps.fromBytes(sBytes)
+      val r = rBytes.toUnsignedBigInt
+      val s = sBytes.toUnsignedBigInt
       val ecParams = algorithm.curve.std.ecParameterSpec
       val orderN = BigInt(ecParams.getOrder)
       if r.mod(orderN) == BigInt(0) || s.mod(orderN) == BigInt(0) then false.asRight.pure[F]

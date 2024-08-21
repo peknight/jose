@@ -8,7 +8,7 @@ import com.peknight.jose.error.jwk.*
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.*
-import com.peknight.jose.jwk.ops.{BigIntOps, OctetKeyPairOps}
+import com.peknight.jose.jwk.ops.OctetKeyPairOps
 import com.peknight.security.algorithm.Algorithm
 import com.peknight.security.key.agreement.{X25519, X448, XDH}
 import com.peknight.security.signature.{Ed25519, Ed448, EdDSA}
@@ -124,9 +124,9 @@ trait JsonWebKeyCompanion:
     for
       curve <- Curve.curveMap.get(ellipticCurve).orElse(curve).toRight[JsonWebKeyError](NoSuchCurve)
       minLength = (ellipticCurve.getField.getFieldSize + 7) / 8
-      xCoordinate = BigIntOps.toBase(BigInt(ecPublicKey.getW.getAffineX), minLength, Base64UrlNoPad)
-      yCoordinate = BigIntOps.toBase(BigInt(ecPublicKey.getW.getAffineY), minLength, Base64UrlNoPad)
-      eccPrivateKey = ecPrivateKey.map(pk => BigIntOps.toBase(BigInt(pk.getS), minLength, Base64UrlNoPad))
+      xCoordinate = Base64UrlNoPad.fromUnsignedBigInt(BigInt(ecPublicKey.getW.getAffineX), minLength)
+      yCoordinate = Base64UrlNoPad.fromUnsignedBigInt(BigInt(ecPublicKey.getW.getAffineY), minLength)
+      eccPrivateKey = ecPrivateKey.map(pk => Base64UrlNoPad.fromUnsignedBigInt(BigInt(pk.getS), minLength))
     yield
       EllipticCurveJsonWebKey(
         curve,
@@ -158,13 +158,13 @@ trait JsonWebKeyCompanion:
   ): RSAJsonWebKey =
     def mapCrt(f: RSAPrivateCrtKey => BigInteger): Option[Base64UrlNoPad] =
       rsaPrivateKey.flatMap {
-        case d: RSAPrivateCrtKey => Option(f(d)).map(b => BigIntOps.toBase(BigInt(b), Base64UrlNoPad))
+        case d: RSAPrivateCrtKey => Option(f(d)).map(b => Base64UrlNoPad.fromUnsignedBigInt(BigInt(b)))
         case _ => None
       }
     RSAJsonWebKey(
-      BigIntOps.toBase(BigInt(rsaPublicKey.getModulus), Base64UrlNoPad),
-      BigIntOps.toBase(BigInt(rsaPublicKey.getPublicExponent), Base64UrlNoPad),
-      rsaPrivateKey.map(d => BigIntOps.toBase(BigInt(d.getPrivateExponent), Base64UrlNoPad)),
+      Base64UrlNoPad.fromUnsignedBigInt(BigInt(rsaPublicKey.getModulus)),
+      Base64UrlNoPad.fromUnsignedBigInt(BigInt(rsaPublicKey.getPublicExponent)),
+      rsaPrivateKey.map(d => Base64UrlNoPad.fromUnsignedBigInt(BigInt(d.getPrivateExponent))),
       mapCrt(_.getPrimeP),
       mapCrt(_.getPrimeQ),
       mapCrt(_.getPrimeExponentP),
