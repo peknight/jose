@@ -32,7 +32,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         case Right(joseJwk: AsymmetricJsonWebKey) => joseJwk.checkJsonWebKey[IO](Some(BouncyCastleProvider)).map(_.isRight)
         case _ => IO(false)
       restoredKeyPair <- joseJwkEither match
-        case Right(joseJwk: AsymmetricJsonWebKey) => joseJwk.toKeyPair[IO](Some(BouncyCastleProvider)).map(_.some)
+        case Right(joseJwk: AsymmetricJsonWebKey) => joseJwk.keyPair[IO](Some(BouncyCastleProvider)).map(_.some)
         case _ => IO(None)
       jose4jJwk = org.jose4j.jwk.JsonWebKey.Factory.newJwk(keyPair.getPublic).asInstanceOf[org.jose4j.jwk.PublicJsonWebKey]
       _ = jose4jJwk.setPrivateKey(keyPair.getPrivate)

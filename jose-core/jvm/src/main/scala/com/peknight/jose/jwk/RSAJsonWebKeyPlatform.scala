@@ -1,71 +1,63 @@
 package com.peknight.jose.jwk
 
+import cats.Id
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.applicative.*
+import cats.syntax.applicativeError.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
-import com.peknight.codec.error.DecodingFailure
+import cats.syntax.traverse.*
+import com.peknight.error.Error
+import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
-import com.peknight.jose.jwk.ops.RSAKeyOps
-import com.peknight.scodec.bits.ext.syntax.byteVector.toUnsignedBigInt
+import com.peknight.security.cipher.RSA
 import com.peknight.security.provider.Provider
 
-import java.security.{PrivateKey, PublicKey, Provider as JProvider}
+import java.security.Provider as JProvider
+import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
 
 trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
-    val eitherT =
+  def publicKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, RSAPublicKey]] =
+    val either =
       for
-        modulus <- EitherT(self.modulus.decode[F])
-        publicExponent <- EitherT(self.exponent.decode[F])
-        rsaPublicKey <- EitherT(RSAKeyOps.toPublicKey[F](modulus.toUnsignedBigInt, publicExponent.toUnsignedBigInt,
-          provider).map(_.asRight))
+        modulus <- self.modulus.decodeToUnsignedBigInt[Id]
+        publicExponent <- self.exponent.decodeToUnsignedBigInt[Id]
       yield
-        rsaPublicKey
-    eitherT.value
+        RSA.publicKey[F](modulus, publicExponent, provider).attempt.map(_.asError)
+    either.fold(_.asLeft.pure, identity)
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
-    self.privateExponent.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { privateExponent =>
-      val eitherT =
+  def privateKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[RSAPrivateKey]]] =
+    self.privateExponent.fold(none[RSAPrivateKey].asRight[Error].pure[F]) { privateExponent =>
+      val either =
         for
-          modulus <- EitherT(self.modulus.decode[F])
-          privateExponent <- EitherT(privateExponent.decode[F])
-          rsaPrivateKey <-
-            val crtEitherTOption =
+          modulus <- self.modulus.decodeToUnsignedBigInt[Id]
+          privateExponent <- privateExponent.decodeToUnsignedBigInt[Id]
+          option =
+            for
+              firstPrimeFactor <- self.firstPrimeFactor
+              secondPrimeFactor <- self.secondPrimeFactor
+              firstFactorCRTExponent <- self.firstFactorCRTExponent
+              secondFactorCRTExponent <- self.secondFactorCRTExponent
+              firstCRTCoefficient <- self.firstCRTCoefficient
+            yield
               for
-                firstPrimeFactor <- self.firstPrimeFactor
-                secondPrimeFactor <- self.secondPrimeFactor
-                firstFactorCRTExponent <- self.firstFactorCRTExponent
-                secondFactorCRTExponent <- self.secondFactorCRTExponent
-                firstCRTCoefficient <- self.firstCRTCoefficient
+                publicExponent <- self.exponent.decodeToUnsignedBigInt[Id]
+                primeP <- firstPrimeFactor.decodeToUnsignedBigInt[Id]
+                primeQ <- secondPrimeFactor.decodeToUnsignedBigInt[Id]
+                primeExponentP <- firstFactorCRTExponent.decodeToUnsignedBigInt[Id]
+                primeExponentQ <- secondFactorCRTExponent.decodeToUnsignedBigInt[Id]
+                crtCoefficient <- firstCRTCoefficient.decodeToUnsignedBigInt[Id]
               yield
-                for
-                  publicExponent <- EitherT(self.exponent.decode[F])
-                  primeP <- EitherT(firstPrimeFactor.decode[F])
-                  primeQ <- EitherT(secondPrimeFactor.decode[F])
-                  primeExponentP <- EitherT(firstFactorCRTExponent.decode[F])
-                  primeExponentQ <- EitherT(secondFactorCRTExponent.decode[F])
-                  crtCoefficient <- EitherT(firstCRTCoefficient.decode[F])
-                  privateKey <- EitherT(RSAKeyOps.toPrivateKey[F](
-                    modulus.toUnsignedBigInt,
-                    publicExponent.toUnsignedBigInt,
-                    privateExponent.toUnsignedBigInt,
-                    primeP.toUnsignedBigInt,
-                    primeQ.toUnsignedBigInt,
-                    primeExponentP.toUnsignedBigInt,
-                    primeExponentQ.toUnsignedBigInt,
-                    crtCoefficient.toUnsignedBigInt,
-                    provider
-                  ).map(_.asRight))
-                yield
-                  privateKey
-            crtEitherTOption.getOrElse(EitherT(RSAKeyOps.toPrivateKey[F](
-              modulus.toUnsignedBigInt, privateExponent.toUnsignedBigInt, provider
-            ).map(_.asRight)))
+                (publicExponent, primeP, primeQ, primeExponentP, primeExponentQ, crtCoefficient)
+          option <- option.sequence
         yield
-          rsaPrivateKey
-      eitherT.value.map(_.map(_.some))
+          option match
+            case Some((publicExponent, primeP, primeQ, primeExponentP, primeExponentQ, crtCoefficient)) =>
+              RSA.privateCrtKey[F](modulus, publicExponent, privateExponent, primeP, primeQ, primeExponentP,
+                primeExponentQ, crtCoefficient, provider)
+            case _ => RSA.privateKey[F](modulus, privateExponent, provider)
+      either.fold(_.asLeft.pure, f => f.attempt.map(_.asError.map(Some.apply)))
     }
 }

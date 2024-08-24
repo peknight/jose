@@ -14,7 +14,7 @@ import com.peknight.security.provider.Provider
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: OctetKeyPairJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
+  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
     self.xCoordinate.decode[F].flatMap {
       case Right(publicKeyBytes) =>
         OctetKeyPairOps.getKeyPairOps(self.curve) match
@@ -24,7 +24,7 @@ trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self
       case Left(error) => error.asLeft[PublicKey].pure[F]
     }
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
+  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decode[F].flatMap {
         case Right(privateKeyBytes) =>

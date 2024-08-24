@@ -1,7 +1,7 @@
 package com.peknight.jose.jwa.signature
 
-import com.peknight.security.digest.{`SHA-256`, `SHA-2`}
+import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
 
 object PS256 extends `RSASSA-PSSAlgorithm`:
-  def digest: `SHA-2` = `SHA-256`
+  def digest: MessageDigestAlgorithm = `SHA-256`
 end PS256

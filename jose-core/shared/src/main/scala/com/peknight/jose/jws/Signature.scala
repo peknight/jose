@@ -6,6 +6,7 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{DecodingFailure, MissingField}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.error.Error
 import com.peknight.jose.error.jws.JsonWebSignatureError
 import com.peknight.jose.jws.JsonWebSignature.{concat, fromBase, toBase}
 import com.peknight.jose.jwx.JoseHeader
@@ -27,28 +28,28 @@ trait Signature:
       case Right((_, p)) => Some(p)
       case _ => None
 
-  def getUnprotectedHeader: Either[DecodingFailure, JoseHeader] =
+  def getUnprotectedHeader: Either[Error, JoseHeader] =
     headerEither match
       case Left(Left(h)) => Right(h)
       case Right((h, _)) => Right(h)
       case Left(Right(p)) => fromBase[JoseHeader](p)
 
-  def getProtectedHeader: Either[JsonWebSignatureError, Base64UrlNoPad] =
+  def getProtectedHeader: Either[Error, Base64UrlNoPad] =
     headerEither match
       case Left(Right(p)) => Right(p)
       case Right((_, p)) => Right(p)
       case Left(Left(h)) => toBase(h, Base64UrlNoPad)
 
-  def isBase64UrlEncodePayload: Either[DecodingFailure, Boolean] =
+  def isBase64UrlEncodePayload: Either[Error, Boolean] =
     getUnprotectedHeader.map(_.isBase64UrlEncodePayload)
 
-  def decodePayload(payload: String): Either[DecodingFailure, ByteVector] =
+  def decodePayload(payload: String): Either[Error, ByteVector] =
     isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayload(payload, b64))
 
-  def decodePayloadJson[T](payload: String)(using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] =
+  def decodePayloadJson[T](payload: String)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
     isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadJson(payload, b64))
 
-  def compact(payload: String): Either[JsonWebSignatureError, String] =
+  def compact(payload: String): Either[Error, String] =
     getProtectedHeader.map(h => s"${concat(h, payload)}.${signature.value}")
 end Signature
 object Signature:

@@ -14,6 +14,8 @@ import com.peknight.codec.error.{DecodingFailure, MissingField}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.error.Error
+import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError}
 import com.peknight.jose.jwx.JoseHeader
 import io.circe.{Json, JsonObject}
@@ -31,9 +33,9 @@ case class JsonWebSignature private (
   payload: String,
   signature: Base64UrlNoPad
 ) extends Signature with JsonWebSignaturePlatform:
-  def decodePayload: Either[DecodingFailure, ByteVector] = decodePayload(payload)
-  def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] = decodePayloadJson(payload)
-  def compact: Either[JsonWebSignatureError, String] = compact(payload)
+  def decodePayload: Either[Error, ByteVector] = decodePayload(payload)
+  def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[Error, T] = decodePayloadJson(payload)
+  def compact: Either[Error, String] = compact(payload)
 end JsonWebSignature
 
 object JsonWebSignature extends JsonWebSignatureCompanion:
@@ -73,45 +75,44 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   def concat(header: Base64UrlNoPad, payload: String): String = s"${header.value}.$payload"
 
-  def toBytes(value: String): Either[JsonWebSignatureError, ByteVector] =
-    ByteVector.encodeUtf8(value).left.map(CharacterCodingError.apply)
+  def toBytes(value: String): Either[Error, ByteVector] = ByteVector.encodeUtf8(value).asError
 
-  def toBytes(header: Base64UrlNoPad, payload: String): Either[JsonWebSignatureError, ByteVector] =
-    toBytes(concat(header, payload))
+  def toBytes(header: Base64UrlNoPad, payload: String): Either[Error, ByteVector] = toBytes(concat(header, payload))
 
-  def toJsonBytes[T](t: T)(using Encoder[Id, Json, T]): Either[JsonWebSignatureError, ByteVector] =
+  def toJsonBytes[T](t: T)(using Encoder[Id, Json, T]): Either[Error, ByteVector] =
     toBytes(t.asS[Id, Json].deepDropNullValues.noSpaces)
 
   def toBase[T, B <: Base : ClassTag](t: T, base: BaseAlphabetPlatform[?, B])(using Encoder[Id, Json, T])
-  : Either[JsonWebSignatureError, B] =
+  : Either[Error, B] =
     toJsonBytes[T](t).map(base.fromByteVector)
 
-  def fromBase[T](b: Base)(using Decoder[Id, Cursor[Json], T]): Either[DecodingFailure, T] =
+  def fromBase[T](b: Base)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
     for
       bytes <- b.decode[Id]
-      jsonString <- bytes.decodeUtf8.left.map(DecodingFailure.apply)
+      jsonString <- bytes.decodeUtf8.asError
       t <- decode[Id, T](jsonString)
     yield t
 
-  def encodePayload(payload: ByteVector, base64UrlEncodePayload: Boolean): Either[JsonWebSignatureError, String] =
+  def encodePayload(payload: ByteVector, base64UrlEncodePayload: Boolean): Either[Error, String] =
     if base64UrlEncodePayload then Base64UrlNoPad.fromByteVector(payload).value.asRight
-    else payload.decodeUtf8.left.map(CharacterCodingError.apply)
+    else payload.decodeUtf8.asError
 
   def encodePayloadJson[T](payload: T, base64UrlEncodePayload: Boolean)(using Encoder[Id, Json, T])
-  : Either[JsonWebSignatureError, String] =
+  : Either[Error, String] =
     if base64UrlEncodePayload then toBase(payload, Base64UrlNoPad).map(_.value)
     else payload.asS[Id, Json].deepDropNullValues.noSpaces.asRight
 
-  def decodePayload(payload: String, base64UrlEncodePayload: Boolean): Either[DecodingFailure, ByteVector] =
-    (if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]) else toBytes(payload))
-      .left.map(DecodingFailure.apply)
+  def decodePayload(payload: String, base64UrlEncodePayload: Boolean): Either[Error, ByteVector] =
+    if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]) else toBytes(payload)
 
   def decodePayloadJson[T](payload: String, base64UrlEncodePayload: Boolean)(using Decoder[Id, Cursor[Json], T])
-  : Either[DecodingFailure, T] =
-    val jsonEither =
-      if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]).flatMap(_.decodeUtf8)
-      else payload.asRight
-    jsonEither match
-      case Left(error) => DecodingFailure(error).asLeft
-      case Right(json) => decode[Id, T](json)
+  : Either[Error, T] =
+    if base64UrlEncodePayload then
+      for
+        base64 <- Base64UrlNoPad.fromString(payload)
+        bytes <- base64.decode[Id]
+        json <- bytes.decodeUtf8.asError
+        res <- decode[Id, T](json)
+      yield res
+    else decode[Id, T](payload)
 end JsonWebSignature

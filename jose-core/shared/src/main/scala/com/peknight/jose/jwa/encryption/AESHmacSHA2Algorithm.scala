@@ -4,7 +4,7 @@ import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
-import com.peknight.jose.jwa.JsonWebAlgorithm
+import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.mode.CipherAlgorithmMode
 import com.peknight.security.cipher.padding.CipherAlgorithmPadding
 import com.peknight.security.cipher.{AEAD, AES}
@@ -23,7 +23,7 @@ end AESHmacSHA2Algorithm
 object AESHmacSHA2Algorithm:
   val values: List[AESHmacSHA2Algorithm] = List(`A128CBC-HS256`, `A192CBC-HS384`, `A256CBC-HS512`)
   given stringCodecAESCBCHmacSHA2Algorithm[F[_]: Applicative]: Codec[F, String, String, AESHmacSHA2Algorithm] =
-    JsonWebAlgorithm.stringCodecAlgorithm[F, AESHmacSHA2Algorithm](values)
+    stringCodecAlgorithmIdentifier[F, AESHmacSHA2Algorithm](values)
   given codecAESCBCHmacSHA2Algorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], AESHmacSHA2Algorithm] =
     Codec.codecS[F, S, AESHmacSHA2Algorithm]
 end AESHmacSHA2Algorithm

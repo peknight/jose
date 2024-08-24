@@ -36,6 +36,7 @@ sealed trait JsonWebKey:
   def x509CertificateChain: Option[NonEmptyList[Base64NoPad]]
   def x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad]
   def x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
+  def excludePrivate: JsonWebKey
 end JsonWebKey
 object JsonWebKey extends JsonWebKeyCompanion:
   private val memberNameMap: Map[String, String] = com.peknight.jose.memberNameMap ++ Map(
@@ -71,9 +72,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
       "OctetKeyPairJsonWebKey" -> OctetKeyPair.name,
     )
 
-  sealed trait AsymmetricJsonWebKey extends JsonWebKey with AsymmetricJsonWebKeyPlatform:
-    def excludePrivate: AsymmetricJsonWebKey
-  end AsymmetricJsonWebKey
+  sealed trait AsymmetricJsonWebKey extends JsonWebKey with AsymmetricJsonWebKeyPlatform
 
   case class EllipticCurveJsonWebKey(
     curve: Curve,
@@ -135,20 +134,19 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
   ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
+    def excludePrivate: JsonWebKey = this
   end OctetSequenceJsonWebKey
 
-  type OctetKeyPairAlgorithm = Algorithm & NamedParameterSpecName
-
-  given stringCodecOctetKeyPairAlgorithm[F[_]: Applicative]: Codec[F, String, String, OctetKeyPairAlgorithm] =
-    Codec.mapOption[F, String, String, OctetKeyPairAlgorithm](_.algorithm)(
-      t => List(X25519, X448, Ed25519, Ed448).find(_.algorithm == t)
+  given stringCodecNamedParameterSpecName[F[_]: Applicative]: Codec[F, String, String, NamedParameterSpecName] =
+    Codec.mapOption[F, String, String, NamedParameterSpecName](_.parameterSpecName)(
+      t => List(X25519, X448, Ed25519, Ed448).find(_.parameterSpecName == t)
     )
 
-  given codecOctetKeyPairAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], OctetKeyPairAlgorithm] =
-    Codec.codecS[F, S, OctetKeyPairAlgorithm]
+  given codecNamedParameterSpecName[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], NamedParameterSpecName] =
+    Codec.codecS[F, S, NamedParameterSpecName]
 
   case class OctetKeyPairJsonWebKey(
-    curve: OctetKeyPairAlgorithm,
+    curve: NamedParameterSpecName,
     xCoordinate: Base64UrlNoPad,
     eccPrivateKey: Option[Base64UrlNoPad],
     publicKeyUse: Option[PublicKeyUseType],

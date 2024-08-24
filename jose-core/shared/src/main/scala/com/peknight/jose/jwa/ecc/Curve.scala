@@ -9,10 +9,8 @@ import com.peknight.security.error.UnknownAlgorithm
 import com.peknight.security.oid.ObjectIdentifier
 import com.peknight.security.spec.ECGenParameterSpecName
 
-trait Curve derives CanEqual:
-  def std: ECGenParameterSpecName
+trait Curve extends ECGenParameterSpecName:
   def name: String
-  def oid: Option[ObjectIdentifier] = std.oid
 end Curve
 object Curve extends CurveCompanion:
   given stringCodecCurve[F[_]: Applicative]: Codec[F, String, String, Curve] =

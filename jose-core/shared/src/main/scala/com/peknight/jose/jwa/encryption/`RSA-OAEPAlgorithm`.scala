@@ -1,9 +1,10 @@
 package com.peknight.jose.jwa.encryption
+
 import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
-import com.peknight.jose.jwa.JsonWebAlgorithm
+import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.oid.ObjectIdentifier
 
 trait `RSA-OAEPAlgorithm` extends RSAESAlgorithm:
@@ -12,7 +13,7 @@ end `RSA-OAEPAlgorithm`
 object `RSA-OAEPAlgorithm`:
   val values: List[`RSA-OAEPAlgorithm`] = List(`RSA-OAEP`, `RSA-OAEP-256`)
   given `stringCodecRSA-OAEPAlgorithm`[F[_]: Applicative]: Codec[F, String, String, `RSA-OAEPAlgorithm`] =
-    JsonWebAlgorithm.stringCodecAlgorithm[F, `RSA-OAEPAlgorithm`](values)
+    stringCodecAlgorithmIdentifier[F, `RSA-OAEPAlgorithm`](values)
   given `codecRSA-OAEPAlgorithm`[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], `RSA-OAEPAlgorithm`] =
     Codec.codecS[F, S, `RSA-OAEPAlgorithm`]
 end `RSA-OAEPAlgorithm`

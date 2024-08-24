@@ -14,7 +14,7 @@ import com.peknight.security.provider.Provider
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
-  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
+  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, PublicKey]] =
     val eitherT =
       for
         xCoordinate <- EitherT(self.xCoordinate.decodeToUnsignedBigInt[F])
@@ -25,7 +25,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
         ecPublicKey
     eitherT.value
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
+  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[DecodingFailure, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[PrivateKey].asRight[DecodingFailure].pure[F]) { eccPrivateKey =>
       val eitherT =
         for
@@ -37,7 +37,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
       eitherT.value.map(_.map(_.some))
     }
 
-  override def checkJsonWebKeyTyped[F[_]: Sync]: F[Either[DecodingFailure, Unit]] =
+  override def checkJsonWebKey[F[_]: Sync]: F[Either[DecodingFailure, Unit]] =
     val eitherT =
       for
         xCoordinate <- EitherT(self.xCoordinate.decodeToUnsignedBigInt[F])
