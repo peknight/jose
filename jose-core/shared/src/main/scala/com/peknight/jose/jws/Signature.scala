@@ -7,7 +7,6 @@ import com.peknight.codec.error.{DecodingFailure, MissingField}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
-import com.peknight.jose.error.jws.JsonWebSignatureError
 import com.peknight.jose.jws.JsonWebSignature.{concat, fromBase, toBase}
 import com.peknight.jose.jwx.JoseHeader
 import io.circe.{Json, JsonObject}

@@ -6,7 +6,7 @@ import com.peknight.jose.jwx.Requirement.`Recommended+`
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
 import com.peknight.security.oid.ObjectIdentifier
 
-object ES256K extends ECDSAAlgorithm:
+object ES256K extends ECDSA:
   val curve: Curve = `P-256K`
   val digest: MessageDigestAlgorithm = `SHA-256`
   val requirement: Requirement = `Recommended+`

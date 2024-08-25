@@ -15,9 +15,9 @@ import com.peknight.codec.base.Base
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.error.jwk.{BareKeyCertMismatch, JsonWebKeyError, MissingPrivateKey}
+import com.peknight.jose.error.BareKeyCertMismatch
+import com.peknight.jose.error.{JoseError, MissingPrivateKey}
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwk.ops.X509Ops
 import com.peknight.security.certificate.factory.X509
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.isTrue
@@ -33,14 +33,16 @@ trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
       publicKey[F](provider),
       privateKey[F](provider).map(_.flatMap(_.toRight(MissingPrivateKey)))
     )(new KeyPair(_, _))
-  protected def checkJsonWebKey[F[_]: Sync]: F[Either[Error, Unit]] = ().asRight[Error].pure[F]
-  def checkJsonWebKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+
+  protected def handleCheckJsonWebKey: Either[Error, Unit] = ().asRight[Error]
+
+  def checkJsonWebKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
     val eitherT =
       for
         publicKey <- EitherT(publicKey[F](provider))
         leafCertificate <- EitherT(getLeafCertificate[F](provider))
         _ <- EitherT(checkBareKeyCertMatched(publicKey, leafCertificate).pure[F])
-        _ <- EitherT(checkJsonWebKey[F])
+        _ <- EitherT(handleCheckJsonWebKey.pure[F])
       yield ()
     eitherT.value
 
@@ -63,11 +65,11 @@ trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
   : F[Either[Error, X509Certificate]] =
     base.decode[Id].fold(
       _.asLeft.pure,
-      bytes => X509.generateCertificateFromBytes[F](bytes, provider).attempt.map(_.asError)
+      bytes => X509.generateX509CertificateFromBytes[F](bytes, provider).attempt.map(_.asError)
     )
 
   private def checkBareKeyCertMatched(publicKey: PublicKey, leafCertificate: Option[X509Certificate])
-  : Either[JsonWebKeyError, Unit] =
+  : Either[JoseError, Unit] =
     leafCertificate match
       case Some(cert) => isTrue(Option(cert.getPublicKey).forall(_.equals(publicKey)), BareKeyCertMismatch(publicKey, cert))
       case None => ().asRight

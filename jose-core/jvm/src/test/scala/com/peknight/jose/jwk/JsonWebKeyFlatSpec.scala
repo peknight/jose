@@ -7,12 +7,12 @@ import cats.syntax.option.*
 import com.peknight.codec.circe.parser.decode
 import com.peknight.jose.jwa.ecc.`P-384`
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, OctetSequenceJsonWebKey}
-import com.peknight.jose.jwk.ops.{EllipticCurveKeyOps, RSAKeyOps}
 import com.peknight.security.Security
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
-import com.peknight.security.cipher.AES
+import com.peknight.security.cipher.{AES, RSA}
 import com.peknight.security.provider.Provider
 import com.peknight.security.random.SecureRandom
+import com.peknight.validation.std.either.typed
 import org.jose4j.jwk.JsonWebKey.OutputControlLevel
 import org.scalatest.flatspec.AsyncFlatSpec
 
@@ -21,12 +21,12 @@ import java.security.{KeyPair, SecureRandom as JSecureRandom}
 class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   given CanEqual[JsonWebKey, JsonWebKey] = CanEqual.derived
 
-  def testKeyPair(generateKeyPair: (Provider, JSecureRandom) => IO[KeyPair]): IO[Boolean] =
+  def testKeyPair(generateKeyPair: (JSecureRandom, Provider) => IO[KeyPair]): IO[Boolean] =
     for
       provider <- BouncyCastleProvider[IO]
       _ <- Security.addProvider[IO](provider)
       secureRandom <- SecureRandom[IO]
-      keyPair <- generateKeyPair(BouncyCastleProvider, secureRandom)
+      keyPair <- generateKeyPair(secureRandom, BouncyCastleProvider)
       joseJwkEither = JsonWebKey.fromKeyPair(keyPair)
       checkResult <- joseJwkEither match
         case Right(joseJwk: AsymmetricJsonWebKey) => joseJwk.checkJsonWebKey[IO](Some(BouncyCastleProvider)).map(_.isRight)
@@ -46,14 +46,14 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         case _ => false
 
   "JsonWebKey" should "succeed with EC" in {
-    testKeyPair((provider, random) =>
-      EllipticCurveKeyOps.paramsGenerateKeyPair[IO](`P-384`.std.ecParameterSpec, Some(provider), Some(random))
+    testKeyPair((random, provider) =>
+      `P-384`.generateKeyPair[IO](Some(random), Some(provider))
     ).asserting(assert)
   }
 
   "JsonWebKey" should "succeed with RSA" in {
-    testKeyPair((provider, random) =>
-      RSAKeyOps.keySizeGenerateKeyPair[IO](1024, Some(provider), Some(random))
+    testKeyPair((random, provider) =>
+      RSA.keySizeGenerateKeyPair[IO](1024, Some(random), Some(provider))
     ).asserting(assert)
   }
 
@@ -62,9 +62,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         key <- AES.keySizeGenerateKey[IO](256)
         joseJwkEither = JsonWebKey.fromKey(key)
-        restoredKey <- joseJwkEither match
-          case Right(joseJwk: OctetSequenceJsonWebKey) => joseJwk.toKey[IO].map(_.some)
-          case _ => IO(None)
+        restoredKey = joseJwkEither.flatMap(typed[OctetSequenceJsonWebKey]).map(_.toKey).toOption
         jose4jJwk = org.jose4j.jwk.JsonWebKey.Factory.newJwk(key).asInstanceOf[org.jose4j.jwk.OctetSequenceJsonWebKey]
         jose4jJwkEither = decode[Id, JsonWebKey](jose4jJwk.toJson(OutputControlLevel.INCLUDE_PRIVATE))
       yield

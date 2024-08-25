@@ -16,7 +16,6 @@ import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.error.jws.{CharacterCodingError, JsonWebSignatureError}
 import com.peknight.jose.jwx.JoseHeader
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector

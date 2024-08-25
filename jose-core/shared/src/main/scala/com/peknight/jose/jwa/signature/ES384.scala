@@ -6,7 +6,7 @@ import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-384`}
 import com.peknight.security.oid.ObjectIdentifier
 
-object ES384 extends ECDSAAlgorithm:
+object ES384 extends ECDSA:
   val curve: Curve = `P-384`
   val digest: MessageDigestAlgorithm = `SHA-384`
   val requirement: Requirement = Optional
