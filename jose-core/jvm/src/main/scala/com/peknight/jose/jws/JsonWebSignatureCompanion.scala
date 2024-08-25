@@ -30,20 +30,19 @@ trait JsonWebSignatureCompanion:
         payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
       )
 
-  def signBytes[F[_]](header: JoseHeader, payload: ByteVector, key: Option[Key] = None, doKeyValidation: Boolean = true,
-                      useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
-                      provider: Option[Provider | JProvider] = None)
-                     (using Sync[F]): F[Either[Error, JsonWebSignature]] =
+  def signBytes[F[_]: Sync](header: JoseHeader, payload: ByteVector, key: Option[Key] = None,
+                            doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+                            random: Option[SecureRandom] = None, provider: Option[Provider | JProvider] = None)
+  : F[Either[Error, JsonWebSignature]] =
     encodePayload(payload, header.isBase64UrlEncodePayload)
       .fold(
         _.asLeft.pure[F],
         payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
       )
 
-  def sign[F[_]](header: JoseHeader, payload: String, key: Option[Key] = None, doKeyValidation: Boolean = true,
-                 useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
-                 provider: Option[Provider | JProvider] = None)
-                (using Sync[F]): F[Either[Error, JsonWebSignature]] =
+  def sign[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None, doKeyValidation: Boolean = true,
+                       useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
+                       provider: Option[Provider | JProvider] = None): F[Either[Error, JsonWebSignature]] =
     val either =
       for
         headerBase <- toBase(header, Base64UrlNoPad)

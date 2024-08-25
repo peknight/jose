@@ -13,7 +13,7 @@ import com.peknight.jose.jws.Signature.Signature.codecSignature
 import io.circe.{Json, JsonObject}
 
 case class JsonWebSignatures(payload: String, signatures: List[Signature])
-object JsonWebSignatures:
+object JsonWebSignatures extends JsonWebSignaturesCompanion:
   given codecJsonWebSignatures[F[_], S](using
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
