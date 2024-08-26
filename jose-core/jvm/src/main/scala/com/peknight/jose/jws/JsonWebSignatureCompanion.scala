@@ -24,32 +24,42 @@ trait JsonWebSignatureCompanion:
                         useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
                         provider: Option[Provider | JProvider] = None)
                        (using Sync[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignature]] =
-    encodePayloadJson(payload, header.isBase64UrlEncodePayload)
-      .fold(
-        _.asLeft.pure[F],
-        payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
-      )
+    encodePayloadJson(payload, header.isBase64UrlEncodePayload).fold(
+      _.asLeft.pure[F],
+      payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+    )
 
   def signBytes[F[_]: Sync](header: JoseHeader, payload: ByteVector, key: Option[Key] = None,
                             doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
                             random: Option[SecureRandom] = None, provider: Option[Provider | JProvider] = None)
   : F[Either[Error, JsonWebSignature]] =
-    encodePayload(payload, header.isBase64UrlEncodePayload)
-      .fold(
-        _.asLeft.pure[F],
-        payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
-      )
+    encodePayload(payload, header.isBase64UrlEncodePayload).fold(
+      _.asLeft.pure[F],
+      payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+    )
 
   def sign[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None, doKeyValidation: Boolean = true,
                        useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
                        provider: Option[Provider | JProvider] = None): F[Either[Error, JsonWebSignature]] =
+    handleSignSignature[F, JsonWebSignature](header, payload, key, doKeyValidation, useLegacyName, random, provider)(
+      (headerBase, signature) => JsonWebSignature(header, headerBase, payload, signature)
+    )
+
+  private[jws] def handleSignSignature[F[_]: Sync, S <: Signature](header: JoseHeader, payload: String,
+                                                                   key: Option[Key] = None,
+                                                                   doKeyValidation: Boolean = true,
+                                                                   useLegacyName: Boolean = false,
+                                                                   random: Option[SecureRandom] = None,
+                                                                   provider: Option[Provider | JProvider] = None)
+                                                                  (f: (Base64UrlNoPad, Base64UrlNoPad) => S)
+  : F[Either[Error, S]] =
     val either =
       for
         headerBase <- toBase(header, Base64UrlNoPad)
-        input <- toBytes(headerBase, payload)
+        data <- toBytes(headerBase, payload)
       yield
-        handleSign[F](header.algorithm, key, input, doKeyValidation, useLegacyName, random, provider).map(_.map(
-          signature => JsonWebSignature(header, headerBase, payload, Base64UrlNoPad.fromByteVector(signature))
+        handleSign[F](header.algorithm, key, data, doKeyValidation, useLegacyName, random, provider).map(_.map(
+          signature => f(headerBase, Base64UrlNoPad.fromByteVector(signature))
         ))
     either.fold(_.asLeft.pure, identity)
 
