@@ -3,11 +3,9 @@ package com.peknight.jose.jws
 import cats.Id
 import cats.effect.Sync
 import cats.syntax.applicative.*
-import cats.syntax.either.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
-import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, toBase, toBytes}
 import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.provider.Provider
 import io.circe.Json
