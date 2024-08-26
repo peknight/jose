@@ -10,7 +10,7 @@ import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.decode
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.{DecodingFailure, MissingField}
+import com.peknight.codec.error.MissingField
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
@@ -20,14 +20,13 @@ import com.peknight.jose.jwx.JoseHeader
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
-import java.nio.charset.CharacterCodingException
 import scala.reflect.ClassTag
 
 /**
  * https://datatracker.ietf.org/doc/html/rfc7515
  * https://datatracker.ietf.org/doc/html/rfc7797#section-3
  */
-case class JsonWebSignature private (
+case class JsonWebSignature private[jws] (
   headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
   payload: String,
   signature: Base64UrlNoPad

@@ -1,7 +1,8 @@
 package com.peknight.jose.jws
 
 import cats.Monad
-import com.peknight.codec.Encoder.encodeListA
+import cats.data.NonEmptyList
+import com.peknight.codec.Encoder.encodeNonEmptyListA
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.given
@@ -12,7 +13,10 @@ import com.peknight.jose.jws.Signature.Signature
 import com.peknight.jose.jws.Signature.Signature.codecSignature
 import io.circe.{Json, JsonObject}
 
-case class JsonWebSignatures(payload: String, signatures: List[Signature])
+case class JsonWebSignatures(payload: String, signatures: NonEmptyList[Signature]) extends JsonWebSignaturesPlatform:
+  def toList: NonEmptyList[JsonWebSignature] =
+    signatures.map(signature => JsonWebSignature(signature.headerEither, payload, signature.signature))
+end JsonWebSignatures
 object JsonWebSignatures extends JsonWebSignaturesCompanion:
   given codecJsonWebSignatures[F[_], S](using
     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
