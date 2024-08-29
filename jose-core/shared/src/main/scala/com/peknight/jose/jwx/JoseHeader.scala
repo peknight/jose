@@ -1,18 +1,20 @@
 package com.peknight.jose.jwx
 
-import cats.Monad
 import cats.data.NonEmptyList
+import cats.{Applicative, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
+import com.peknight.jose
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.JWECompressionAlgorithm
 import com.peknight.jose.jwa.encryption.JWEEncryptionAlgorithm
@@ -62,6 +64,9 @@ case class JoseHeader(
 
   private def removeCritical(label: String): Option[List[String]] =
     critical.map(_.filterNot(_ == label)).filterNot(_.isEmpty)
+
+  def decodeExt[F[_], A](using Applicative[F], Decoder[F, Cursor[Json], A]): F[Either[DecodingFailure, Option[A]]] =
+    jose.decodeExt[F, A](ext)
 end JoseHeader
 object JoseHeader:
   def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))

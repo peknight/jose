@@ -1,14 +1,16 @@
 package com.peknight.jose.jwt
 
-import cats.Monad
+import cats.{Applicative, Monad}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
+import com.peknight.jose.decodeExt
 import io.circe.{Json, JsonObject}
 
 import java.time.Instant
@@ -22,7 +24,9 @@ case class JsonWebTokenClaims(
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
                                content: Option[JsonObject] = None
-                             )
+                             ):
+  def decodeContent[F[_], A](using Applicative[F], Decoder[F, Cursor[Json], A]): F[Either[DecodingFailure, Option[A]]] =
+    decodeExt[F, A](content)
 object JsonWebTokenClaims:
   private val memberNameMap: Map[String, String] =
     Map(
