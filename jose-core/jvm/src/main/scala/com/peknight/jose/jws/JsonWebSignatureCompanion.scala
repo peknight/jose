@@ -11,8 +11,8 @@ import com.peknight.error.Error
 import com.peknight.jose.error.{MissingKey, UnsupportedSignatureAlgorithm}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{SignaturePlatform, none}
-import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, toBase, toBytes}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, toBytes}
+import com.peknight.jose.jwx.{JoseHeader, toBase}
 import com.peknight.security.error.InvalidSignature
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.isTrue

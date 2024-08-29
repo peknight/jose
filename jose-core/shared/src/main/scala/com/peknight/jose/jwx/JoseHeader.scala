@@ -1,7 +1,7 @@
 package com.peknight.jose.jwx
 
+import cats.Monad
 import cats.data.NonEmptyList
-import cats.{Applicative, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.iso.codec
@@ -14,7 +14,6 @@ import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
-import com.peknight.jose
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.JWECompressionAlgorithm
 import com.peknight.jose.jwa.encryption.JWEEncryptionAlgorithm
@@ -41,7 +40,7 @@ case class JoseHeader(
                        // rfc7797
                        base64UrlEncodePayload: Option[Boolean] = None,
                        ext: Option[JsonObject] = None
-                     ):
+                     ) extends ExtendedField:
   def isBase64UrlEncodePayload: Boolean = base64UrlEncodePayload.getOrElse(true)
   def base64UrlEncodePayload(b64: Boolean): JoseHeader =
     val label = "b64"
@@ -64,9 +63,6 @@ case class JoseHeader(
 
   private def removeCritical(label: String): Option[List[String]] =
     critical.map(_.filterNot(_ == label)).filterNot(_.isEmpty)
-
-  def decodeExt[F[_], A](using Applicative[F], Decoder[F, Cursor[Json], A]): F[Either[DecodingFailure, Option[A]]] =
-    jose.decodeExt[F, A](ext)
 end JoseHeader
 object JoseHeader:
   def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))

@@ -10,7 +10,7 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
-import com.peknight.jose.decodeExt
+import com.peknight.jose.jwx.ExtendedField
 import io.circe.{Json, JsonObject}
 
 import java.time.Instant
@@ -23,10 +23,8 @@ case class JsonWebTokenClaims(
                                notBefore: Option[Instant] = None,
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
-                               content: Option[JsonObject] = None
-                             ):
-  def decodeContent[F[_], A](using Applicative[F], Decoder[F, Cursor[Json], A]): F[Either[DecodingFailure, Option[A]]] =
-    decodeExt[F, A](content)
+                               ext: Option[JsonObject] = None
+                             ) extends ExtendedField
 object JsonWebTokenClaims:
   private val memberNameMap: Map[String, String] =
     Map(
@@ -51,7 +49,7 @@ object JsonWebTokenClaims:
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
     given CodecConfiguration = CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-      .withExtendedField("content")
+      .withExtendedField("ext")
     given Codec[F, S, Cursor[S], Instant] =
       Codec[F, S, Cursor[S], Instant](using
         Encoder[F, S, Long].contramap[Instant](_.getEpochSecond),

@@ -3,42 +3,17 @@ package com.peknight.jose.jws
 import cats.{Id, Monad}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.{DecodingFailure, MissingField}
+import com.peknight.codec.error.MissingField
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
-import com.peknight.jose.jws.JsonWebSignature.{concat, fromBase, toBase}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jws.JsonWebSignature.concat
+import com.peknight.jose.jwx.{HeaderEither, JoseHeader, fromBase, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
-trait Signature:
-  def headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]
+trait Signature extends HeaderEither:
   def signature: Base64UrlNoPad
-  def header: Option[JoseHeader] =
-    headerEither match
-      case Left(Left(h)) => Some(h)
-      case Right((h, _)) => Some(h)
-      case _ => None
-
-  def `protected`: Option[Base64UrlNoPad] =
-    headerEither match
-      case Left(Right(p)) => Some(p)
-      case Right((_, p)) => Some(p)
-      case _ => None
-
-  def getUnprotectedHeader: Either[Error, JoseHeader] =
-    headerEither match
-      case Left(Left(h)) => Right(h)
-      case Right((h, _)) => Right(h)
-      case Left(Right(p)) => fromBase[JoseHeader](p)
-
-  def getProtectedHeader: Either[Error, Base64UrlNoPad] =
-    headerEither match
-      case Left(Right(p)) => Right(p)
-      case Right((_, p)) => Right(p)
-      case Left(Left(h)) => toBase(h, Base64UrlNoPad)
-
   def isBase64UrlEncodePayload: Either[Error, Boolean] =
     getUnprotectedHeader.map(_.isBase64UrlEncodePayload)
 

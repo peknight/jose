@@ -1,11 +1,11 @@
 package com.peknight.jose.jwe
 
 import cats.Monad
-import com.peknight.codec.{Decoder, Encoder}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.sum.{ArrayType, NullType, NumberType, ObjectType, StringType}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.codec.sum.*
+import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
 import io.circe.JsonObject
 
 case class JsonWebEncryption private[jwe] (
@@ -17,7 +17,7 @@ case class JsonWebEncryption private[jwe] (
                                             ciphertext: Base64UrlNoPad,
                                             authenticationTag: Base64UrlNoPad,
                                             additionalAuthenticatedData: Option[Base64UrlNoPad]
-                                          ) extends Recipient
+                                          ) extends Recipient with HeaderEither
 
 object JsonWebEncryption extends JsonWebEncryptionCompanion:
   def apply(header: JoseHeader, sharedHeader: Option[JoseHeader], recipientHeader: Option[JoseHeader],
@@ -57,5 +57,8 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     jsonObjectEncoder: Encoder[F, S, JsonObject],
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebEncryption] =
+    given Codec[F, S, Cursor[S], Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]] =
+      Base64UrlNoPad.codecBaseS[F, S]
+      ???
     ???
 end JsonWebEncryption

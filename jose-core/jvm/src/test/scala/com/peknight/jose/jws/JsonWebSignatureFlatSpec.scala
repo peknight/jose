@@ -24,7 +24,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   private val jwtClaims = JsonWebTokenClaims(
     issuer = Some("joe"),
     expirationTime = Some(Instant.ofEpochSecond(1300819380)),
-    content = Some(JsonObject("http://example.com/is_root" -> Json.True))
+    ext = Some(JsonObject("http://example.com/is_root" -> Json.True))
   )
 
   def testKey(algorithm: JsonWebAlgorithm, key: Key, checkEquals: Boolean = true): IO[Boolean] =

@@ -16,7 +16,8 @@ import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx
+import com.peknight.jose.jwx.{JoseHeader, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
@@ -73,23 +74,7 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   def concat(header: Base64UrlNoPad, payload: String): String = s"${header.value}.$payload"
 
-  def toBytes(value: String): Either[Error, ByteVector] = ByteVector.encodeUtf8(value).asError
-
-  def toBytes(header: Base64UrlNoPad, payload: String): Either[Error, ByteVector] = toBytes(concat(header, payload))
-
-  def toJsonBytes[T](t: T)(using Encoder[Id, Json, T]): Either[Error, ByteVector] =
-    toBytes(t.asS[Id, Json].deepDropNullValues.noSpaces)
-
-  def toBase[T, B <: Base : ClassTag](t: T, base: BaseAlphabetPlatform[?, B])(using Encoder[Id, Json, T])
-  : Either[Error, B] =
-    toJsonBytes[T](t).map(base.fromByteVector)
-
-  def fromBase[T](b: Base)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
-    for
-      bytes <- b.decode[Id]
-      jsonString <- bytes.decodeUtf8.asError
-      t <- decode[Id, T](jsonString)
-    yield t
+  def toBytes(header: Base64UrlNoPad, payload: String): Either[Error, ByteVector] = jwx.toBytes(concat(header, payload))
 
   def encodePayload(payload: ByteVector, base64UrlEncodePayload: Boolean): Either[Error, String] =
     if base64UrlEncodePayload then Base64UrlNoPad.fromByteVector(payload).value.asRight
@@ -101,7 +86,7 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
     else payload.asS[Id, Json].deepDropNullValues.noSpaces.asRight
 
   def decodePayload(payload: String, base64UrlEncodePayload: Boolean): Either[Error, ByteVector] =
-    if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]) else toBytes(payload)
+    if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]) else jwx.toBytes(payload)
 
   def decodePayloadJson[T](payload: String, base64UrlEncodePayload: Boolean)(using Decoder[Id, Cursor[Json], T])
   : Either[Error, T] =
