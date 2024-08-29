@@ -43,7 +43,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         verify4j <- EitherT(JsonWebSignature.handleVerify[IO](Some(algorithm), Some(verificationKey),
           signature.getProtectedHeader.flatMap(h => JsonWebSignature.toBytes(h, signature.payload)).getOrElse(ByteVector.empty),
           Base64UrlNoPad.unsafeFromString(jose4jSignature).decode[Id].getOrElse(ByteVector.empty)))
-      yield !checkEquals || signature.signature.value == jose4jSignature
+      yield verify && (!checkEquals || signature.signature.value == jose4jSignature)
     eitherT.value.map(_.getOrElse(false))
 
   private def signWithJose4j(signature: JsonWebSignature, key: Key): IO[String] = IO {
@@ -97,7 +97,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader.jwtHeader(none), jwtClaims))
         verify <- EitherT(signature.verify[IO]())
-      yield true
+      yield verify
     eitherT.value.map(_.getOrElse(false)).asserting(assert)
   }
 end JsonWebSignatureFlatSpec
