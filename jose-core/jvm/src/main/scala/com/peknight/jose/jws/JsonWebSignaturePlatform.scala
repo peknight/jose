@@ -4,14 +4,17 @@ import cats.Id
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.functor.*
 import com.peknight.error.Error
+import com.peknight.security.error.InvalidSignature
 import com.peknight.security.provider.Provider
+import com.peknight.validation.std.either.isTrue
 
 import java.security.{Key, Provider as JProvider}
 
 trait JsonWebSignaturePlatform { self: JsonWebSignature =>
   def verify[F[_]: Sync](key: Option[Key] = None, doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
-                         provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+                         provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]] =
     val either =
       for
         h <- self.getUnprotectedHeader
@@ -21,4 +24,8 @@ trait JsonWebSignaturePlatform { self: JsonWebSignature =>
       yield
         JsonWebSignature.handleVerify[F](h.algorithm, key, data, signed, doKeyValidation, useLegacyName, provider)
     either.fold(_.asLeft.pure, identity)
+
+  def check[F[_]: Sync](key: Option[Key] = None, doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+                         provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+    verify[F](key, doKeyValidation, useLegacyName, provider).map(_.flatMap(isTrue(_, InvalidSignature)))
 }

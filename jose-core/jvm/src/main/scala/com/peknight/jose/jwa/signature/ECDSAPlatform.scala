@@ -22,7 +22,7 @@ trait ECDSAPlatform extends SignaturePlatform { self: ECDSA =>
       .fold(_.asLeft.pure, identity)
 
   def handleVerify[F[_] : Sync](key: Key, data: ByteVector, signed: ByteVector, useLegacyName: Boolean = false,
-                                provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+                                provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]] =
     typed[PublicKey](key).map(publicKey => self.publicKeyVerifyES[F](publicKey, data, signed, provider = provider))
       .fold(_.asLeft.pure, identity)
 

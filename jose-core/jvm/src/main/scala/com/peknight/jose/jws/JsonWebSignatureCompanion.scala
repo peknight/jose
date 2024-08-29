@@ -13,7 +13,9 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{SignaturePlatform, none}
 import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, toBase, toBytes}
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.security.error.InvalidSignature
 import com.peknight.security.provider.Provider
+import com.peknight.validation.std.either.isTrue
 import io.circe.Json
 import scodec.bits.ByteVector
 
@@ -77,8 +79,7 @@ trait JsonWebSignatureCompanion:
 
   def handleVerify[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
                                signed: ByteVector, doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
-                               provider: Option[Provider | JProvider] = None)
-  : F[Either[Error, Unit]] =
+                               provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]] =
     algorithm match
       case Some(`none`) | None => none.verify(key, data, signed, doKeyValidation).pure[F]
       case Some(algo: SignaturePlatform) =>
@@ -86,4 +87,10 @@ trait JsonWebSignatureCompanion:
           case Some(k) => algo.verifyJws[F](k, data, signed, doKeyValidation, useLegacyName, provider)
           case None => MissingKey.asLeft.pure[F]
       case Some(algo) => UnsupportedSignatureAlgorithm(algo).asLeft.pure[F]
+
+  def handleCheck[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
+                              signed: ByteVector, doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+                              provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+    handleVerify[F](algorithm, key, data, signed, doKeyValidation, useLegacyName, provider)
+      .map(_.flatMap(isTrue(_, InvalidSignature)))
 end JsonWebSignatureCompanion

@@ -7,9 +7,8 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
-import com.peknight.security.error.InvalidSignature
 import com.peknight.security.provider.Provider
-import com.peknight.validation.std.either.{isTrue, typed}
+import com.peknight.validation.std.either.typed
 import scodec.bits.ByteVector
 
 import java.security.interfaces.{EdECPrivateKey, EdECPublicKey}
@@ -23,9 +22,9 @@ trait EdDSAPlatform extends SignaturePlatform { self: EdDSA =>
       .attempt.map(_.asError)).fold(_.asLeft.pure, identity)
 
   def handleVerify[F[_] : Sync](key: Key, data: ByteVector, signed: ByteVector, useLegacyName: Boolean = false,
-                                provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+                                provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]] =
     typed[PublicKey](key).map(publicKey => self.publicKeyVerify[F](publicKey, data, signed, provider = provider).attempt
-      .map(_.asError.flatMap(isTrue(_, InvalidSignature)))).fold(_.asLeft.pure, identity)
+      .map(_.asError)).fold(_.asLeft.pure, identity)
 
   def validateSigningKey(key: Key): Either[Error, Unit] = typed[EdECPrivateKey](key).as(())
 

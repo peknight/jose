@@ -20,7 +20,7 @@ trait SignaturePlatform { self: JWSAlgorithm =>
 
   def verifyJws[F[_]: Sync](key: Key, data: ByteVector, signed: ByteVector, doKeyValidation: Boolean = true,
                             useLegacyName: Boolean = false, provider: Option[Provider | JProvider] = None)
-  : F[Either[Error, Unit]] =
+  : F[Either[Error, Boolean]] =
     (if doKeyValidation then validateVerificationKey(key) else ().asRight).map { _ =>
       handleVerify[F](key, data, signed, useLegacyName, provider)
     }.fold(_.asLeft.pure, identity)
@@ -29,7 +29,7 @@ trait SignaturePlatform { self: JWSAlgorithm =>
                              random: Option[SecureRandom] = None, provider: Option[Provider | JProvider] = None)
   : F[Either[Error, ByteVector]]
   def handleVerify[F[_]: Sync](key: Key, data: ByteVector, signed: ByteVector, useLegacyName: Boolean = false,
-                               provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]]
+                               provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]]
   def validateSigningKey(key: Key): Either[Error, Unit]
   def validateVerificationKey(key: Key): Either[Error, Unit]
 }

@@ -11,18 +11,25 @@ import cats.{Id, Parallel}
 import com.peknight.error.Error
 import com.peknight.jose.error.MissingVerifyPrimitive
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.security.error.InvalidSignature
+import com.peknight.validation.std.either.isTrue
 
 trait JsonWebSignaturesPlatform { self: JsonWebSignatures =>
-
-  def parVerify[F[_]: Sync: Parallel](f: JoseHeader => Option[VerifyPrimitive]): F[Either[Error, Unit]] =
+  def parVerify[F[_]: Sync: Parallel](f: JoseHeader => Option[VerifyPrimitive]): F[Either[Error, Boolean]] =
     handleVerify(f)(_.parSequence)
 
-  def verify[F[_]: Sync](f: JoseHeader => Option[VerifyPrimitive]): F[Either[Error, Unit]] =
+  def verify[F[_]: Sync](f: JoseHeader => Option[VerifyPrimitive]): F[Either[Error, Boolean]] =
     handleVerify(f)(_.sequence)
 
+  def parCheck[F[_]: Sync: Parallel](f: JoseHeader => Option[VerifyPrimitive]): F[Either[Error, Unit]] =
+    parVerify[F](f).map(_.flatMap(isTrue(_, InvalidSignature)))
+
+  def check[F[_]: Sync](f: JoseHeader => Option[VerifyPrimitive]): F[Either[Error, Unit]] =
+    verify[F](f).map(_.flatMap(isTrue(_, InvalidSignature)))
+
   def handleVerify[F[_]: Sync](f: JoseHeader => Option[VerifyPrimitive])
-                              (sequence: NonEmptyList[F[Either[Error, Unit]]] => F[NonEmptyList[Either[Error, Unit]]])
-  : F[Either[Error, Unit]] =
+                              (sequence: NonEmptyList[F[Either[Error, Boolean]]] => F[NonEmptyList[Either[Error, Boolean]]])
+  : F[Either[Error, Boolean]] =
     sequence(self.signatures.map { signature =>
       val either =
         for
@@ -35,6 +42,6 @@ trait JsonWebSignaturesPlatform { self: JsonWebSignatures =>
           JsonWebSignature.handleVerify[F](h.algorithm, primitive.key, data, signed, primitive.doKeyValidation,
             primitive.useLegacyName, primitive.provider)
       either.fold(_.asLeft.pure, identity)
-    }).map(_.sequence.as(()))
+    }).map(_.sequence.map(_.forall(identity)))
 }
 
