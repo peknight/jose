@@ -37,12 +37,13 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
       "com.peknight" %%% "io-core" % pekIoVersion,
       "com.peknight" %%% "cats-parse-ext" % pekExtVersion,
       "com.peknight" %%% "commons-string" % pekCommonsVersion,
+      "com.peknight" %%% "validation-spire" % pekValidationVersion,
+      "org.typelevel" %%% "cats-effect-testing-scalatest" % catsEffectTestingScalaTestVersion % Test,
+      "com.peknight" %%% "security-bcprov" % pekSecurityVersion % Test,
     ),
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect-testing-scalatest" % catsEffectTestingScalaTestVersion % Test,
-      "com.peknight" %%% "security-bcprov" % pekSecurityVersion % Test,
       jwtCirce % Test,
       scalaJwk % Test,
       jose4j % Test,
@@ -56,8 +57,9 @@ val catsEffectTestingScalaTestVersion = "1.5.0"
 val pekSecurityVersion = pekVersion
 val pekCodecVersion = pekVersion
 val pekIoVersion = pekVersion
-val pekCommonsVersion = pekVersion
 val pekExtVersion = pekVersion
+val pekCommonsVersion = pekVersion
+val pekValidationVersion = pekVersion
 
 val jwtCirceVersion = "10.0.1"
 val scalaJwkVersion = "1.2.24"

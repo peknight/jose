@@ -1,12 +1,21 @@
 package com.peknight.jose.jwe
 
 import cats.Monad
+import cats.syntax.either.*
+import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.Base64UrlNoPad
+import com.peknight.codec.circe.iso.codec
+import com.peknight.codec.circe.sum.jsonType.given
+import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.commons.string.cases.SnakeCase
+import com.peknight.commons.string.syntax.cases.to
+import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 
 case class JsonWebEncryption private[jwe] (
                                             headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
@@ -53,12 +62,18 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     arrayType: ArrayType[S],
     nullType: NullType[S],
     stringType: StringType[S],
-    numberType: NumberType[S],
     jsonObjectEncoder: Encoder[F, S, JsonObject],
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebEncryption] =
+    given CodecConfiguration = CodecConfiguration.default
+      .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
     given Codec[F, S, Cursor[S], Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]] =
       Base64UrlNoPad.codecBaseS[F, S]
-      ???
-    ???
+        .imap(_.asRight[JoseHeader].asLeft[(JoseHeader, Base64UrlNoPad)])(HeaderEither.unsafeGetProtectedHeader)
+    Codec.derived[F, S, JsonWebEncryption]
+
+  given jsonCodecJsonWebEncryption[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebEncryption] =
+    codecJsonWebEncryption[F, Json]
+
+  given circeCodecJsonWebEncryption: io.circe.Codec[JsonWebEncryption] = codec[JsonWebEncryption]
 end JsonWebEncryption
