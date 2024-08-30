@@ -1,7 +1,7 @@
 package com.peknight.jose.jwe
 
 import cats.Monad
-import cats.syntax.either.*
+import cats.parse.{Parser, Parser0}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
@@ -13,6 +13,7 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
+import com.peknight.error.Error
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
 import io.circe.{Json, JsonObject}
@@ -26,7 +27,12 @@ case class JsonWebEncryption private[jwe] (
                                             ciphertext: Base64UrlNoPad,
                                             authenticationTag: Base64UrlNoPad,
                                             additionalAuthenticatedData: Option[Base64UrlNoPad]
-                                          ) extends Recipient with HeaderEither
+                                          ) extends HeaderEither with JsonWebEncryptionPlatform:
+  def compact: Either[Error, String] =
+    getProtectedHeader.map(h =>
+      s"${h.value}.${encryptedKey.value}.${initializationVector.value}.${ciphertext.value}.${authenticationTag.value}"
+    )
+end JsonWebEncryption
 
 object JsonWebEncryption extends JsonWebEncryptionCompanion:
   def apply(header: JoseHeader, sharedHeader: Option[JoseHeader], recipientHeader: Option[JoseHeader],
@@ -48,13 +54,11 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     JsonWebEncryption(Right((header, `protected`)), sharedHeader, recipientHeader, encryptedKey, initializationVector,
       ciphertext, authenticationTag, additionalAuthenticatedData)
 
-  private val memberNameMap: Map[String, String] = Recipient.memberNameMap ++ Map(
-    "headerEither" -> "protected",
-    "sharedHeader" -> "unprotected",
-    "initializationVector" -> "iv",
-    "authenticationTag" -> "tag",
-    "additionalAuthenticatedData" -> "aad"
-  )
+  def jsonWebEncryptionParser: Parser0[JsonWebEncryption] =
+    (Base64UrlNoPad.baseParser ~ (Parser.char('.') *> Base64UrlNoPad.baseParser) ~ (Parser.char('.') *> Base64UrlNoPad.baseParser) ~ (Parser.char('.') *> Base64UrlNoPad.baseParser) ~ (Parser.char('.') *> Base64UrlNoPad.baseParser)).map {
+      case ((((p, encryptedKey), initializationVector), ciphertext), authenticationTag) =>
+        JsonWebEncryption(p, None, None, encryptedKey, initializationVector, ciphertext, authenticationTag, None)
+    }
 
   given codecJsonWebEncryption[F[_], S](using
     monad: Monad[F],
@@ -66,10 +70,7 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebEncryption] =
     given CodecConfiguration = CodecConfiguration.default
-      .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-    given Codec[F, S, Cursor[S], Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]] =
-      Base64UrlNoPad.codecBaseS[F, S]
-        .imap(_.asRight[JoseHeader].asLeft[(JoseHeader, Base64UrlNoPad)])(HeaderEither.unsafeGetProtectedHeader)
+      .withTransformMemberNames(memberName => JsonWebEncryptions.memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
     Codec.derived[F, S, JsonWebEncryption]
 
   given jsonCodecJsonWebEncryption[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebEncryption] =
