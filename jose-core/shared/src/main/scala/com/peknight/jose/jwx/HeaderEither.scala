@@ -2,11 +2,9 @@ package com.peknight.jose.jwx
 
 import cats.Applicative
 import cats.syntax.either.*
-import cats.syntax.functor.*
 import com.peknight.codec.Codec
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.StringType
 import com.peknight.error.Error
 import com.peknight.jose.jwx.{fromBase, toBase}
@@ -56,11 +54,6 @@ private[jose] object HeaderEither:
   : Base64UrlNoPad =
     getProtectedHeader(headerEither).fold(throw _, identity)
 
-  given codecProtectedHeaderEither[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]] with
-    def decode(t: Cursor[S])
-    : F[Either[DecodingFailure, Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]]] =
-      Base64UrlNoPad.codecBaseS[F, S].decode(t).map(_.map(_.asRight[JoseHeader].asLeft[(JoseHeader, Base64UrlNoPad)]))
-    def encode(a: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]): F[S] =
-      Base64UrlNoPad.codecBaseS[F, S].encode(unsafeGetProtectedHeader(a))
-  end codecProtectedHeaderEither
+  given codecProtectedHeaderEither[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]] =
+    Base64UrlNoPad.codecBaseS[F, S].imap(_.asRight[JoseHeader].asLeft[(JoseHeader, Base64UrlNoPad)])(unsafeGetProtectedHeader)
 end HeaderEither
