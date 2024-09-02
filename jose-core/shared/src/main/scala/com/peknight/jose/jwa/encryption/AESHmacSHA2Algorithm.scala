@@ -10,7 +10,7 @@ import com.peknight.security.cipher.padding.CipherAlgorithmPadding
 import com.peknight.security.cipher.{AEAD, AES}
 import com.peknight.security.mac.HmacSHA2
 
-trait AESHmacSHA2Algorithm extends JWEEncryptionAlgorithm with AEAD:
+trait AESHmacSHA2Algorithm extends JWEEncryptionAlgorithm with AEAD with AESHmacSHA2AlgorithmPlatform:
   type This = AEAD
   def encryption: AES
   def mac: HmacSHA2
