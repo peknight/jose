@@ -9,7 +9,7 @@ import com.peknight.security.cipher.AESWrap
 
 trait `ECDH-ESUsingConcatKDFAndCEKWithAESWrap` extends `ECDH-ESAlgorithm`:
   def encryption: AESWrap
-  override def algorithm: String = s"ECDH-ES+A${encryption.blockSize * 8}KW"
+  def algorithm: String = s"ECDH-ES+A${encryption.blockSize * 8}KW"
 end `ECDH-ESUsingConcatKDFAndCEKWithAESWrap`
 object `ECDH-ESUsingConcatKDFAndCEKWithAESWrap`:
   val values: List[`ECDH-ESUsingConcatKDFAndCEKWithAESWrap`] = List(`ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW`)

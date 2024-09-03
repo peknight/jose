@@ -1,39 +1,59 @@
 package com.peknight.jose.jwa.encryption
 
+import cats.data.EitherT
 import cats.effect.Sync
-import cats.syntax.applicative.*
+import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.error.Error
+import com.peknight.error.syntax.either.asError
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.cipher.mode.CBC
 import com.peknight.security.cipher.padding.PKCS5Padding
 import com.peknight.security.cipher.{AES, Cipher}
+import com.peknight.security.error.IntegrityError
 import com.peknight.security.mac.Hmac
 import com.peknight.security.provider.Provider
-import com.peknight.security.random.SecureRandom
-import com.peknight.security.syntax.secureRandom.nextBytesF
+import com.peknight.validation.std.either.isTrue
 import scodec.bits.ByteVector
 
 import java.security.{Provider as JProvider, SecureRandom as JSecureRandom}
 
 trait AESHmacSHA2AlgorithmPlatform { self: AESHmacSHA2Algorithm =>
   private val javaAlgorithm: AES = AES / CBC / PKCS5Padding
+  private val ivByteLength: Int = 16
 
-  private def initializationVector[F[_]: Sync](ivByteLength: Int, ivOverride: Option[ByteVector],
-                                               random: Option[JSecureRandom]): F[ByteVector] =
-    ivOverride.fold(random.fold(SecureRandom[F])(_.pure[F]).flatMap(_.nextBytesF[F](ivByteLength)))(_.pure[F])
-
-
-  private def encrypt[F[_]: Sync](key: ByteVector, input: ByteVector, aad: ByteVector, iv: ByteVector,
-                                  random: Option[JSecureRandom] = None,
-                                  cipherProvider: Option[Provider | JProvider] = None,
-                                  macProvider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector)] =
+  def encrypt[F[_]: Sync](key: ByteVector, input: ByteVector, aad: ByteVector, ivOverride: Option[ByteVector] = None,
+                          random: Option[JSecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
+                          macProvider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector, ByteVector)] =
     for
-      cipherText <- Cipher.rawKeyEncrypt[F](javaAlgorithm, key.rightHalf, input, Some(iv), random, cipherProvider)
-      aadLengthBytes = ByteVector.fromLong(aad.length * 8)
-      authenticationTagInput = aad ++ iv ++ cipherText ++ aadLengthBytes
-      authenticationTag <- self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput, None, macProvider)
+      iv <- initializationVector[F](ivByteLength, ivOverride, random)
+      ciphertext <- Cipher.rawKeyEncrypt[F](javaAlgorithm, key.rightHalf, input, Some(iv), provider = cipherProvider)
+      authenticationTag <- self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput(ciphertext, aad, iv),
+        None, macProvider).map(_.take(self.tagTruncationLength))
     yield
-      (cipherText, authenticationTag.take(self.tagTruncationLength))
+      (iv, ciphertext, authenticationTag)
+
+  private def authenticationTagInput(ciphertext: ByteVector, aad: ByteVector, iv: ByteVector): ByteVector =
+    aad ++ iv ++ ciphertext ++ additionalAuthenticatedDataLengthBytes(aad)
+
+  private def additionalAuthenticatedDataLengthBytes(aad: ByteVector): ByteVector =
+    ByteVector.fromLong(aad.length * 8)
+
+  def decrypt[F[_]: Sync](key: ByteVector, ciphertext: ByteVector, authenticationTag: ByteVector, aad: ByteVector,
+                          iv: ByteVector, cipherProvider: Option[Provider | JProvider] = None,
+                          macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
+    val eitherT =
+      for
+        _ <- EitherT(self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput(ciphertext, aad, iv),
+            provider = macProvider)
+          .map(_.take(self.tagTruncationLength) === authenticationTag)
+          .attempt.map(_.asError.flatMap(isTrue(_, IntegrityError))))
+        decrypted <- EitherT(Cipher.rawKeyDecrypt[F](javaAlgorithm, key.rightHalf, ciphertext, Some(iv),
+            provider = cipherProvider)
+          .attempt.map(_.asError))
+      yield decrypted
+    eitherT.value
+
+  def isAvailable[F[_]: Sync]: F[Boolean] = javaAlgorithm.getMaxAllowedKeyLength[F].map(self.cekByteLength / 2 <= _)
 }

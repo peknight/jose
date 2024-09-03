@@ -6,10 +6,11 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.AES
+import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
 
-trait AESGCMAlgorithm extends JWEEncryptionAlgorithm:
-  def encryption: AES
-  def algorithm: String = s"A${encryption.blockSize * 8}GCM"
+trait AESGCMAlgorithm extends JWEEncryptionAlgorithm with AES with AESGCMAlgorithmPlatform:
+  override def mode: CipherAlgorithmMode = GCM
+  override def identifier: String = s"A${blockSize * 8}GCM"
 end AESGCMAlgorithm
 object AESGCMAlgorithm:
   val values: List[AESGCMAlgorithm] = List(A128GCM, A192GCM, A256GCM)
