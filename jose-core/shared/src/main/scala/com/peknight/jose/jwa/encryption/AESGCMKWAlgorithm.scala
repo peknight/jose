@@ -9,12 +9,13 @@ import com.peknight.jose.jwa.encryption.HeaderParam.{iv, tag}
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.cipher.AESWrap
+import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
 
-trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm:
-  def encryption: AESWrap
+trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm with AESWrap with AESGCMKWAlgorithmPlatform:
   def headerParams: Seq[HeaderParam] = Seq(iv, tag)
   def requirement: Requirement = Optional
-  def algorithm: String = s"A${encryption.blockSize * 8}GCMKW"
+  override val mode: CipherAlgorithmMode = GCM
+  override def identifier: String = s"A${blockSize * 8}GCMKW"
 end AESGCMKWAlgorithm
 object AESGCMKWAlgorithm:
   val values: List[AESGCMKWAlgorithm] = List(A128GCMKW, A192GCMKW, A256GCMKW)
