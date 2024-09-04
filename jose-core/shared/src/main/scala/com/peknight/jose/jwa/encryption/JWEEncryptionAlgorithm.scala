@@ -6,7 +6,9 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 
-trait JWEEncryptionAlgorithm extends EncryptionAlgorithm with JWEEncryptionAlgorithmPlatform
+trait JWEEncryptionAlgorithm extends EncryptionAlgorithm with JWEEncryptionAlgorithmPlatform:
+  def cekByteLength: Int
+end JWEEncryptionAlgorithm
 object JWEEncryptionAlgorithm:
   val values: List[JWEEncryptionAlgorithm] = AESHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
   given stringCodecJWEEncryptionAlgorithm[F[_]: Applicative]: Codec[F, String, String, JWEEncryptionAlgorithm] =
