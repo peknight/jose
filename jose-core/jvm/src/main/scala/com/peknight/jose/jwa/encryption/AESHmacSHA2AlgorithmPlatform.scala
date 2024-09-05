@@ -17,17 +17,17 @@ import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.isTrue
 import scodec.bits.ByteVector
 
-import java.security.{Provider as JProvider, SecureRandom as JSecureRandom}
+import java.security.{Provider as JProvider, SecureRandom}
 
 trait AESHmacSHA2AlgorithmPlatform { self: AESHmacSHA2Algorithm =>
   private val javaAlgorithm: AES = AES / CBC / PKCS5Padding
   private val ivByteLength: Int = 16
 
   def encrypt[F[_]: Sync](key: ByteVector, input: ByteVector, aad: ByteVector, ivOverride: Option[ByteVector] = None,
-                          random: Option[JSecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
+                          random: Option[SecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector, ByteVector)] =
     for
-      iv <- initializationVector[F](ivByteLength, ivOverride, random)
+      iv <- getBytesOrRandom[F](ivByteLength, ivOverride, random)
       ciphertext <- Cipher.rawKeyEncrypt[F](javaAlgorithm, key.rightHalf, input, Some(iv), provider = cipherProvider)
       authenticationTag <- self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput(ciphertext, aad, iv),
         None, macProvider).map(_.take(self.tagTruncationLength))
@@ -55,5 +55,5 @@ trait AESHmacSHA2AlgorithmPlatform { self: AESHmacSHA2Algorithm =>
       yield decrypted
     eitherT.value
 
-  def isAvailable[F[_]: Sync]: F[Boolean] = javaAlgorithm.getMaxAllowedKeyLength[F].map(self.cekByteLength / 2 <= _)
+  def isAvailable[F[_]: Sync]: F[Boolean] = javaAlgorithm.getMaxAllowedKeyLength[F].map(self.keyByteLength / 2 <= _)
 }

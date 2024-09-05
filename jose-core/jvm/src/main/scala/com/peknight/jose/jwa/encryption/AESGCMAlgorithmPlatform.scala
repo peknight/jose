@@ -27,7 +27,7 @@ trait AESGCMAlgorithmPlatform { self: AESGCMAlgorithm =>
                           random: Option[JSecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector, ByteVector)] =
     for
-      iv <- initializationVector[F](ivByteLength, ivOverride, random)
+      iv <- getBytesOrRandom[F](ivByteLength, ivOverride, random)
       encrypted <- javaAlgorithm.keyEncrypt[F](javaAlgorithm.secretKeySpec(key), input,
         Some(GCMParameterSpec(tagByteLength * 8, iv)), Some(aad), provider = cipherProvider)
     yield

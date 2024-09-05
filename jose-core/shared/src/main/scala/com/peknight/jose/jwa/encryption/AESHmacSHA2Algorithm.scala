@@ -14,7 +14,7 @@ trait AESHmacSHA2Algorithm extends JWEEncryptionAlgorithm with AEAD with AESHmac
   type This = AEAD
   def encryption: AES
   def mac: HmacSHA2
-  def cekByteLength: Int = encryption.blockSize / 4
+  def keyByteLength: Int = encryption.blockSize / 4
   def tagTruncationLength: Int = encryption.blockSize / 8
   override def identifier: String = s"A${encryption.blockSize * 8}${encryption.mode.mode}-HS${mac.digest.bitLength}"
   override def /(mode: CipherAlgorithmMode): AEAD =

@@ -9,7 +9,7 @@ import com.peknight.security.cipher.AES
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
 
 trait AESGCMAlgorithm extends JWEEncryptionAlgorithm with AES with AESGCMAlgorithmPlatform:
-  def cekByteLength: Int = blockSize
+  def keyByteLength: Int = blockSize
   override def mode: CipherAlgorithmMode = GCM
   override def identifier: String = s"A${blockSize * 8}GCM"
 end AESGCMAlgorithm
