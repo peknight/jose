@@ -7,7 +7,7 @@ import com.peknight.security.cipher.{AES, AES_128}
 import com.peknight.security.mac.{HmacSHA2, HmacSHA256}
 import com.peknight.security.oid.ObjectIdentifier
 
-object `A128CBC-HS256` extends AESHmacSHA2Algorithm:
+object `A128CBC-HS256` extends AESCBCHmacSHA2Algorithm:
   val encryption: AES = AES_128 / CBC
   val mac: HmacSHA2 = HmacSHA256
   val requirement: Requirement = Required

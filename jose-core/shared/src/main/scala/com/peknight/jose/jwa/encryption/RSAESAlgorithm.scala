@@ -5,10 +5,12 @@ import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
-import com.peknight.security.cipher.RSAES
+import com.peknight.security.cipher.mode.{CipherAlgorithmMode, ECB}
+import com.peknight.security.cipher.{RSA, RSAES}
 
-trait RSAESAlgorithm extends KeyEncryptionAlgorithm:
-  def encryption: RSAES
+trait RSAESAlgorithm extends KeyEncryptionAlgorithm with RSAES with RSA:
+  override def algorithm: String = RSA.algorithm
+  override def mode: CipherAlgorithmMode = ECB
   def headerParams: Seq[HeaderParam] = Seq.empty
 end RSAESAlgorithm
 object RSAESAlgorithm:

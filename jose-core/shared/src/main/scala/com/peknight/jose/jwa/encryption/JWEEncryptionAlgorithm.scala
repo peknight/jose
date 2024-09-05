@@ -10,7 +10,7 @@ trait JWEEncryptionAlgorithm extends EncryptionAlgorithm with JWEEncryptionAlgor
   def keyByteLength: Int
 end JWEEncryptionAlgorithm
 object JWEEncryptionAlgorithm:
-  val values: List[JWEEncryptionAlgorithm] = AESHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
+  val values: List[JWEEncryptionAlgorithm] = AESCBCHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
   given stringCodecJWEEncryptionAlgorithm[F[_]: Applicative]: Codec[F, String, String, JWEEncryptionAlgorithm] =
     stringCodecAlgorithmIdentifier[F, JWEEncryptionAlgorithm](values)
   given codecJWEEncryptionAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], JWEEncryptionAlgorithm] =

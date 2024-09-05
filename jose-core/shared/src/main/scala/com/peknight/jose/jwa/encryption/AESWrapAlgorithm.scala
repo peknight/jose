@@ -7,10 +7,9 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.AESWrap
 
-trait AESWrapAlgorithm extends KeyWrappingAlgorithm:
-  def encryption: AESWrap
+trait AESWrapAlgorithm extends KeyWrappingAlgorithm with AESWrap with AESWrapAlgorithmPlatform:
   def headerParams: Seq[HeaderParam] = Seq.empty
-  def algorithm: String = s"A${encryption.blockSize * 8}KW"
+  override def identifier: String = s"A${blockSize * 8}KW"
 end AESWrapAlgorithm
 object AESWrapAlgorithm:
   val values: List[AESWrapAlgorithm] = List(A128KW, A192KW, A256KW)

@@ -3,13 +3,11 @@ package com.peknight.jose.jwa
 import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.JWEAlgorithm
 import com.peknight.jose.jwa.signature.JWSAlgorithm
 import com.peknight.jose.jwx.Requirement
-import com.peknight.security.error.UnknownAlgorithm
 
 import scala.reflect.ClassTag
 

@@ -8,13 +8,16 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.HeaderParam.{iv, tag}
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
-import com.peknight.security.cipher.AESWrap
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
+import com.peknight.security.cipher.{AES, AESWrap}
 
 trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm with AESWrap with AESGCMKWAlgorithmPlatform:
+  def ivByteLength = 12
+  def tagByteLength = 16
   def headerParams: Seq[HeaderParam] = Seq(iv, tag)
   def requirement: Requirement = Optional
-  override val mode: CipherAlgorithmMode = GCM
+  override def algorithm: String = AES.algorithm
+  override def mode: CipherAlgorithmMode = GCM
   override def identifier: String = s"A${blockSize * 8}GCMKW"
 end AESGCMKWAlgorithm
 object AESGCMKWAlgorithm:
