@@ -20,9 +20,9 @@ import scodec.bits.ByteVector
 import java.security.{Key, SecureRandom as JSecureRandom}
 
 package object encryption:
-  private[encryption] def getBytesOrRandom[F[_]: Sync](byteLength: Int, bytesOverride: Option[ByteVector] = None,
+  private[encryption] def getBytesOrRandom[F[_]: Sync](lengthOrBytes: Either[Int, ByteVector],
                                                        random: Option[JSecureRandom] = None): F[ByteVector] =
-    bytesOverride.fold(random.fold(SecureRandom[F])(_.pure[F]).flatMap(_.nextBytesF[F](byteLength)))(_.pure[F])
+    lengthOrBytes.fold(length => random.fold(SecureRandom[F])(_.pure[F]).flatMap(_.nextBytesF[F](length)), _.pure[F])
 
   private[encryption] def validateAESWrappingKey(managementKey: Key, identifier: AlgorithmIdentifier, keyByteLength: Int)
   : Either[Error, Unit] =

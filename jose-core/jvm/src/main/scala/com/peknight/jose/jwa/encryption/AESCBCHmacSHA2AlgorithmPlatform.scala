@@ -22,7 +22,7 @@ trait AESCBCHmacSHA2AlgorithmPlatform { self: AESCBCHmacSHA2Algorithm =>
                           random: Option[SecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector, ByteVector)] =
     for
-      iv <- getBytesOrRandom[F](self.ivByteLength, ivOverride, random)
+      iv <- getBytesOrRandom[F](ivOverride.toRight(self.ivByteLength), random)
       ciphertext <- Cipher.rawKeyEncrypt[F](self.javaAlgorithm, key.rightHalf, input, Some(iv), provider = cipherProvider)
       authenticationTag <- self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput(ciphertext, aad, iv),
         None, macProvider).map(_.take(self.tagTruncationLength))
