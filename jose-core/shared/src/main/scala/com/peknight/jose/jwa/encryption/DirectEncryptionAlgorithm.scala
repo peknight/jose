@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Recommended
 
-trait DirectEncryptionAlgorithm extends KeyManagementAlgorithm:
+trait DirectEncryptionAlgorithm extends KeyManagementAlgorithm with DirectEncryptionAlgorithmPlatform:
   def algorithm: String = "dir"
   def headerParams: Seq[HeaderParam] = Seq.empty
   def requirement: Requirement = Recommended

@@ -27,14 +27,24 @@ package object encryption:
   private[encryption] def validateAESWrappingKey(managementKey: Key, identifier: AlgorithmIdentifier, keyByteLength: Int)
   : Either[Error, Unit] =
     for
-      key <- nonEmpty(Option(managementKey)).label("managementKey")
+      key <- nonEmptyManagementKey(managementKey)
       _ <- isTrue(AES.algorithm == key.getAlgorithm, InvalidKeyAlgorithm(key.getAlgorithm))
-      _ <- Option(key.getEncoded).map(_.length).fold(().asRight)(managementKeyByteLength =>
-        isTrue(managementKeyByteLength == keyByteLength, InvalidKeyLength(identifier.identifier, keyByteLength * 8,
-          managementKeyByteLength * 8))
-      )
+      _ <- validateManagementKeyLength(key, identifier, keyByteLength)
     yield
       ()
+
+  private[encryption] def nonEmptyManagementKey(managementKey: Key): Either[Error, Key] =
+    nonEmpty(Option(managementKey)).label("managementKey")
+
+  private[encryption] def validateManagementKeyLength(managementKey: Key, identifier: AlgorithmIdentifier,
+                                                      keyByteLength: Int): Either[Error, Unit] =
+    Option(managementKey.getEncoded).map(_.length) match
+      case Some(managementKeyByteLength) =>
+        isTrue(
+          managementKeyByteLength == keyByteLength,
+          InvalidKeyLength(identifier.identifier, keyByteLength * 8, managementKeyByteLength * 8)
+        )
+      case None => ().asRight
 
   private[encryption] def isAESGCMKeyAvailable[F[_]: Sync](algorithm: AES, keyByteLength: Int, ivByteLength: Int,
                                                            tagByteLength: Int): F[Boolean] =

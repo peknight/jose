@@ -16,19 +16,20 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
                              provider: Option[Provider | JProvider] = None)
   : F[(ByteVector, ByteVector, ByteVector, ByteVector)] =
     for
-      cek <- getBytesOrRandom[F](cekLengthOrBytes, random)
+      contentEncryptionKey <- getBytesOrRandom[F](cekLengthOrBytes, random)
       iv <- getBytesOrRandom[F](ivOverride.toRight(self.ivByteLength), random)
-      encrypted <- self.keyEncrypt[F](managementKey, cek, Some(GCMParameterSpec(self.tagByteLength * 8, iv)),
+      encrypted <- self.keyEncrypt[F](managementKey, contentEncryptionKey, Some(GCMParameterSpec(self.tagByteLength * 8, iv)),
         provider = provider)
     yield
       val (encryptedKey, authenticationTag) = encrypted.splitAt(encrypted.length - self.tagByteLength)
-      (cek, iv, encryptedKey, authenticationTag)
+      (contentEncryptionKey, iv, encryptedKey, authenticationTag)
 
-  def decryptKey[F[_]: Sync](managementKey: Key, algorithm: SecretKeySpecAlgorithm, iv: ByteVector,
-                             encryptedKey: ByteVector, authenticationTag: ByteVector,
-                             provider: Option[Provider | JProvider] = None): F[Key] =
+  def decryptKey[F[_]: Sync](managementKey: Key, encryptedKey: ByteVector,
+                             contentEncryptionKeyAlgorithm: SecretKeySpecAlgorithm, iv: ByteVector,
+                             authenticationTag: ByteVector, provider: Option[Provider | JProvider] = None): F[Key] =
     self.keyDecrypt[F](managementKey, encryptedKey ++ authenticationTag,
-      Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = provider).map(algorithm.secretKeySpec)
+        Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = provider)
+      .map(contentEncryptionKeyAlgorithm.secretKeySpec)
 
   def validateKey(managementKey: Key): Either[Error, Unit] = validateAESWrappingKey(managementKey, self, self.blockSize)
 

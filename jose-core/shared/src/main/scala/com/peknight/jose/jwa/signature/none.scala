@@ -25,5 +25,5 @@ object none extends JWSAlgorithm with com.peknight.security.algorithm.NONE:
     (if doKeyValidation then validateKey(key) else ().asRight).map(_ => signed.isEmpty)
 
   def validateKey(key: Option[Key]): Either[JoseError, Unit] =
-    key.fold(().asRight)(_ => CanNotHaveKey.asLeft)
+    key.fold(().asRight)(_ => CanNotHaveKey(this).asLeft)
 end none
