@@ -1,16 +1,14 @@
 package com.peknight.jose.jwk
 
 import cats.Id
-import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.applicative.*
-import cats.syntax.applicativeError.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
 import cats.syntax.traverse.*
 import com.peknight.error.Error
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.security.cipher.RSA
 import com.peknight.security.provider.Provider
@@ -25,7 +23,7 @@ trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJson
         modulus <- self.modulus.decodeToUnsignedBigInt[Id]
         publicExponent <- self.exponent.decodeToUnsignedBigInt[Id]
       yield
-        RSA.publicKey[F](modulus, publicExponent, provider).attempt.map(_.asError)
+        RSA.publicKey[F](modulus, publicExponent, provider).asError
     either.fold(_.asLeft.pure, identity)
 
   def privateKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[RSAPrivateKey]]] =
@@ -58,6 +56,6 @@ trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJson
               RSA.privateCrtKey[F](modulus, publicExponent, privateExponent, primeP, primeQ, primeExponentP,
                 primeExponentQ, crtCoefficient, provider)
             case _ => RSA.privateKey[F](modulus, privateExponent, provider)
-      either.fold(_.asLeft.pure, f => f.attempt.map(_.asError.map(Some.apply)))
+      either.fold(_.asLeft.pure, f => f.asError.map(_.map(Some.apply)))
     }
 }

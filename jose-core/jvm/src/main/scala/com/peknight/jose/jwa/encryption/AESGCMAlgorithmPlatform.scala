@@ -1,11 +1,10 @@
 package com.peknight.jose.jwa.encryption
 
 import cats.effect.Sync
-import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.GCMParameterSpec
 import scodec.bits.ByteVector
@@ -28,7 +27,7 @@ trait AESGCMAlgorithmPlatform { self: AESGCMAlgorithm =>
                           iv: ByteVector, cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
     self.keyDecrypt[F](self.secretKeySpec(key), ciphertext ++ authenticationTag,
-      Some(GCMParameterSpec(self.tagByteLength * 8, iv)), Some(aad), provider = cipherProvider).attempt.map(_.asError)
+      Some(GCMParameterSpec(self.tagByteLength * 8, iv)), Some(aad), provider = cipherProvider).asError
 
   def isAvailable[F[_]: Sync]: F[Boolean] =
     isAESGCMKeyAvailable[F](self, self.blockSize, self.ivByteLength, self.tagByteLength)

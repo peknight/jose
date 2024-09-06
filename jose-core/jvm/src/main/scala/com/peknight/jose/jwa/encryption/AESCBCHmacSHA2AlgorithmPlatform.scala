@@ -5,8 +5,9 @@ import cats.effect.Sync
 import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
+import com.peknight.cats.ext.monad.transformer.syntax.eitherT.eLiftET
 import com.peknight.error.Error
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.cipher.{AES, Cipher}
 import com.peknight.security.error.IntegrityError
@@ -40,13 +41,11 @@ trait AESCBCHmacSHA2AlgorithmPlatform { self: AESCBCHmacSHA2Algorithm =>
                           macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
     val eitherT =
       for
-        _ <- EitherT(self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput(ciphertext, aad, iv),
-            provider = macProvider)
-          .map(_.take(self.tagTruncationLength) === authenticationTag)
-          .attempt.map(_.asError.flatMap(isTrue(_, IntegrityError))))
+        macBytes <- EitherT(self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf),
+          authenticationTagInput(ciphertext, aad, iv), provider = macProvider).asError)
+        _ <- isTrue(macBytes.take(self.tagTruncationLength) === authenticationTag, IntegrityError).eLiftET
         decrypted <- EitherT(Cipher.rawKeyDecrypt[F](self.javaAlgorithm, key.rightHalf, ciphertext, Some(iv),
-            provider = cipherProvider)
-          .attempt.map(_.asError))
+            provider = cipherProvider).asError)
       yield decrypted
     eitherT.value
 

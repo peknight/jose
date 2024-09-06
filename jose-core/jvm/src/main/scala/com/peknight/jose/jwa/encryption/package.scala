@@ -8,7 +8,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
-import com.peknight.jose.error.{InvalidKeyAlgorithm, InvalidKeyLength}
+import com.peknight.jose.error.{CanNotHaveKey, InvalidKeyAlgorithm, InvalidKeyLength}
 import com.peknight.security.cipher.AES
 import com.peknight.security.random.SecureRandom
 import com.peknight.security.spec.GCMParameterSpec
@@ -62,4 +62,8 @@ package object encryption:
         true
     else false.pure[F]
   }.attempt.map(_.getOrElse(false))
+
+  private[encryption] def canNotHaveKey(keyOverride: Option[ByteVector], identifier: AlgorithmIdentifier)
+  : Either[Error, Unit] =
+    keyOverride.fold(().asRight)(_ => CanNotHaveKey(identifier).asLeft)
 end encryption

@@ -1,6 +1,5 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.syntax.either.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.jose.error.CanNotHaveKey
@@ -10,10 +9,8 @@ import scodec.bits.ByteVector
 import java.security.Key
 
 trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
-  def encryptKey(managementKey: Key, cekOverride: Option[ByteVector]): Either[Error, (ByteVector, ByteVector)] =
-    cekOverride match
-      case Some(_) => CanNotHaveKey(self).asLeft
-      case None => (ByteVector(managementKey.getEncoded), ByteVector.empty).asRight
+  def encryptKey(managementKey: Key, cekOverride: Option[ByteVector] = None): Either[Error, (ByteVector, ByteVector)] =
+    canNotHaveKey(cekOverride, self).as((ByteVector(managementKey.getEncoded), ByteVector.empty))
 
   def decryptKey(managementKey: Key, encryptedKey: ByteVector): Either[Error, Key] =
     isTrue(encryptedKey.isEmpty, CanNotHaveKey(self)).as(managementKey)

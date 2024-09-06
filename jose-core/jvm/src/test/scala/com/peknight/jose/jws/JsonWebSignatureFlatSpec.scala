@@ -5,13 +5,13 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.either.*
+import com.peknight.cats.ext.monad.transformer.syntax.eitherT.frLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.*
 import com.peknight.jose.jwt.{JsonWebToken, JsonWebTokenClaims}
 import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.cipher.{AES, RSA}
-import com.peknight.security.random.SecureRandom
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -39,7 +39,7 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader.jwtHeader(algorithm),
           jwtClaims, Some(signingKey)))
         verify <- EitherT(signature.verify[IO](Some(verificationKey)))
-        jose4jSignature <- EitherT(signWithJose4j(signature, signingKey).map(_.asRight))
+        jose4jSignature <- signWithJose4j(signature, signingKey).frLiftET
         verify4j <- EitherT(JsonWebSignature.handleVerify[IO](Some(algorithm), Some(verificationKey),
           signature.getProtectedHeader.flatMap(h => JsonWebSignature.toBytes(h, signature.payload)).getOrElse(ByteVector.empty),
           Base64UrlNoPad.unsafeFromString(jose4jSignature).decode[Id].getOrElse(ByteVector.empty)))

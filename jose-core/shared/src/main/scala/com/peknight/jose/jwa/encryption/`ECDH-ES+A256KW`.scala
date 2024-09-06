@@ -4,7 +4,7 @@ import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Recommended
 import com.peknight.security.cipher.{AESWrap, AESWrap_256}
 
-object `ECDH-ES+A256KW` extends `ECDH-ESUsingConcatKDFAndCEKWithAESWrap`:
+object `ECDH-ES+A256KW` extends `ECDH-ESWithAESWrapAlgorithm`:
   val encryption: AESWrap = AESWrap_256
   val requirement: Requirement = Recommended
 end `ECDH-ES+A256KW`

@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 
 trait KeyAgreementAlgorithm extends KeyManagementAlgorithm
 object KeyAgreementAlgorithm:
-  val values: List[KeyAgreementAlgorithm] = `ECDH-ESAlgorithm`.values
+  val values: List[KeyAgreementAlgorithm] = `ECDH-ESAlgorithm`.values ::: `ECDH-ESWithAESWrapAlgorithm`.values
   given stringCodecKeyAgreementAlgorithm[F[_]: Applicative]: Codec[F, String, String, KeyAgreementAlgorithm] =
     stringCodecAlgorithmIdentifier[F, KeyAgreementAlgorithm](values)
   given codecKeyAgreementAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], KeyAgreementAlgorithm] =
