@@ -9,7 +9,7 @@ import cats.syntax.option.*
 import cats.syntax.traverse.*
 import cats.{Apply, Id}
 import com.peknight.cats.ext.instances.eitherT.given
-import com.peknight.cats.ext.monad.transformer.syntax.eitherT.eLiftET
+import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError

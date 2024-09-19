@@ -2,9 +2,8 @@ package com.peknight.jose.jwa.encryption
 
 import cats.data.EitherT
 import cats.effect.Sync
-import cats.syntax.applicative.*
 import cats.syntax.either.*
-import com.peknight.cats.ext.monad.transformer.syntax.eitherT.{eLiftET, lLiftET}
+import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET}
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.error.{JoseError, NoSuchCurve, UnsupportedCurve, UnsupportedKey}
@@ -17,7 +16,7 @@ import com.peknight.security.syntax.ecParameterSpec.generateKeyPair as ecGenerat
 import com.peknight.validation.std.either.typed
 import scodec.bits.ByteVector
 
-import java.security.interfaces.{ECKey, ECPublicKey, ECPrivateKey, XECPublicKey}
+import java.security.interfaces.{ECKey, ECPrivateKey, ECPublicKey, XECPublicKey}
 import java.security.spec.NamedParameterSpec
 import java.security.{Key, KeyPair, PublicKey, SecureRandom, Provider as JProvider}
 

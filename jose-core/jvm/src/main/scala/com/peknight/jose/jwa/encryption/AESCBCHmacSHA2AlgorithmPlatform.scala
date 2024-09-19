@@ -5,7 +5,7 @@ import cats.effect.Sync
 import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import com.peknight.cats.ext.monad.transformer.syntax.eitherT.eLiftET
+import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}

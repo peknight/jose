@@ -5,7 +5,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.either.*
-import com.peknight.cats.ext.monad.transformer.syntax.eitherT.frLiftET
+import com.peknight.cats.ext.syntax.eitherT.frLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.*

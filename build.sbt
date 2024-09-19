@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.4.2"
+ThisBuild / scalaVersion := "3.5.0"
 
 ThisBuild / organization := "com.peknight"
 
@@ -34,7 +34,6 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
       "com.peknight" %%% "codec-circe-parser" % pekCodecVersion,
       "com.peknight" %%% "codec-base" % pekCodecVersion,
       "com.peknight" %%% "codec-http4s" % pekCodecVersion,
-      "com.peknight" %%% "io-core" % pekIoVersion,
       "com.peknight" %%% "cats-parse-ext" % pekExtVersion,
       "com.peknight" %%% "commons-string" % pekCommonsVersion,
       "com.peknight" %%% "validation-spire" % pekValidationVersion,
@@ -53,18 +52,17 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
 
 val http4sVersion = "1.0.0-M34"
 val pekVersion = "0.1.0-SNAPSHOT"
-val catsEffectTestingScalaTestVersion = "1.5.0"
 val pekSecurityVersion = pekVersion
 val pekCodecVersion = pekVersion
-val pekIoVersion = pekVersion
 val pekExtVersion = pekVersion
 val pekCommonsVersion = pekVersion
 val pekValidationVersion = pekVersion
+val catsEffectTestingScalaTestVersion = "1.5.0"
 
 val jwtCirceVersion = "10.0.1"
 val scalaJwkVersion = "1.2.24"
 val jose4jVersion = "0.9.6"
-val logbackVersion = "1.5.6"
+val logbackVersion = "1.5.8"
 val jwtCirce = "com.github.jwt-scala" %% "jwt-circe" % jwtCirceVersion
 val scalaJwk = "com.chatwork" %% "scala-jwk" % scalaJwkVersion
 val jose4j = "org.bitbucket.b_c" % "jose4j" % jose4jVersion
