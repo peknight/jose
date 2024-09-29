@@ -21,15 +21,14 @@ import java.security.spec.NamedParameterSpec
 import java.security.{Key, KeyPair, PublicKey, SecureRandom, Provider as JProvider}
 
 trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
-  def encryptKey[F[_]: Sync](managementKey: Key, contentEncryptionKeyByteLength: Int,
-                             cekOverride: Option[ByteVector] = None,
+  def encryptKey[F[_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
                              random: Option[SecureRandom] = None,
                              keyPairGeneratorProvider: Option[Provider | JProvider] = None,
                              keyAgreementProvider: Option[Provider | JProvider] = None,
                              messageDigestProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
     val eitherT =
       for
-        _ <- canNotHaveKey(cekOverride, self).eLiftET
+        cekLength <- canNotHaveKey(cekLengthOrBytes, self).eLiftET
         keyPair <- generateKeyPair[F](managementKey, random, keyPairGeneratorProvider)
         jwk <- JsonWebKey.fromPublicKey(keyPair.getPublic).eLiftET
         otherPartyPublicKey <- typed[PublicKey](managementKey).eLiftET
@@ -41,6 +40,12 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
           provider = keyAgreementProvider).asError)
       yield ByteVector.empty
     eitherT.value
+
+  private def test[F[_]: Sync](cekLength: Int, encryptionAlgorithm: Option[EncryptionAlgorithm],
+                               messageDigestProvider: Option[Provider | JProvider] = None): Unit =
+    val keyDataLength = cekLength * 8
+    val algorithmID = encryptionAlgorithm.map(_.algorithm)
+    ()
 
   private def generateKeyPair[F[_]: Sync](managementKey: Key, random: Option[SecureRandom] = None,
                                           provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
