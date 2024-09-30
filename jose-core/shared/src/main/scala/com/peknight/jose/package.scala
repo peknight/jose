@@ -18,6 +18,16 @@ package object jose:
       "encryptionAlgorithm" -> "enc",
       "compressionAlgorithm" -> "zip",
 
+      "ephemeralPublicKey" -> "epk",
+      "agreementPartyUInfo" -> "apu",
+      "agreementPartyVInfo" -> "apv",
+
+      "initializationVector" -> "iv",
+      "authenticationTag" -> "tag",
+
+      "pbes2SaltInput" -> "p2s",
+      "pbes2Count" -> "p2c",
+
       // rfc7797
       "base64UrlEncodePayload" -> "b64",
     )

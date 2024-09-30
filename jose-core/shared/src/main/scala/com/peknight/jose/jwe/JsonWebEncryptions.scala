@@ -46,8 +46,10 @@ object JsonWebEncryptions extends JsonWebEncryptionsCompanion:
   given codecJsonWebEncryptions[F[_], S](using
     monad: Monad[F],
     objectType: ObjectType[S],
-    arrayType: ArrayType[S],
     nullType: NullType[S],
+    arrayType: ArrayType[S],
+    booleanType: BooleanType[S],
+    numberType: NumberType[S],
     stringType: StringType[S],
     jsonObjectEncoder: Encoder[F, S, JsonObject],
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]

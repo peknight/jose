@@ -40,10 +40,10 @@ object JsonWebTokenClaims:
   given codecJsonWebTokenClaims[F[_], S](using
     monad: Monad[F],
     objectType: ObjectType[S],
-    arrayType: ArrayType[S],
     nullType: NullType[S],
-    stringType: StringType[S],
+    arrayType: ArrayType[S],
     numberType: NumberType[S],
+    stringType: StringType[S],
     jsonObjectEncoder: Encoder[F, S, JsonObject],
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =

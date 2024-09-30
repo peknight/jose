@@ -162,7 +162,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
   end OctetKeyPairJsonWebKey
 
-  given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S])
+  given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
   : Codec[F, S, Cursor[S], JsonWebKey] =
     given CodecConfiguration = CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))

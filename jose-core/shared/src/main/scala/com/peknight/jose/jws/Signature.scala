@@ -4,7 +4,7 @@ import cats.{Id, Monad}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.MissingField
-import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
+import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.jose.jws.JsonWebSignature.concat
@@ -41,7 +41,7 @@ object Signature:
       Signature(Right((header, `protected`)), signature)
 
     given codecSignature[F[_], S](using
-     Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
+     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
      Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
     ): Codec[F, S, Cursor[S], Signature] =
       Codec.forProduct[F, S, Signature, (Option[JoseHeader], Option[Base64UrlNoPad], Base64UrlNoPad)]

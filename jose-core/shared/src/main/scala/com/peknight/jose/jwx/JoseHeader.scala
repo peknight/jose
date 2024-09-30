@@ -10,7 +10,7 @@ import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.http4s.instances.uri.given
-import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
+import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
@@ -37,6 +37,13 @@ case class JoseHeader(
                        `type`: Option[String] = None,
                        contentType: Option[String] = None,
                        critical: Option[List[String]] = None,
+                       ephemeralPublicKey: Option[JsonWebKey] = None,
+                       agreementPartyUInfo: Option[Base64UrlNoPad] = None,
+                       agreementPartyVInfo: Option[Base64UrlNoPad] = None,
+                       initializationVector: Option[Base64UrlNoPad] = None,
+                       authenticationTag: Option[Base64UrlNoPad] = None,
+                       pbes2SaltInput: Option[Base64UrlNoPad] = None,
+                       pbes2Count: Option[Int] = None,
                        // rfc7797
                        base64UrlEncodePayload: Option[Boolean] = None,
                        ext: Option[JsonObject] = None
@@ -67,7 +74,7 @@ end JoseHeader
 object JoseHeader:
   def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))
   given codecJoseHeader[F[_], S](using
-    Monad[F], ObjectType[S], ArrayType[S], NullType[S], StringType[S],
+    Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JoseHeader] =
     given CodecConfiguration = CodecConfiguration.default
