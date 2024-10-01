@@ -31,21 +31,15 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         cekLength <- canNotHaveKey(cekLengthOrBytes, self).eLiftET
         keyPair <- generateKeyPair[F](managementKey, random, keyPairGeneratorProvider)
         jwk <- JsonWebKey.fromPublicKey(keyPair.getPublic).eLiftET
-        otherPartyPublicKey <- typed[PublicKey](managementKey).eLiftET
-        thePartyPrivateKey = keyPair.getPrivate
-        keyAgreementAlgorithm = thePartyPrivateKey match
+        partyVPublicKey <- typed[PublicKey](managementKey).eLiftET
+        partyUPrivateKey = keyPair.getPrivate
+        keyAgreementAlgorithm = partyUPrivateKey match
           case _: ECPrivateKey => self
           case _ => XDH
-        z <- EitherT(keyAgreementAlgorithm.generateSecret[F](thePartyPrivateKey, otherPartyPublicKey,
+        z <- EitherT(keyAgreementAlgorithm.generateSecret[F](partyUPrivateKey, partyVPublicKey,
           provider = keyAgreementProvider).asError)
       yield ByteVector.empty
     eitherT.value
-
-  private def test[F[_]: Sync](cekLength: Int, encryptionAlgorithm: Option[EncryptionAlgorithm],
-                               messageDigestProvider: Option[Provider | JProvider] = None): Unit =
-    val keyDataLength = cekLength * 8
-    val algorithmID = encryptionAlgorithm.map(_.algorithm)
-    ()
 
   private def generateKeyPair[F[_]: Sync](managementKey: Key, random: Option[SecureRandom] = None,
                                           provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
@@ -76,5 +70,17 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
       case Some(curve) if self.supportedCurves.contains(curve) => curve.asRight
       case Some(curve) => UnsupportedCurve(curve).asLeft
       case None => NoSuchCurve.asLeft
+
+  private def kdf[F[_]: Sync](sharedSecret: ByteVector, cekLength: Int,
+                              encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                              agreementPartyUInfo: Option[ByteVector] = None,
+                              agreementPartyVInfo: Option[ByteVector] = None,
+                              messageDigestProvider: Option[Provider | JProvider] = None): Unit =
+    val keyDataLength = cekLength * 8
+    val algorithmID = encryptionAlgorithm.map(enc => ByteVector.encodeUtf8(enc.algorithm))
+    ()
+
+  private def prependDataLength(data: Option[ByteVector]): ByteVector =
+    data.fold(ByteVector.empty)(data => ByteVector.fromInt(data.length) ++ data)
 
 }
