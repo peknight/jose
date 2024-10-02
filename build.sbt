@@ -35,6 +35,7 @@ lazy val joseCore = (crossProject(JSPlatform, JVMPlatform) in file("jose-core"))
       "com.peknight" %%% "codec-base" % pekCodecVersion,
       "com.peknight" %%% "codec-http4s" % pekCodecVersion,
       "com.peknight" %%% "cats-parse-ext" % pekExtVersion,
+      "com.peknight" %%% "cats-instances-scodec-bits" % pekInstancesVersion,
       "com.peknight" %%% "commons-string" % pekCommonsVersion,
       "com.peknight" %%% "validation-spire" % pekValidationVersion,
       "org.typelevel" %%% "cats-effect-testing-scalatest" % catsEffectTestingScalaTestVersion % Test,
@@ -55,6 +56,7 @@ val pekVersion = "0.1.0-SNAPSHOT"
 val pekSecurityVersion = pekVersion
 val pekCodecVersion = pekVersion
 val pekExtVersion = pekVersion
+val pekInstancesVersion = pekVersion
 val pekCommonsVersion = pekVersion
 val pekValidationVersion = pekVersion
 val catsEffectTestingScalaTestVersion = "1.5.0"
