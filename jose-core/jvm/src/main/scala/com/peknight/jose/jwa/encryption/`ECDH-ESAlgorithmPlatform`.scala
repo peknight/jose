@@ -14,7 +14,6 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{JoseError, NoSuchCurve, UnsupportedCurve, UnsupportedKey}
 import com.peknight.jose.jwa.ecc.Curve
-import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
 import com.peknight.security.key.agreement.XDH
 import com.peknight.security.provider.Provider
@@ -37,12 +36,12 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                              random: Option[SecureRandom] = None,
                              keyPairGeneratorProvider: Option[Provider | JProvider] = None,
                              keyAgreementProvider: Option[Provider | JProvider] = None,
-                             messageDigestProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
+                             messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, (PublicKey, ByteVector)]] =
     val eitherT =
       for
         cekLength <- canNotHaveKey(cekLengthOrBytes, self).eLiftET
         keyPair <- generateKeyPair[F](managementKey, random, keyPairGeneratorProvider)
-        jwk <- JsonWebKey.fromPublicKey(keyPair.getPublic).eLiftET
         partyVPublicKey <- typed[PublicKey](managementKey).eLiftET
         partyUPrivateKey = keyPair.getPrivate
         keyAgreementAlgorithm = partyUPrivateKey match
@@ -52,8 +51,12 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
           provider = keyAgreementProvider).asError)
         otherInfo <- otherInfo(cekLength, encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo).eLiftET
         derivedKey <- EitherT(kdf[F](`SHA-256`, z, otherInfo, cekLength, messageDigestProvider).asError)
-      yield derivedKey
+      yield
+        (keyPair.getPublic, derivedKey)
     eitherT.value
+
+  def decryptKey[F[_]: Sync](managementKey: Key): F[Key] =
+    ???
 
   private def generateKeyPair[F[_]: Sync](managementKey: Key, random: Option[SecureRandom] = None,
                                           provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
@@ -90,7 +93,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
   : Either[Error, ByteVector] =
     for
       algorithmId <- encryptionAlgorithm.fold(none[ByteVector].asRight[Error])(
-        enc => ByteVector.encodeUtf8(enc.algorithm).map(_.some).asError
+        enc => ByteVector.encodeUtf8(enc.identifier).map(_.some).asError
       )
     yield
       val algorithmIdBytes = prependDataLength(algorithmId)
