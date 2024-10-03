@@ -25,11 +25,11 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
       (contentEncryptionKey, iv, encryptedKey, authenticationTag)
 
   def decryptKey[F[_]: Sync](managementKey: Key, encryptedKey: ByteVector,
-                             contentEncryptionKeyAlgorithm: SecretKeySpecAlgorithm, iv: ByteVector,
+                             cekAlgorithm: SecretKeySpecAlgorithm, iv: ByteVector,
                              authenticationTag: ByteVector, provider: Option[Provider | JProvider] = None): F[Key] =
     self.keyDecrypt[F](managementKey, encryptedKey ++ authenticationTag,
         Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = provider)
-      .map(contentEncryptionKeyAlgorithm.secretKeySpec)
+      .map(cekAlgorithm.secretKeySpec)
 
   def validateKey(managementKey: Key): Either[Error, Unit] = validateAESWrappingKey(managementKey, self, self.blockSize)
 
