@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 
 import java.security.{SecureRandom, Provider as JProvider}
 
-trait JWEEncryptionAlgorithmPlatform {
+trait EncryptionAlgorithmPlatform {
 
   def encrypt[F[_]: Sync](key: ByteVector, input: ByteVector, aad: ByteVector, ivOverride: Option[ByteVector] = None,
                           random: Option[SecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,

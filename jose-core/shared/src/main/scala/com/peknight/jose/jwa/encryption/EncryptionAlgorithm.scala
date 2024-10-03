@@ -8,11 +8,12 @@ import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwx.Requirement
 
-trait EncryptionAlgorithm extends AlgorithmIdentifier:
+trait EncryptionAlgorithm extends AlgorithmIdentifier with EncryptionAlgorithmPlatform:
+  def keyByteLength: Int
   def requirement: Requirement
 end EncryptionAlgorithm
 object EncryptionAlgorithm:
-  val values: List[EncryptionAlgorithm] = JWEEncryptionAlgorithm.values
+  val values: List[EncryptionAlgorithm] = AESCBCHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
   given stringCodecEncryptionAlgorithm[F[_]: Applicative]: Codec[F, String, String, EncryptionAlgorithm] =
     stringCodecAlgorithmIdentifier[F, EncryptionAlgorithm](values)
   given codecEncryptionAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], EncryptionAlgorithm] =

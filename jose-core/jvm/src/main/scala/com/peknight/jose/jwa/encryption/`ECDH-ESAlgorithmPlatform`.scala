@@ -77,6 +77,8 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         cekAlgorithm.secretKeySpec(derivedKey)
     eitherT.value
 
+  // private def validateEncryptionKey(managementKey: Key, )
+
   private def generateKeyPair[F[_]: Sync](managementKey: Key, random: Option[SecureRandom] = None,
                                           provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
     managementKey match

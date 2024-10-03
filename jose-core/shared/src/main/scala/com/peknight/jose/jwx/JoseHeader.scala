@@ -16,7 +16,7 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.JWECompressionAlgorithm
-import com.peknight.jose.jwa.encryption.JWEEncryptionAlgorithm
+import com.peknight.jose.jwa.encryption.EncryptionAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
 import com.peknight.jose.jwt.JsonWebToken
 import com.peknight.jose.memberNameMap
@@ -25,7 +25,7 @@ import org.http4s.Uri
 
 case class JoseHeader(
                        algorithm: Option[JsonWebAlgorithm] = None,
-                       encryptionAlgorithm: Option[JWEEncryptionAlgorithm] = None,
+                       encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
                        compressionAlgorithm: Option[JWECompressionAlgorithm] = None,
                        jwkSetURL: Option[Uri] = None,
                        jwk: Option[JsonWebKey] = None,

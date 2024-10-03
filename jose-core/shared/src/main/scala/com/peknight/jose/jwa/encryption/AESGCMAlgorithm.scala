@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.AES
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
 
-trait AESGCMAlgorithm extends JWEEncryptionAlgorithm with AES with AESGCMAlgorithmPlatform:
+trait AESGCMAlgorithm extends EncryptionAlgorithm with AES with AESGCMAlgorithmPlatform:
   def keyByteLength: Int = blockSize
   def ivByteLength: Int = 12
   def tagByteLength: Int = 16
