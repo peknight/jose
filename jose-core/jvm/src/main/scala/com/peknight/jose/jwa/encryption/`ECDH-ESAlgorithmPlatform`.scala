@@ -3,6 +3,7 @@ package com.peknight.jose.jwa.encryption
 import cats.Foldable
 import cats.data.EitherT
 import cats.effect.Sync
+import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
@@ -14,8 +15,10 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{JoseError, NoSuchCurve, UnsupportedCurve, UnsupportedKey}
 import com.peknight.jose.jwa.ecc.Curve
+import com.peknight.security.Security
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
-import com.peknight.security.key.agreement.{DiffieHellman, XDH}
+import com.peknight.security.ecc.EC
+import com.peknight.security.key.agreement.{DiffieHellman, KeyAgreement, XDH}
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.SecretKeySpecAlgorithm
 import com.peknight.security.syntax.algorithmParameterSpec.generateKeyPair as paramsGenerateKeyPair
@@ -25,7 +28,7 @@ import com.peknight.validation.std.either.typed
 import fs2.Stream
 import scodec.bits.ByteVector
 
-import java.security.interfaces.{ECKey, ECPrivateKey, ECPublicKey, XECPublicKey}
+import java.security.interfaces.*
 import java.security.spec.NamedParameterSpec
 import java.security.{Key, KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
 
@@ -38,7 +41,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                              keyPairGeneratorProvider: Option[Provider | JProvider] = None,
                              keyAgreementProvider: Option[Provider | JProvider] = None,
                              messageDigestProvider: Option[Provider | JProvider] = None)
-  : F[Either[Error, (PublicKey, ByteVector)]] =
+  : F[Either[Error, (ByteVector, PublicKey)]] =
     val eitherT =
       for
         cekLength <- canNotHaveKey(cekLengthOrBytes, self).eLiftET
@@ -51,7 +54,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo,
           messageDigestProvider)
       yield
-        (keyPair.getPublic, derivedKey)
+        (derivedKey, keyPair.getPublic)
     eitherT.value
 
   def decryptKey[F[+_]: Sync](managementKey: Key, ephemeralPublicKey: PublicKey, cekLength: Int,
@@ -77,7 +80,19 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         cekAlgorithm.secretKeySpec(derivedKey)
     eitherT.value
 
-  // private def validateEncryptionKey(managementKey: Key, )
+  def validateEncryptionKey(managementKey: Key): Either[JoseError, Unit] =
+    if managementKey.isInstanceOf[ECPublicKey] || managementKey.isInstanceOf[XECPublicKey] then ().asRight
+    else UnsupportedKey(managementKey.getAlgorithm, managementKey).asLeft
+
+  def validateDecryptionKey(managementKey: Key): Either[JoseError, Unit] =
+    if managementKey.isInstanceOf[ECPrivateKey] || managementKey.isInstanceOf[XECPrivateKey] then ().asRight
+    else UnsupportedKey(managementKey.getAlgorithm, managementKey).asLeft
+
+  def isAvailable[F[_]: Sync]: F[Boolean] =
+    isKeyPairAlgorithmAvailable[F](EC).flatMap {
+      case true => Security.getAlgorithms[F](KeyAgreement).map(_.exists(_.equalsIgnoreCase(self.algorithm)))
+      case false => false.pure[F]
+    }
 
   private def generateKeyPair[F[_]: Sync](managementKey: Key, random: Option[SecureRandom] = None,
                                           provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =

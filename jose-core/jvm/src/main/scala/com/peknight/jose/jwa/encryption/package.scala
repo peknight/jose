@@ -9,7 +9,10 @@ import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
 import com.peknight.jose.error.{CanNotHaveKey, InvalidKeyAlgorithm, InvalidKeyLength}
+import com.peknight.security.Security
 import com.peknight.security.cipher.AES
+import com.peknight.security.key.factory.{KeyFactory, KeyFactoryAlgorithm}
+import com.peknight.security.key.pair.{KeyPairGenerator, KeyPairGeneratorAlgorithm}
 import com.peknight.security.random.SecureRandom
 import com.peknight.security.spec.GCMParameterSpec
 import com.peknight.security.syntax.secureRandom.nextBytesF
@@ -62,6 +65,13 @@ package object encryption:
         true
     else false.pure[F]
   }.attempt.map(_.getOrElse(false))
+
+  private[encryption] def isKeyPairAlgorithmAvailable[F[_]: Sync](algorithm: KeyFactoryAlgorithm & KeyPairGeneratorAlgorithm)
+  : F[Boolean] =
+    Security.isAvailable[F](KeyFactory, algorithm).flatMap {
+      case true => Security.isAvailable[F](KeyPairGenerator, algorithm)
+      case false => false.pure[F]
+    }
 
   private[encryption] def canNotHaveKey(keyOverride: Option[ByteVector], identifier: AlgorithmIdentifier)
   : Either[Error, Unit] =

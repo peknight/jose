@@ -16,24 +16,23 @@ import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait AESWrapAlgorithmPlatform { self: AESWrapAlgorithm =>
   def encryptKey[F[_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
-                             contentEncryptionKeyAlgorithm: SecretKeySpecAlgorithm, random: Option[SecureRandom] = None,
+                             cekAlgorithm: SecretKeySpecAlgorithm, random: Option[SecureRandom] = None,
                              provider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector)] =
     for
       contentEncryptionKey <- getBytesOrRandom[F](cekLengthOrBytes, random)
-      encryptedKey <- self.keyWrap[F](managementKey, contentEncryptionKeyAlgorithm.secretKeySpec(contentEncryptionKey),
+      encryptedKey <- self.keyWrap[F](managementKey, cekAlgorithm.secretKeySpec(contentEncryptionKey),
         provider = provider)
     yield (contentEncryptionKey, encryptedKey)
 
   def decryptKey[F[_]: Sync](managementKey: Key, encryptedKey: ByteVector,
-                             contentEncryptionKeyAlgorithm: SecretKeySpecAlgorithm,
+                             cekAlgorithm: SecretKeySpecAlgorithm,
                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
                              provider: Option[Provider | JProvider] = None): F[Key] =
     keyDecipherModeOverride match
       case Some(Decrypt) =>
-        self.keyDecrypt[F](managementKey, encryptedKey, provider = provider)
-          .map(contentEncryptionKeyAlgorithm.secretKeySpec)
+        self.keyDecrypt[F](managementKey, encryptedKey, provider = provider).map(cekAlgorithm.secretKeySpec)
       case _ =>
-        self.keyUnwrap[F](managementKey, encryptedKey, contentEncryptionKeyAlgorithm, SecretKey, provider = provider)
+        self.keyUnwrap[F](managementKey, encryptedKey, cekAlgorithm, SecretKey, provider = provider)
 
   def validateKey(managementKey: Key): Either[Error, Unit] = validateAESWrappingKey(managementKey, self, self.blockSize)
 
