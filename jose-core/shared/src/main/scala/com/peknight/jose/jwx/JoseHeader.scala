@@ -43,7 +43,7 @@ case class JoseHeader(
                        initializationVector: Option[Base64UrlNoPad] = None,
                        authenticationTag: Option[Base64UrlNoPad] = None,
                        pbes2SaltInput: Option[Base64UrlNoPad] = None,
-                       pbes2Count: Option[Int] = None,
+                       pbes2Count: Option[Long] = None,
                        // rfc7797
                        base64UrlEncodePayload: Option[Boolean] = None,
                        ext: Option[JsonObject] = None
