@@ -58,12 +58,12 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
     eitherT.value
 
   def decryptKey[F[+_]: Sync](managementKey: Key, ephemeralPublicKey: PublicKey, cekLength: Int,
-                             cekAlgorithm: SecretKeySpecAlgorithm,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
-                             agreementPartyUInfo: Option[ByteVector] = None,
-                             agreementPartyVInfo: Option[ByteVector] = None,
-                             keyAgreementProvider: Option[Provider | JProvider] = None,
-                             messageDigestProvider: Option[Provider | JProvider] = None)
+                              cekAlgorithm: SecretKeySpecAlgorithm,
+                              encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                              agreementPartyUInfo: Option[ByteVector] = None,
+                              agreementPartyVInfo: Option[ByteVector] = None,
+                              keyAgreementProvider: Option[Provider | JProvider] = None,
+                              messageDigestProvider: Option[Provider | JProvider] = None)
   : F[Either[Error, Key]] =
     val eitherT =
       for
