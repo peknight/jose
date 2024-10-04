@@ -8,8 +8,8 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.HeaderParam.{apu, apv, epk}
 import com.peknight.security.cipher.AESWrap
 
-trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm:
-  def encryption: AESWrap
+trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm with `ECDH-ESWithAESWrapAlgorithmPlatform`:
+  def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)
   def algorithm: String = s"ECDH-ES+A${encryption.blockSize * 8}KW"
 end `ECDH-ESWithAESWrapAlgorithm`

@@ -14,6 +14,7 @@ import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{JoseError, NoSuchCurve, UnsupportedCurve, UnsupportedKey}
+import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.security.Security
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
@@ -34,7 +35,7 @@ import java.security.{Key, KeyPair, PrivateKey, PublicKey, SecureRandom, Provide
 
 trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
   def encryptKey[F[_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
                              random: Option[SecureRandom] = None,
@@ -59,7 +60,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
 
   def decryptKey[F[+_]: Sync](managementKey: Key, ephemeralPublicKey: PublicKey, cekLength: Int,
                               cekAlgorithm: SecretKeySpecAlgorithm,
-                              encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                              encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                               agreementPartyUInfo: Option[ByteVector] = None,
                               agreementPartyVInfo: Option[ByteVector] = None,
                               keyAgreementProvider: Option[Provider | JProvider] = None,
@@ -128,21 +129,21 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
     if privateKey.isInstanceOf[ECPrivateKey] then self else XDH
 
   private def kdf[F[_]: Sync](messageDigestAlgorithm: MessageDigestAlgorithm, sharedSecret: ByteVector, cekLength: Int,
-                              encryptionAlgorithm: Option[EncryptionAlgorithm],
+                              algorithm: Option[AlgorithmIdentifier],
                               agreementPartyUInfo: Option[ByteVector],
                               agreementPartyVInfo: Option[ByteVector],
                               provider: Option[Provider | JProvider]
                              ): EitherT[F, Error, ByteVector] =
     for
-      otherInfo <- otherInfo(cekLength, encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo).eLiftET
+      otherInfo <- otherInfo(cekLength, algorithm, agreementPartyUInfo, agreementPartyVInfo).eLiftET
       derivedKey <- EitherT(kdf[F](messageDigestAlgorithm, sharedSecret, otherInfo, cekLength, provider).asError)
     yield derivedKey
 
-  private def otherInfo(cekLength: Int, encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+  private def otherInfo(cekLength: Int, algorithm: Option[AlgorithmIdentifier] = None,
                         agreementPartyUInfo: Option[ByteVector] = None, agreementPartyVInfo: Option[ByteVector] = None)
   : Either[Error, ByteVector] =
     for
-      algorithmId <- encryptionAlgorithm.fold(none[ByteVector].asRight[Error])(
+      algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(
         enc => ByteVector.encodeUtf8(enc.identifier).map(_.some).asError
       )
     yield
