@@ -6,7 +6,7 @@ import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.cipher.AESWrap
 import com.peknight.security.mac.HmacSHA2
 
-trait PBES2Algorithm extends KeyEncryptionAlgorithm:
+trait PBES2Algorithm extends KeyEncryptionAlgorithm with PBES2AlgorithmPlatform:
   def prf: HmacSHA2
   def encryption: AESWrap
   def headerParams: Seq[HeaderParam] = Seq(p2s, p2c)
