@@ -1,7 +1,9 @@
 package com.peknight.jose.jwa.encryption
 
+import cats.Monad
 import cats.data.EitherT
-import com.peknight.security.syntax.mac.getMacLengthF
+import com.peknight.security.syntax.mac.{getMacLengthF, doFinalF}
+import cats.syntax.flatMap.*
 import cats.effect.Sync
 import com.peknight.error.Error
 import fs2.Stream
@@ -43,8 +45,11 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
       yield
         (saltInput, iterationCount)
     eitherT.value
-    
-    def f(salt: ByteVector, iterationCount: Int, blockIndex: Int, prf: Mac): F[ByteVector] =
-      
-      ???
+
+    def f[F[_]: Sync](salt: ByteVector, iterationCount: Int, blockIndex: Int, prf: Mac): F[ByteVector] =
+      prf.doFinalF[F](salt ++ ByteVector.fromInt(blockIndex)).flatMap { currentU =>
+        Monad[F].tailRecM[(Int, ByteVector, ByteVector), ByteVector]((2, currentU, currentU)) {
+          case (i, currentU, xorU) if i => 
+        }
+      }
 }
