@@ -1,16 +1,19 @@
 package com.peknight.jose.jwa.encryption
 
 import cats.data.EitherT
+import com.peknight.security.syntax.mac.getMacLengthF
 import cats.effect.Sync
 import com.peknight.error.Error
+import fs2.Stream
 import scodec.bits.ByteVector
-import com.peknight.validation.spire.math.interval.either.atOrAbove
+import com.peknight.validation.spire.math.interval.either.{atOrAbove, atOrBelow}
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.{asError, label}
 import com.peknight.security.provider.Provider
 
 import java.security.{SecureRandom, Provider as JProvider}
+import javax.crypto.Mac
 
 trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
   private val defaultIterationCount: Long = 8192L * 8;
@@ -27,7 +30,21 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
         identifierBytes <- ByteVector.encodeUtf8(self.identifier).asError.eLiftET
         salt = identifierBytes ++ (0 +: saltInput)
         dkLen = self.encryption.blockSize
+        prf <- EitherT(self.prf.getMAC[F](macProvider).asError)
+        hLen <- EitherT(prf.getMacLengthF[F].asError)
+        // value of (Math.pow(2, 32) - 1).toLong
+        maxDerivedKeyLength = 4294967295L
+        _ <- atOrBelow(dkLen.toLong, maxDerivedKeyLength).label("derivedKey").eLiftET
+        l = Math.ceil(dkLen.toDouble / hLen.toDouble).toInt
+        r = dkLen - (l - 1) * hLen
+        // _ <- Stream.emits(0 until l).evalMap[F, ByteVector] { i =>
+        //
+        // }
       yield
         (saltInput, iterationCount)
     eitherT.value
+    
+    def f(salt: ByteVector, iterationCount: Int, blockIndex: Int, prf: Mac): F[ByteVector] =
+      
+      ???
 }
