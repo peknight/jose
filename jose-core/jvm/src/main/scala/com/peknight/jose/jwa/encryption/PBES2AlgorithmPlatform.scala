@@ -13,7 +13,7 @@ import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.{asError, label}
 import com.peknight.jose.jwa.AlgorithmIdentifier
-import com.peknight.security.cipher.BlockCipher
+import com.peknight.security.cipher.{AES, BlockCipher}
 import com.peknight.security.mac.{Hmac, MACAlgorithm}
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.{SecretKeySpec, SecretKeySpecAlgorithm}
@@ -28,21 +28,35 @@ import javax.crypto.Mac
 trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
   private val defaultIterationCount: Long = 8192L * 8;
   private val defaultSaltByteLength: Int = 12
-  def encryptKey[F[_]: Sync](pbes2SaltInput: Option[ByteVector], pbes2Count: Option[Long] = None,
-                             random: Option[SecureRandom] = None,
-                             macProvider: Option[Provider | JProvider] = None)
+  def encryptKey[F[+_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
+                              cekAlgorithm: SecretKeySpecAlgorithm,
+                              pbes2SaltInput: Option[ByteVector], pbes2Count: Option[Long] = None,
+                              random: Option[SecureRandom] = None, macProvider: Option[Provider | JProvider] = None,
+                              cipherProvider: Option[Provider | JProvider] = None)
   : F[Either[Error, (ByteVector, Long)]] =
     val eitherT =
       for
-        iterationCount <- atOrAbove(pbes2Count.getOrElse(defaultIterationCount), 1000L).label("iterationCount").eLiftET
-        saltInput <- EitherT(getBytesOrRandom[F](pbes2SaltInput.toRight(defaultSaltByteLength), random).asError)
-        _ <- atOrAbove(saltInput.length, 8L).label("saltInput").eLiftET
-        identifierBytes <- ByteVector.encodeUtf8(self.identifier).asError.eLiftET
-        salt = identifierBytes ++ (0 +: saltInput)
-        dkLen = self.encryption.blockSize
+        (derivedKey, saltInput, iterationCount) <- deriveForEncrypt[F](self, self.encryption, self.prf, managementKey,
+          AES, pbes2SaltInput, pbes2Count, random, macProvider)
+        (contentEncryptionKey, encryptedKey) <- EitherT(self.encryption.encryptKey[F](derivedKey, cekLengthOrBytes,
+          cekAlgorithm, random, cipherProvider).asError)
       yield
         (saltInput, iterationCount)
     eitherT.value
+
+  private def deriveForEncrypt[F[+_]: Sync](identifier: AlgorithmIdentifier, cipher: BlockCipher, prf: MACAlgorithm,
+                                            managementKey: Key, cekAlgorithm: SecretKeySpecAlgorithm,
+                                            pbes2SaltInput: Option[ByteVector], pbes2Count: Option[Long] = None,
+                                            random: Option[SecureRandom] = None,
+                                            macProvider: Option[Provider | JProvider] = None)
+  : EitherT[F, Error, (Key, ByteVector, Long)] =
+    for
+      iterationCount <- atOrAbove(pbes2Count.getOrElse(defaultIterationCount), 1000L).label("iterationCount").eLiftET
+      saltInput <- EitherT(getBytesOrRandom[F](pbes2SaltInput.toRight(defaultSaltByteLength), random).asError)
+      _ <- atOrAbove(saltInput.length, 8L).label("saltInput").eLiftET
+      derivedKey <- deriveKey[F](identifier, cipher, prf, managementKey, cekAlgorithm, iterationCount.toInt, saltInput, macProvider)
+    yield
+      (derivedKey, saltInput, iterationCount)
 
   private def deriveKey[F[+_]: Sync](identifier: AlgorithmIdentifier, cipher: BlockCipher, prf: MACAlgorithm,
                                      managementKey: Key, cekAlgorithm: SecretKeySpecAlgorithm, iterationCount: Int,
