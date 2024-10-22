@@ -33,7 +33,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
                               pbes2SaltInput: Option[ByteVector], pbes2Count: Option[Long] = None,
                               random: Option[SecureRandom] = None, macProvider: Option[Provider | JProvider] = None,
                               cipherProvider: Option[Provider | JProvider] = None)
-  : F[Either[Error, (ByteVector, Long)]] =
+  : F[Either[Error, (ByteVector, ByteVector, ByteVector, Long)]] =
     val eitherT =
       for
         (derivedKey, saltInput, iterationCount) <- deriveForEncrypt[F](self, self.encryption, self.prf, managementKey,
@@ -41,7 +41,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
         (contentEncryptionKey, encryptedKey) <- EitherT(self.encryption.encryptKey[F](derivedKey, cekLengthOrBytes,
           cekAlgorithm, random, cipherProvider).asError)
       yield
-        (saltInput, iterationCount)
+        (contentEncryptionKey, encryptedKey, saltInput, iterationCount)
     eitherT.value
 
   private def deriveForEncrypt[F[+_]: Sync](identifier: AlgorithmIdentifier, cipher: BlockCipher, prf: MACAlgorithm,
