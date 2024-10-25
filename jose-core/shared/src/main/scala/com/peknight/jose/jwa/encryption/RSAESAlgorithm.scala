@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, ECB}
 import com.peknight.security.cipher.{RSA, RSAES}
 
-trait RSAESAlgorithm extends KeyEncryptionAlgorithm with RSAES with RSA:
+trait RSAESAlgorithm extends KeyEncryptionAlgorithm with RSAES with RSA with RSAESAlgorithmPlatform:
   override def algorithm: String = RSA.algorithm
   override def mode: CipherAlgorithmMode = ECB
   def headerParams: Seq[HeaderParam] = Seq.empty
