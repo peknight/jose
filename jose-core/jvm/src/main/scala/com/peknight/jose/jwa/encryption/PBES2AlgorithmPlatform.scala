@@ -11,7 +11,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.cats.instances.scodec.bits.byteVector.given
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.{asError, label}
+import com.peknight.error.syntax.either.{asError, label, message}
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.security.cipher.{AES, BlockCipher}
 import com.peknight.security.mac.{Hmac, MACAlgorithm}
@@ -26,8 +26,9 @@ import java.security.{Key, SecureRandom, Provider as JProvider}
 import javax.crypto.Mac
 
 trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
-  private val defaultIterationCount: Long = 8192L * 8;
+  private val defaultIterationCount: Long = 8192L * 8
   private val defaultSaltByteLength: Int = 12
+  private val maxIterationCount: Long = 2499999L
   def encryptKey[F[+_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
                               cekAlgorithm: SecretKeySpecAlgorithm,
                               pbes2SaltInput: Option[ByteVector], pbes2Count: Option[Long] = None,
@@ -42,6 +43,25 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
           cekAlgorithm, random, cipherProvider).asError)
       yield
         (contentEncryptionKey, encryptedKey, saltInput, iterationCount)
+    eitherT.value
+
+  def decryptKey[F[+_]: Sync](managementKey: Key, encryptedKey: ByteVector, cekAlgorithm: SecretKeySpecAlgorithm,
+                              pbes2SaltInput: ByteVector, pbes2Count: Long,
+                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
+                              macProvider: Option[Provider | JProvider] = None,
+                              cipherProvider: Option[Provider | JProvider] = None): F[Either[Error, Key]] =
+    val eitherT =
+      for
+        iterationCount <- atOrBelow(pbes2Count, maxIterationCount)
+          .message(s"PBES2 iteration count (p2c=$pbes2Count) cannot be more than $maxIterationCount to avoid " +
+            s"excessive resource utilization.")
+          .eLiftET
+        derivedKey <- deriveKey(self, self.encryption, self.prf, managementKey, AES, iterationCount.toInt, pbes2SaltInput,
+          macProvider)
+        key <- EitherT(self.encryption.decryptKey[F](derivedKey, encryptedKey, cekAlgorithm, keyDecipherModeOverride,
+          cipherProvider).asError)
+      yield
+        key
     eitherT.value
 
   private def deriveForEncrypt[F[+_]: Sync](identifier: AlgorithmIdentifier, cipher: BlockCipher, prf: MACAlgorithm,
