@@ -21,7 +21,8 @@ trait RSA1_5Companion extends RSAESAlgorithmPlatform { self: RSAESAlgorithm =>
     for
       cekBytes <- getBytesOrRandom[F](cekLength.asLeft, random)
       randomKey = cekAlgorithm.secretKeySpec(cekBytes)
-      unwrappedKeyEither <- super.decryptKey[F](managementKey, encryptedKey, cekLength, cekAlgorithm, keyDecipherModeOverride, random, provider).asError
+      unwrappedKeyEither <- super.decryptKey[F](managementKey, encryptedKey, cekLength, cekAlgorithm,
+        keyDecipherModeOverride, random, provider).asError
     yield
       unwrappedKeyEither match
         case Right(unwrappedKey) if unwrappedKey.getEncoded.length == cekLength => unwrappedKey
