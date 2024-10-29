@@ -45,6 +45,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
                               agreementPartyUInfo: Option[ByteVector] = None,
                               agreementPartyVInfo: Option[ByteVector] = None,
                               keyDecipherModeOverride: Option[KeyDecipherMode] = None,
+                              random: Option[SecureRandom] = None,
                               keyAgreementProvider: Option[Provider | JProvider] = None,
                               messageDigestProvider: Option[Provider | JProvider] = None,
                               cipherProvider: Option[Provider | JProvider] = None
@@ -53,8 +54,8 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
       for
         agreedKey <- EitherT(`ECDH-ES`.decryptKey[F](managementKey, ephemeralPublicKey, self.encryption.blockSize, AES,
           algorithm, agreementPartyUInfo, agreementPartyVInfo, keyAgreementProvider, messageDigestProvider))
-        key <- EitherT(self.encryption.decryptKey[F](agreedKey, encryptedKey, cekAlgorithm, keyDecipherModeOverride,
-          cipherProvider).asError)
+        key <- EitherT(self.encryption.decryptKey[F](agreedKey, encryptedKey, cekLength, cekAlgorithm,
+          keyDecipherModeOverride, random, cipherProvider).asError)
       yield key
     eitherT.value
 

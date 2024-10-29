@@ -6,7 +6,7 @@ import com.peknight.security.cipher.padding.{CipherAlgorithmPadding, PKCS1Paddin
 import com.peknight.security.cipher.{RSAES, `RSAES-PKCS1-v1_5`}
 import com.peknight.security.oid.ObjectIdentifier
 
-object RSA1_5 extends RSAESAlgorithm with `RSAES-PKCS1-v1_5`:
+object RSA1_5 extends RSAESAlgorithm with `RSAES-PKCS1-v1_5` with RSA1_5Companion:
   override def padding: CipherAlgorithmPadding = PKCS1Padding
   val requirement: Requirement = `Recommended-`
   override val identifier: String = "RSA1_5"
