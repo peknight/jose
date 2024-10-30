@@ -13,22 +13,23 @@ import java.security.{Key, SecureRandom, Provider as JProvider}
 trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
   def encryptKey[F[_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
                              ivOverride: Option[ByteVector] = None, random: Option[SecureRandom] = None,
-                             provider: Option[Provider | JProvider] = None)
+                             cipherProvider: Option[Provider | JProvider] = None)
   : F[(ByteVector, ByteVector, ByteVector, ByteVector)] =
     for
       contentEncryptionKey <- getBytesOrRandom[F](cekLengthOrBytes, random)
       iv <- getBytesOrRandom[F](ivOverride.toRight(self.ivByteLength), random)
-      encrypted <- self.keyEncrypt[F](managementKey, contentEncryptionKey, Some(GCMParameterSpec(self.tagByteLength * 8, iv)),
-        provider = provider)
+      encrypted <- self.keyEncrypt[F](managementKey, contentEncryptionKey,
+        Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = cipherProvider)
     yield
       val (encryptedKey, authenticationTag) = encrypted.splitAt(encrypted.length - self.tagByteLength)
       (contentEncryptionKey, iv, encryptedKey, authenticationTag)
 
   def decryptKey[F[_]: Sync](managementKey: Key, encryptedKey: ByteVector,
                              cekAlgorithm: SecretKeySpecAlgorithm, iv: ByteVector,
-                             authenticationTag: ByteVector, provider: Option[Provider | JProvider] = None): F[Key] =
+                             authenticationTag: ByteVector, cipherProvider: Option[Provider | JProvider] = None)
+  : F[Key] =
     self.keyDecrypt[F](managementKey, encryptedKey ++ authenticationTag,
-        Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = provider)
+        Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = cipherProvider)
       .map(cekAlgorithm.secretKeySpec)
 
   def validateKey(managementKey: Key): Either[Error, Unit] = validateAESWrappingKey(managementKey, self, self.blockSize)

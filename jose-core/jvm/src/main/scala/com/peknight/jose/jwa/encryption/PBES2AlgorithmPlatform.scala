@@ -45,9 +45,10 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
         (contentEncryptionKey, encryptedKey, saltInput, iterationCount)
     eitherT.value
 
-  def decryptKey[F[+_]: Sync](managementKey: Key, encryptedKey: ByteVector, cekAlgorithm: SecretKeySpecAlgorithm,
-                              pbes2SaltInput: ByteVector, pbes2Count: Long,
+  def decryptKey[F[+_]: Sync](managementKey: Key, encryptedKey: ByteVector, cekLength: Int,
+                              cekAlgorithm: SecretKeySpecAlgorithm, pbes2SaltInput: ByteVector, pbes2Count: Long,
                               keyDecipherModeOverride: Option[KeyDecipherMode] = None,
+                              random: Option[SecureRandom] = None,
                               macProvider: Option[Provider | JProvider] = None,
                               cipherProvider: Option[Provider | JProvider] = None): F[Either[Error, Key]] =
     val eitherT =
@@ -58,8 +59,8 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
           .eLiftET
         derivedKey <- deriveKey(self, self.encryption, self.prf, managementKey, AES, iterationCount.toInt, pbes2SaltInput,
           macProvider)
-        key <- EitherT(self.encryption.decryptKey[F](derivedKey, encryptedKey, cekAlgorithm, keyDecipherModeOverride,
-          cipherProvider).asError)
+        key <- EitherT(self.encryption.decryptKey[F](derivedKey, encryptedKey, cekLength, cekAlgorithm,
+          keyDecipherModeOverride, random, cipherProvider).asError)
       yield
         key
     eitherT.value
@@ -74,7 +75,8 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
       iterationCount <- atOrAbove(pbes2Count.getOrElse(defaultIterationCount), 1000L).label("iterationCount").eLiftET
       saltInput <- EitherT(getBytesOrRandom[F](pbes2SaltInput.toRight(defaultSaltByteLength), random).asError)
       _ <- atOrAbove(saltInput.length, 8L).label("saltInput").eLiftET
-      derivedKey <- deriveKey[F](identifier, cipher, prf, managementKey, cekAlgorithm, iterationCount.toInt, saltInput, macProvider)
+      derivedKey <- deriveKey[F](identifier, cipher, prf, managementKey, cekAlgorithm, iterationCount.toInt, saltInput,
+        macProvider)
     yield
       (derivedKey, saltInput, iterationCount)
 

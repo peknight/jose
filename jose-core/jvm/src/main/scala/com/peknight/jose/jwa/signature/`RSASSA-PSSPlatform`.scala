@@ -2,9 +2,7 @@ package com.peknight.jose.jwa.signature
 
 import cats.effect.Sync
 import cats.syntax.applicative.*
-import cats.syntax.applicativeError.*
 import cats.syntax.either.*
-import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.security.provider.Provider

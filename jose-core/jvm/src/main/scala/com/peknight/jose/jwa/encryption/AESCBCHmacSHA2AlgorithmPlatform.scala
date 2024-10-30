@@ -8,6 +8,7 @@ import cats.syntax.functor.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.jose.jwe.ContentEncryptionParts
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.cipher.{AES, Cipher}
 import com.peknight.security.error.IntegrityError
@@ -21,14 +22,14 @@ import java.security.{SecureRandom, Provider as JProvider}
 trait AESCBCHmacSHA2AlgorithmPlatform { self: AESCBCHmacSHA2Algorithm =>
   def encrypt[F[_]: Sync](key: ByteVector, input: ByteVector, aad: ByteVector, ivOverride: Option[ByteVector] = None,
                           random: Option[SecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
-                          macProvider: Option[Provider | JProvider] = None): F[(ByteVector, ByteVector, ByteVector)] =
+                          macProvider: Option[Provider | JProvider] = None): F[ContentEncryptionParts] =
     for
       iv <- getBytesOrRandom[F](ivOverride.toRight(self.ivByteLength), random)
       ciphertext <- Cipher.rawKeyEncrypt[F](self.javaAlgorithm, key.rightHalf, input, Some(iv), provider = cipherProvider)
       authenticationTag <- self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf), authenticationTagInput(ciphertext, aad, iv),
         None, macProvider).map(_.take(self.tagTruncationLength))
     yield
-      (iv, ciphertext, authenticationTag)
+      ContentEncryptionParts(iv, ciphertext, authenticationTag)
 
   private def authenticationTagInput(ciphertext: ByteVector, aad: ByteVector, iv: ByteVector): ByteVector =
     aad ++ iv ++ ciphertext ++ additionalAuthenticatedDataLengthBytes(aad)
