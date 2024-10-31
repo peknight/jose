@@ -78,15 +78,15 @@ object JsonWebKey extends JsonWebKeyCompanion:
     curve: Curve,
     xCoordinate: Base64UrlNoPad,
     yCoordinate: Base64UrlNoPad,
-    eccPrivateKey: Option[Base64UrlNoPad],
-    publicKeyUse: Option[PublicKeyUseType],
-    keyOperations: Option[Seq[KeyOperationType]],
-    algorithm: Option[JsonWebAlgorithm],
-    keyID: Option[KeyId],
-    x509URL: Option[Uri],
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
-    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
+    eccPrivateKey: Option[Base64UrlNoPad] = None,
+    publicKeyUse: Option[PublicKeyUseType] = None,
+    keyOperations: Option[Seq[KeyOperationType]] = None,
+    algorithm: Option[JsonWebAlgorithm] = None,
+    keyID: Option[KeyId] = None,
+    x509URL: Option[Uri] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
     def excludePrivate: EllipticCurveJsonWebKey = copy(eccPrivateKey = None)
@@ -95,21 +95,21 @@ object JsonWebKey extends JsonWebKeyCompanion:
   case class RSAJsonWebKey(
     modulus: Base64UrlNoPad,
     exponent: Base64UrlNoPad,
-    privateExponent: Option[Base64UrlNoPad],
-    firstPrimeFactor: Option[Base64UrlNoPad],
-    secondPrimeFactor: Option[Base64UrlNoPad],
-    firstFactorCRTExponent: Option[Base64UrlNoPad],
-    secondFactorCRTExponent: Option[Base64UrlNoPad],
-    firstCRTCoefficient: Option[Base64UrlNoPad],
-    otherPrimesInfo: Option[Seq[OtherPrimesInfo]],
-    publicKeyUse: Option[PublicKeyUseType],
-    keyOperations: Option[Seq[KeyOperationType]],
-    algorithm: Option[JsonWebAlgorithm],
-    keyID: Option[KeyId],
-    x509URL: Option[Uri],
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
-    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
+    privateExponent: Option[Base64UrlNoPad] = None,
+    firstPrimeFactor: Option[Base64UrlNoPad] = None,
+    secondPrimeFactor: Option[Base64UrlNoPad] = None,
+    firstFactorCRTExponent: Option[Base64UrlNoPad] = None,
+    secondFactorCRTExponent: Option[Base64UrlNoPad] = None,
+    firstCRTCoefficient: Option[Base64UrlNoPad] = None,
+    otherPrimesInfo: Option[Seq[OtherPrimesInfo]] = None,
+    publicKeyUse: Option[PublicKeyUseType] = None,
+    keyOperations: Option[Seq[KeyOperationType]] = None,
+    algorithm: Option[JsonWebAlgorithm] = None,
+    keyID: Option[KeyId] = None,
+    x509URL: Option[Uri] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends AsymmetricJsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
     def excludePrivate: RSAJsonWebKey = copy(
@@ -124,14 +124,14 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   case class OctetSequenceJsonWebKey(
     keyValue: Base64UrlNoPad,
-    publicKeyUse: Option[PublicKeyUseType],
-    keyOperations: Option[Seq[KeyOperationType]],
-    algorithm: Option[JsonWebAlgorithm],
-    keyID: Option[KeyId],
-    x509URL: Option[Uri],
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
-    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
+    publicKeyUse: Option[PublicKeyUseType] = None,
+    keyOperations: Option[Seq[KeyOperationType]] = None,
+    algorithm: Option[JsonWebAlgorithm] = None,
+    keyID: Option[KeyId] = None,
+    x509URL: Option[Uri] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
     def excludePrivate: JsonWebKey = this
@@ -148,15 +148,15 @@ object JsonWebKey extends JsonWebKeyCompanion:
   case class OctetKeyPairJsonWebKey(
     curve: NamedParameterSpecName,
     xCoordinate: Base64UrlNoPad,
-    eccPrivateKey: Option[Base64UrlNoPad],
-    publicKeyUse: Option[PublicKeyUseType],
-    keyOperations: Option[Seq[KeyOperationType]],
-    algorithm: Option[JsonWebAlgorithm],
-    keyID: Option[KeyId],
-    x509URL: Option[Uri],
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]],
-    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad],
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
+    eccPrivateKey: Option[Base64UrlNoPad] = None,
+    publicKeyUse: Option[PublicKeyUseType] = None,
+    keyOperations: Option[Seq[KeyOperationType]] = None,
+    algorithm: Option[JsonWebAlgorithm] = None,
+    keyID: Option[KeyId] = None,
+    x509URL: Option[Uri] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)

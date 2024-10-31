@@ -1,10 +1,7 @@
 package com.peknight.jose.jwa.signature
 
-import cats.syntax.functor.*
 import com.peknight.error.Error
-import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.either.label
-import com.peknight.validation.spire.math.interval.either.atOrAbove
+import com.peknight.jose.jwa.checkRSAKeySize
 import com.peknight.validation.std.either.typed
 
 import java.security.Key
@@ -17,9 +14,5 @@ trait RSASSAPlatform extends SignaturePlatform { self: JWSAlgorithm =>
   def validateVerificationKey(key: Key): Either[Error, Unit] =
     typed[RSAPublicKey](key).flatMap(validateKey)
 
-  def validateKey(key: RSAKey): Either[Error, Unit] =
-    Option(key.getModulus)
-      .flatMap(modulus => Option(modulus.bitLength()))
-      .toRight(OptionEmpty.label("modulusBitLength"))
-      .flatMap(bitLength => atOrAbove(bitLength, 2048).label("bitLength").as(()))
+  def validateKey(key: RSAKey): Either[Error, Unit] = checkRSAKeySize(key)
 }
