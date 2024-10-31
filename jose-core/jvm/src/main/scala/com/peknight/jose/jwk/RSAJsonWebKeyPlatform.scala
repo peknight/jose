@@ -13,20 +13,20 @@ import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.security.cipher.RSA
 import com.peknight.security.provider.Provider
 
-import java.security.Provider as JProvider
 import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJsonWebKey =>
-  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, RSAPublicKey]] =
+  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
     val either =
       for
         modulus <- self.modulus.decodeToUnsignedBigInt[Id]
         publicExponent <- self.exponent.decodeToUnsignedBigInt[Id]
       yield
-        RSA.publicKey[F](modulus, publicExponent, provider).asError
+        RSA.publicKey[F](modulus, publicExponent, provider).map(_.asInstanceOf[PublicKey]).asError
     either.fold(_.asLeft.pure, identity)
 
-  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[RSAPrivateKey]]] =
+  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.privateExponent.fold(none[RSAPrivateKey].asRight[Error].pure[F]) { privateExponent =>
       val either =
         for
@@ -54,8 +54,8 @@ trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJson
           option match
             case Some((publicExponent, primeP, primeQ, primeExponentP, primeExponentQ, crtCoefficient)) =>
               RSA.privateCrtKey[F](modulus, publicExponent, privateExponent, primeP, primeQ, primeExponentP,
-                primeExponentQ, crtCoefficient, provider)
-            case _ => RSA.privateKey[F](modulus, privateExponent, provider)
-      either.fold(_.asLeft.pure, f => f.asError.map(_.map(Some.apply)))
+                primeExponentQ, crtCoefficient, provider).map(_.asInstanceOf[PrivateKey])
+            case _ => RSA.privateKey[F](modulus, privateExponent, provider).map(_.asInstanceOf[PrivateKey])
+      either.fold(_.asLeft.pure, f => f.map(Some.apply).asError)
     }
 }

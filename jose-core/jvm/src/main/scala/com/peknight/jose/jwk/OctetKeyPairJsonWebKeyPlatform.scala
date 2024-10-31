@@ -20,8 +20,8 @@ trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self
   def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
     self.xCoordinate.decode[Id].map { publicKeyBytes =>
       self.curve match
-        case edDSA: EdDSA => edDSA.publicKey[F](publicKeyBytes, provider).asError
-        case xdh: XDH => xdh.publicKey[F](publicKeyBytes, provider).asError
+        case edDSA: EdDSA => edDSA.publicKey[F](publicKeyBytes, provider).map(_.asInstanceOf[PublicKey]).asError
+        case xdh: XDH => xdh.publicKey[F](publicKeyBytes, provider).map(_.asInstanceOf[PublicKey]).asError
         case curve => UnsupportedKeyAlgorithm(curve.parameterSpecName).asLeft.pure
     }.fold(_.asLeft.pure, identity)
 
@@ -29,8 +29,10 @@ trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self
     self.eccPrivateKey.fold(none[PrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decode[Id].map { privateKeyBytes =>
         self.curve match
-          case edDSA: EdDSA => edDSA.privateKey[F](privateKeyBytes, provider).asError.map(_.map(Some.apply))
-          case xdh: XDH => xdh.privateKey[F](privateKeyBytes, provider).asError.map(_.map(Some.apply))
+          case edDSA: EdDSA => edDSA.privateKey[F](privateKeyBytes, provider)
+            .map(privateKey => privateKey.asInstanceOf[PrivateKey].some).asError
+          case xdh: XDH => xdh.privateKey[F](privateKeyBytes, provider)
+            .map(privateKey => privateKey.asInstanceOf[PrivateKey].some).asError
           case curve => UnsupportedKeyAlgorithm(curve.parameterSpecName).asLeft.pure
       }.fold(_.asLeft.pure, identity)
     }

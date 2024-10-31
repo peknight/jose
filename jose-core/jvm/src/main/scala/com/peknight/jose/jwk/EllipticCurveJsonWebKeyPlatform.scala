@@ -12,25 +12,26 @@ import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import com.peknight.security.ecc.EC
 import com.peknight.security.provider.Provider
 
-import java.security.Provider as JProvider
 import java.security.interfaces.{ECPrivateKey, ECPublicKey}
+import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
-  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, ECPublicKey]] =
+  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
     val either =
       for
         xCoordinate <- self.xCoordinate.decodeToUnsignedBigInt[Id]
         yCoordinate <- self.yCoordinate.decodeToUnsignedBigInt[Id]
       yield
-        EC.publicKey[F](xCoordinate, yCoordinate, self.curve.ecParameterSpec, provider).asError
+        EC.publicKey[F](xCoordinate, yCoordinate, self.curve.ecParameterSpec, provider).map(_.asInstanceOf[PublicKey])
+          .asError
     either.fold(_.asLeft.pure, identity)
 
-  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[ECPrivateKey]]] =
+  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[ECPrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decodeToUnsignedBigInt[Id].fold(
         _.asLeft.pure,
         eccPrivateKey => EC.privateKey[F](eccPrivateKey, self.curve.ecParameterSpec, provider).asError
-          .map(_.map(Some.apply))
+          .map(_.map(privateKey => privateKey.asInstanceOf[PrivateKey].some))
       )
     }
 
