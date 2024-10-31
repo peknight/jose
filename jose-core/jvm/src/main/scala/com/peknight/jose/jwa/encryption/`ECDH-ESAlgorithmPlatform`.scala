@@ -13,9 +13,11 @@ import com.peknight.cats.instances.scodec.bits.byteVector.given
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.error.{JoseError, NoSuchCurve, UnsupportedCurve, UnsupportedKey}
+import com.peknight.jose.error.*
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.ecc.Curve
+import com.peknight.jose.jwe.ContentEncryptionKeys
+import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.security.Security
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
 import com.peknight.security.ecc.EC
@@ -34,58 +36,79 @@ import java.security.spec.NamedParameterSpec
 import java.security.{Key, KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
 
 trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
-  def encryptKey[F[_]: Sync](managementKey: Key, cekLengthOrBytes: Either[Int, ByteVector],
-                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
+  def encryptKey[F[_]: Sync](managementKey: Key,
+                             cekLength: Int,
+                             cekAlgorithm: SecretKeySpecAlgorithm,
+                             cekOverride: Option[ByteVector] = None,
+                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
+                             initializationVector: Option[ByteVector] = None,
+                             pbes2SaltInput: Option[ByteVector] = None,
+                             pbes2Count: Option[Long] = None,
                              random: Option[SecureRandom] = None,
-                             keyPairGeneratorProvider: Option[Provider | JProvider] = None,
+                             cipherProvider: Option[Provider | JProvider] = None,
                              keyAgreementProvider: Option[Provider | JProvider] = None,
-                             messageDigestProvider: Option[Provider | JProvider] = None)
-  : F[Either[Error, (ByteVector, PublicKey)]] =
+                             keyPairGeneratorProvider: Option[Provider | JProvider] = None,
+                             macProvider: Option[Provider | JProvider] = None,
+                             messageDigestProvider: Option[Provider | JProvider] = None
+                            ): F[Either[Error, ContentEncryptionKeys]] =
     val eitherT =
       for
-        cekLength <- canNotHaveKey(cekLengthOrBytes, self).eLiftET
+        _ <- canNotHaveKey(cekOverride, self).eLiftET
         keyPair <- generateKeyPair[F](managementKey, random, keyPairGeneratorProvider)
         partyVPublicKey <- typed[PublicKey](managementKey).eLiftET
         partyUPrivateKey = keyPair.getPrivate
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(partyUPrivateKey)
         z <- EitherT(keyAgreementAlgorithm.generateSecret[F](partyUPrivateKey, partyVPublicKey,
           provider = keyAgreementProvider).asError)
-        derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo,
-          messageDigestProvider)
+        derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo,
+          agreementPartyVInfo, messageDigestProvider)
+        ephemeralPublicKey <- JsonWebKey.fromPublicKey(keyPair.getPublic).eLiftET
       yield
-        (derivedKey, keyPair.getPublic)
+        ContentEncryptionKeys(derivedKey, ByteVector.empty, Some(ephemeralPublicKey))
     eitherT.value
 
-  def decryptKey[F[+_]: Sync](managementKey: Key, ephemeralPublicKey: PublicKey, cekLength: Int,
-                              cekAlgorithm: SecretKeySpecAlgorithm,
-                              encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
-                              agreementPartyUInfo: Option[ByteVector] = None,
-                              agreementPartyVInfo: Option[ByteVector] = None,
-                              keyAgreementProvider: Option[Provider | JProvider] = None,
-                              messageDigestProvider: Option[Provider | JProvider] = None)
-  : F[Either[Error, Key]] =
+  def decryptKey[F[_]: Sync](managementKey: Key,
+                             encryptedKey: ByteVector,
+                             cekLength: Int,
+                             cekAlgorithm: SecretKeySpecAlgorithm,
+                             keyDecipherModeOverride: Option[KeyDecipherMode] = None,
+                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             ephemeralPublicKey: Option[PublicKey] = None,
+                             agreementPartyUInfo: Option[ByteVector] = None,
+                             agreementPartyVInfo: Option[ByteVector] = None,
+                             initializationVector: Option[ByteVector] = None,
+                             authenticationTag: Option[ByteVector] = None,
+                             pbes2SaltInput: Option[ByteVector] = None,
+                             pbes2Count: Option[Long] = None,
+                             random: Option[SecureRandom] = None,
+                             cipherProvider: Option[Provider | JProvider] = None,
+                             keyAgreementProvider: Option[Provider | JProvider] = None,
+                             macProvider: Option[Provider | JProvider] = None,
+                             messageDigestProvider: Option[Provider | JProvider] = None
+                            ): F[Either[Error, Key]] =
     val eitherT =
       for
         privateKey <- typed[PrivateKey](managementKey).eLiftET
-        _ <- ephemeralPublicKey match
-          case ecPublicKey: ECPublicKey => checkECKeyForDecrypt(privateKey, ecPublicKey).eLiftET
-          case _ => ().rLiftET
+        ephemeralPublicKey <- ephemeralPublicKey match
+          case Some(ecPublicKey: ECPublicKey) => checkECKeyForDecrypt(privateKey, ecPublicKey).as(ecPublicKey).eLiftET
+          case Some(publicKey) => publicKey.rLiftET
+          case _ => MissingPublicKey.lLiftET
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(privateKey)
         z <- EitherT(keyAgreementAlgorithm.generateSecret[F](privateKey, ephemeralPublicKey,
           provider = keyAgreementProvider).asError)
-        derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo,
-          messageDigestProvider)
+        derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo,
+          agreementPartyVInfo, messageDigestProvider)
       yield
-        cekAlgorithm.secretKeySpec(derivedKey)
+        cekAlgorithm.secretKeySpec(derivedKey).asInstanceOf[Key]
     eitherT.value
 
-  def validateEncryptionKey(managementKey: Key): Either[JoseError, Unit] =
+  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[JoseError, Unit] =
     if managementKey.isInstanceOf[ECPublicKey] || managementKey.isInstanceOf[XECPublicKey] then ().asRight
     else UnsupportedKey(managementKey.getAlgorithm, managementKey).asLeft
 
-  def validateDecryptionKey(managementKey: Key): Either[JoseError, Unit] =
+  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[JoseError, Unit] =
     if managementKey.isInstanceOf[ECPrivateKey] || managementKey.isInstanceOf[XECPrivateKey] then ().asRight
     else UnsupportedKey(managementKey.getAlgorithm, managementKey).asLeft
 
@@ -129,19 +152,16 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
     if privateKey.isInstanceOf[ECPrivateKey] then self else XDH
 
   private def kdf[F[_]: Sync](messageDigestAlgorithm: MessageDigestAlgorithm, sharedSecret: ByteVector, cekLength: Int,
-                              algorithm: Option[AlgorithmIdentifier],
-                              agreementPartyUInfo: Option[ByteVector],
-                              agreementPartyVInfo: Option[ByteVector],
-                              provider: Option[Provider | JProvider]
+                              algorithm: Option[AlgorithmIdentifier], agreementPartyUInfo: Option[ByteVector],
+                              agreementPartyVInfo: Option[ByteVector], provider: Option[Provider | JProvider]
                              ): EitherT[F, Error, ByteVector] =
     for
       otherInfo <- otherInfo(cekLength, algorithm, agreementPartyUInfo, agreementPartyVInfo).eLiftET
       derivedKey <- EitherT(kdf[F](messageDigestAlgorithm, sharedSecret, otherInfo, cekLength, provider).asError)
     yield derivedKey
 
-  private def otherInfo(cekLength: Int, algorithm: Option[AlgorithmIdentifier] = None,
-                        agreementPartyUInfo: Option[ByteVector] = None, agreementPartyVInfo: Option[ByteVector] = None)
-  : Either[Error, ByteVector] =
+  private def otherInfo(cekLength: Int, algorithm: Option[AlgorithmIdentifier], agreementPartyUInfo: Option[ByteVector],
+                        agreementPartyVInfo: Option[ByteVector]): Either[Error, ByteVector] =
     for
       algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(
         enc => ByteVector.encodeUtf8(enc.identifier).map(_.some).asError

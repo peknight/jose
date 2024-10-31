@@ -15,6 +15,13 @@ import scodec.bits.ByteVector
 import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait AESWrapAlgorithmPlatform extends KeyWrapAlgorithmPlatform  { self: AESWrapAlgorithm =>
+
+  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
+    validateKey(managementKey)
+
+  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
+    validateKey(managementKey)
+
   def validateKey(managementKey: Key): Either[Error, Unit] = validateAESWrappingKey(managementKey, self, self.blockSize)
 
   def isAvailable[F[_]: Sync]: F[Boolean] =

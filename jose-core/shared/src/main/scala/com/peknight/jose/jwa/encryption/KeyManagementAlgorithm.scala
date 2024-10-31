@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-trait KeyManagementAlgorithm extends JWEAlgorithm
+trait KeyManagementAlgorithm extends JWEAlgorithm with KeyManagementAlgorithmPlatform
 object KeyManagementAlgorithm:
   val values: List[KeyManagementAlgorithm] =
     KeyEncryptionAlgorithm.values :::

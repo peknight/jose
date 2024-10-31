@@ -7,9 +7,11 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwx.Requirement
+import com.peknight.security.spec.SecretKeySpecAlgorithm
 
 trait EncryptionAlgorithm extends AlgorithmIdentifier with EncryptionAlgorithmPlatform:
-  def keyByteLength: Int
+  def cekByteLength: Int
+  def cekAlgorithm: SecretKeySpecAlgorithm
   def requirement: Requirement
 end EncryptionAlgorithm
 object EncryptionAlgorithm:

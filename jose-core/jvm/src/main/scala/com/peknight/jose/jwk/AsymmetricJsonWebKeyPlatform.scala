@@ -13,7 +13,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.jose.error.{BareKeyCertMismatch, JoseError, MissingPrivateKey}
+import com.peknight.jose.error.{BareKeyCertMismatch, JoseError, MissingPublicKey}
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.security.certificate.factory.X509
 import com.peknight.security.provider.Provider
@@ -23,17 +23,17 @@ import java.security.cert.X509Certificate
 import java.security.{KeyPair, PrivateKey, PublicKey, Provider as JProvider}
 
 trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
-  def publicKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]]
-  def privateKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]]
-  def keyPair[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, KeyPair]] =
+  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]]
+  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]]
+  def keyPair[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, KeyPair]] =
     Apply[[X] =>> F[Either[Error, X]]].map2(
       publicKey[F](provider),
-      privateKey[F](provider).map(_.flatMap(_.toRight(MissingPrivateKey)))
+      privateKey[F](provider).map(_.flatMap(_.toRight(MissingPublicKey)))
     )(new KeyPair(_, _))
 
   protected def handleCheckJsonWebKey: Either[Error, Unit] = ().asRight[Error]
 
-  def checkJsonWebKey[F[+_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
+  def checkJsonWebKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
     val eitherT =
       for
         publicKey <- EitherT(publicKey[F](provider))

@@ -4,7 +4,6 @@ import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import com.peknight.error.Error
-import com.peknight.jose.jwa.signature.JWSAlgorithm
 import com.peknight.security.provider.Provider
 import scodec.bits.ByteVector
 

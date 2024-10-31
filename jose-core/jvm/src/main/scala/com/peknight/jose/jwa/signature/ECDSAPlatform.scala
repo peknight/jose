@@ -5,6 +5,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.error.NoSuchCurve
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.security.provider.Provider
@@ -34,4 +35,6 @@ trait ECDSAPlatform extends SignaturePlatform { self: ECDSA =>
 
   def validateKey(key: ECKey): Either[Error, Unit] =
     Curve.curveMap.get(self.curve.ecParameterSpec.getCurve).toRight(NoSuchCurve).as(())
+
+  def isAvailable[F[_]: Sync]: F[Boolean] = self.getSignature[F]().asError.map(_.isRight)
 }

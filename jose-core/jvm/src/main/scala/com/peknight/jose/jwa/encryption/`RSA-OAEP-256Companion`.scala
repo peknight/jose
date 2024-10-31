@@ -12,7 +12,7 @@ import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.security.cipher.AES
 
 trait `RSA-OAEP-256Companion` extends RSAESAlgorithmPlatform { self: RSAESAlgorithm =>
-  override def isAvailable[F[+_] : Sync]: F[Boolean] =
+  override def isAvailable[F[_] : Sync]: F[Boolean] =
     val jwk = RSAJsonWebKey(
       Base64UrlNoPad.unsafeFromString(
         "sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1Wl" +
@@ -26,7 +26,7 @@ trait `RSA-OAEP-256Companion` extends RSAESAlgorithmPlatform { self: RSAESAlgori
     val eitherT =
       for
         publicKey <- EitherT(jwk.publicKey[F]())
-        _ <- EitherT(encryptKey[F](publicKey, 16.asLeft, AES).asError)
+        _ <- EitherT(encryptKey[F](publicKey, 16, AES).asError)
       yield
         ()
     eitherT.value.map(_.isRight)

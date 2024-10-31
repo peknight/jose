@@ -12,7 +12,7 @@ import scodec.bits.ByteVector
 
 import java.security.Key
 
-object none extends JWSAlgorithm with com.peknight.security.algorithm.NONE:
+object none extends JWSAlgorithm with com.peknight.security.algorithm.NONE with NonePlatform:
   val requirement: Requirement = Optional
   override def identifier: String = "none"
 

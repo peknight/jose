@@ -12,7 +12,7 @@ import java.security.interfaces.RSAKey
 import java.security.{Key, PrivateKey, PublicKey}
 
 trait RSAESAlgorithmPlatform extends KeyWrapAlgorithmPlatform { self: RSAESAlgorithm =>
-  def validateEncryptionKey(managementKey: Key): Either[Error, Unit] =
+  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
     for
       publicKey <- typed[PublicKey](managementKey)
       _ <- publicKey match
@@ -20,7 +20,7 @@ trait RSAESAlgorithmPlatform extends KeyWrapAlgorithmPlatform { self: RSAESAlgor
         case _ => ().asRight
     yield ()
 
-  def validateDecryptionKey(managementKey: Key): Either[Error, Unit] =
+  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
     for
       privateKey <- typed[PrivateKey](managementKey)
       _ <- privateKey match
@@ -28,5 +28,5 @@ trait RSAESAlgorithmPlatform extends KeyWrapAlgorithmPlatform { self: RSAESAlgor
         case _ => ().asRight
     yield ()
 
-  def isAvailable[F[+_]: Sync]: F[Boolean] = self.getCipher[F]().asError.map(_.isRight)
+  def isAvailable[F[_]: Sync]: F[Boolean] = self.getCipher[F]().asError.map(_.isRight)
 }

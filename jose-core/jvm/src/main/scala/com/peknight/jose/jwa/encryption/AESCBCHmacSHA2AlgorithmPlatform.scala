@@ -51,5 +51,5 @@ trait AESCBCHmacSHA2AlgorithmPlatform { self: AESCBCHmacSHA2Algorithm =>
     eitherT.value
 
   def isAvailable[F[_]: Sync]: F[Boolean] =
-    self.javaAlgorithm.getMaxAllowedKeyLength[F].map(self.keyByteLength / 2 <= _).attempt.map(_.getOrElse(false))
+    self.javaAlgorithm.getMaxAllowedKeyLength[F].map(self.cekByteLength / 2 <= _).attempt.map(_.getOrElse(false))
 }

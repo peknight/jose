@@ -79,8 +79,4 @@ package object encryption:
   private[encryption] def canNotHaveKey(keyOverride: Option[ByteVector], identifier: AlgorithmIdentifier)
   : Either[Error, Unit] =
     keyOverride.fold(().asRight)(_ => CanNotHaveKey(identifier).asLeft)
-
-  private[encryption] def canNotHaveKey(keyLengthOrBytes: Either[Int, ByteVector], identifier: AlgorithmIdentifier)
-  : Either[Error, Int] =
-    keyLengthOrBytes.fold(_.asRight, _ => CanNotHaveKey(identifier).asLeft)
 end encryption

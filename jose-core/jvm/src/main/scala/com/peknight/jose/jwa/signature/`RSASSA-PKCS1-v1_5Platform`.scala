@@ -3,6 +3,7 @@ package com.peknight.jose.jwa.signature
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.security.provider.Provider
@@ -24,4 +25,6 @@ trait `RSASSA-PKCS1-v1_5Platform` extends RSASSAPlatform { self: `RSASSA-PKCS1-v
                                 provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]] =
     typed[PublicKey](key).map(publicKey => self.publicKeyVerify[F](publicKey, data, signed, provider = provider).asError)
       .fold(_.asLeft.pure, identity)
+
+  def isAvailable[F[_]: Sync]: F[Boolean] = self.getSignature[F]().asError.map(_.isRight)
 }

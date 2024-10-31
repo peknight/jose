@@ -1,5 +1,6 @@
 package com.peknight.jose.jwa.signature
 
+import cats.effect.Sync
 import com.peknight.error.Error
 import com.peknight.jose.jwa.checkRSAKeySize
 import com.peknight.validation.std.either.typed

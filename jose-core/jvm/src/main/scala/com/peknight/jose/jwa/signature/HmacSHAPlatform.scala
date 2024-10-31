@@ -13,12 +13,12 @@ import scodec.bits.ByteVector
 import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait HmacSHAPlatform extends SignaturePlatform { self: HmacSHA =>
-  def handleSign[F[_] : Sync](key: Key, data: ByteVector, useLegacyName: Boolean = false,
+  def handleSign[F[_]: Sync](key: Key, data: ByteVector, useLegacyName: Boolean = false,
                               random: Option[SecureRandom] = None, provider: Option[Provider | JProvider] = None)
   : F[Either[Error, ByteVector]] =
     self.mac[F](key, data, provider = provider).asError
 
-  def handleVerify[F[_] : Sync](key: Key, data: ByteVector, signed: ByteVector, useLegacyName: Boolean = false,
+  def handleVerify[F[_]: Sync](key: Key, data: ByteVector, signed: ByteVector, useLegacyName: Boolean = false,
                                 provider: Option[Provider | JProvider] = None): F[Either[Error, Boolean]] =
     self.verify(key, data, signed, provider = provider).asError
 
@@ -32,4 +32,6 @@ trait HmacSHAPlatform extends SignaturePlatform { self: HmacSHA =>
       .map(_.length * 8)
       .flatMap(bitLength => atOrAbove(bitLength, self.digest.bitLength).label("keyBitLength"))
       .as(())
+
+  def isAvailable[F[_]: Sync]: F[Boolean] = self.getMAC[F]().asError.map(_.isRight)
 }

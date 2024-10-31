@@ -7,14 +7,16 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.AES
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
+import com.peknight.security.spec.SecretKeySpecAlgorithm
 
 trait AESGCMAlgorithm extends EncryptionAlgorithm with AES with AESGCMAlgorithmPlatform:
-  def keyByteLength: Int = blockSize
+  def cekByteLength: Int = blockSize
   def ivByteLength: Int = 12
   def tagByteLength: Int = 16
   override def algorithm: String = AES.algorithm
   override def mode: CipherAlgorithmMode = GCM
   override def identifier: String = s"A${blockSize * 8}GCM"
+  def cekAlgorithm: SecretKeySpecAlgorithm = this
 end AESGCMAlgorithm
 object AESGCMAlgorithm:
   val values: List[AESGCMAlgorithm] = List(A128GCM, A192GCM, A256GCM)

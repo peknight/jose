@@ -8,7 +8,7 @@ import com.peknight.security.error.UnknownAlgorithm
 
 import scala.reflect.ClassTag
 
-trait AlgorithmIdentifier extends Algorithm:
+trait AlgorithmIdentifier extends Algorithm with AlgorithmIdentifierPlatform:
   def identifier: String = algorithm
 end AlgorithmIdentifier
 object AlgorithmIdentifier:

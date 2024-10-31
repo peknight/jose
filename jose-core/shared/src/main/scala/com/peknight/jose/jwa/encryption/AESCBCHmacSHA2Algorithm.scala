@@ -9,15 +9,17 @@ import com.peknight.security.cipher.mode.{CBC, CipherAlgorithmMode}
 import com.peknight.security.cipher.padding.{CipherAlgorithmPadding, PKCS5Padding}
 import com.peknight.security.cipher.{AEAD, AES}
 import com.peknight.security.mac.HmacSHA2
+import com.peknight.security.spec.SecretKeySpecAlgorithm
 
 trait AESCBCHmacSHA2Algorithm extends EncryptionAlgorithm with AEAD with AESCBCHmacSHA2AlgorithmPlatform:
   type This = AEAD
   def encryption: AES
   def mac: HmacSHA2
-  def keyByteLength: Int = encryption.blockSize / 4
+  def cekByteLength: Int = encryption.blockSize / 4
   def tagTruncationLength: Int = encryption.blockSize / 8
   def ivByteLength: Int = 16
   def javaAlgorithm: AES = AES / CBC / PKCS5Padding
+  def cekAlgorithm: SecretKeySpecAlgorithm = javaAlgorithm
   override def identifier: String = s"A${encryption.blockSize * 8}${encryption.mode.mode}-HS${mac.digest.bitLength}"
   override def /(mode: CipherAlgorithmMode): AEAD =
     if mode == encryption.mode then this else AEAD(encryption / mode, mac)

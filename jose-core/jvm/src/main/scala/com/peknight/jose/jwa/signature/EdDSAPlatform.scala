@@ -29,4 +29,6 @@ trait EdDSAPlatform extends SignaturePlatform { self: EdDSA =>
   def validateSigningKey(key: Key): Either[Error, Unit] = typed[EdECPrivateKey](key).as(())
 
   def validateVerificationKey(key: Key): Either[Error, Unit] = typed[EdECPublicKey](key).as(())
+  
+  def isAvailable[F[_]: Sync]: F[Boolean] = self.getSignature[F]().asError.map(_.isRight)
 }
