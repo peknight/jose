@@ -8,14 +8,13 @@ import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
-import com.peknight.jose.jwa.compression.JWECompressionAlgorithm
+import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.EncryptionAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
 import com.peknight.jose.jwt.JsonWebToken
@@ -26,7 +25,7 @@ import org.http4s.Uri
 case class JoseHeader(
                        algorithm: Option[JsonWebAlgorithm] = None,
                        encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
-                       compressionAlgorithm: Option[JWECompressionAlgorithm] = None,
+                       compressionAlgorithm: Option[CompressionAlgorithm] = None,
                        jwkSetURL: Option[Uri] = None,
                        jwk: Option[JsonWebKey] = None,
                        keyID: Option[KeyId] = None,
