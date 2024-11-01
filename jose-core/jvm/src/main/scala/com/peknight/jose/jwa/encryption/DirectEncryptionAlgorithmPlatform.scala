@@ -69,5 +69,5 @@ trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
     yield
       ()
 
-  def isAvailable: Boolean = true
+  def isAvailable[F[_]: Sync]: F[Boolean] = true.pure[F]
 }

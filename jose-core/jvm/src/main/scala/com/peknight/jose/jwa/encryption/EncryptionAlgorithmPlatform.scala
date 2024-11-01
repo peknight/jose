@@ -17,6 +17,4 @@ trait EncryptionAlgorithmPlatform {
   def decrypt[F[_]: Sync](key: ByteVector, ciphertext: ByteVector, authenticationTag: ByteVector, aad: ByteVector,
                           iv: ByteVector, cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]]
-
-  def isAvailable[F[_]: Sync]: F[Boolean]
 }

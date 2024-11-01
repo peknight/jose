@@ -9,7 +9,7 @@ import com.peknight.jose.jwa.ecc.`P-256K`
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import scodec.bits.ByteVector
 
-trait ES256KCompanion extends ECDSAPlatform:
+trait ES256KCompanion extends ECDSAPlatform { self: ECDSA =>
   override def isAvailable[F[_]: Sync]: F[Boolean] = super.isAvailable.flatMap {
     case true =>
       val jwk = EllipticCurveJsonWebKey(`P-256K`,
@@ -23,4 +23,4 @@ trait ES256KCompanion extends ECDSAPlatform:
       }
     case false => false.pure[F]
   }
-end ES256KCompanion
+}

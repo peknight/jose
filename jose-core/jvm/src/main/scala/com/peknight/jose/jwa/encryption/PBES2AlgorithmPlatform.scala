@@ -199,4 +199,6 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
 
   def validateKey(managementKey: Key): Either[Error, Unit] =
     Option(managementKey).toRight(OptionEmpty.label("managementKey")).as(())
+
+  def isAvailable[F[_]: Sync]: F[Boolean] = self.encryption.isAvailable[F]
 }
