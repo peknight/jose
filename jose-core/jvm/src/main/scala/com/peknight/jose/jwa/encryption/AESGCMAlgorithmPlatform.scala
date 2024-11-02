@@ -24,11 +24,13 @@ trait AESGCMAlgorithmPlatform { self: AESGCMAlgorithm =>
       val (ciphertext, authenticationTag) = encrypted.splitAt(encrypted.length - self.tagByteLength)
       ContentEncryptionParts(iv, ciphertext, authenticationTag)
 
-  def decrypt[F[_]: Sync](key: ByteVector, ciphertext: ByteVector, authenticationTag: ByteVector, aad: ByteVector,
-                          iv: ByteVector, cipherProvider: Option[Provider | JProvider] = None,
+  def decrypt[F[_]: Sync](key: ByteVector, initializationVector: ByteVector, ciphertext: ByteVector,
+                          authenticationTag: ByteVector, additionalAuthenticatedData: ByteVector,
+                          cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
     self.keyDecrypt[F](self.secretKeySpec(key), ciphertext ++ authenticationTag,
-      Some(GCMParameterSpec(self.tagByteLength * 8, iv)), Some(aad), provider = cipherProvider).asError
+      Some(GCMParameterSpec(self.tagByteLength * 8, initializationVector)), Some(additionalAuthenticatedData),
+      provider = cipherProvider).asError
 
   def isAvailable[F[_]: Sync]: F[Boolean] =
     isAESGCMKeyAvailable[F](self, self.blockSize, self.ivByteLength, self.tagByteLength)

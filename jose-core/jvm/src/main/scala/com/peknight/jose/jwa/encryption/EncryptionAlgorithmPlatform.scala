@@ -14,7 +14,8 @@ trait EncryptionAlgorithmPlatform {
                           random: Option[SecureRandom] = None, cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[ContentEncryptionParts]
 
-  def decrypt[F[_]: Sync](key: ByteVector, ciphertext: ByteVector, authenticationTag: ByteVector, aad: ByteVector,
-                          iv: ByteVector, cipherProvider: Option[Provider | JProvider] = None,
+  def decrypt[F[_]: Sync](key: ByteVector, initializationVector: ByteVector, ciphertext: ByteVector,
+                          authenticationTag: ByteVector, additionalAuthenticatedData: ByteVector,
+                          cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]]
 }

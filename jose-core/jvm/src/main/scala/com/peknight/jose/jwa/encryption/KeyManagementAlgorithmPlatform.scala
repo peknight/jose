@@ -2,7 +2,6 @@ package com.peknight.jose.jwa.encryption
 
 import cats.effect.Sync
 import com.peknight.error.Error
-import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.ContentEncryptionKeys
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.SecretKeySpecAlgorithm

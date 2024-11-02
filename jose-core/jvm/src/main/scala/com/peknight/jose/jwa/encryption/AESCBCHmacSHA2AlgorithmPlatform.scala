@@ -37,15 +37,17 @@ trait AESCBCHmacSHA2AlgorithmPlatform { self: AESCBCHmacSHA2Algorithm =>
   private def additionalAuthenticatedDataLengthBytes(aad: ByteVector): ByteVector =
     ByteVector.fromLong(aad.length * 8)
 
-  def decrypt[F[_]: Sync](key: ByteVector, ciphertext: ByteVector, authenticationTag: ByteVector, aad: ByteVector,
-                          iv: ByteVector, cipherProvider: Option[Provider | JProvider] = None,
+  def decrypt[F[_]: Sync](key: ByteVector, initializationVector: ByteVector, ciphertext: ByteVector,
+                          authenticationTag: ByteVector, additionalAuthenticatedData: ByteVector,
+                          cipherProvider: Option[Provider | JProvider] = None,
                           macProvider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
     val eitherT =
       for
         macBytes <- EitherT(self.mac.mac[F](Hmac.secretKeySpec(key.leftHalf),
-          authenticationTagInput(ciphertext, aad, iv), provider = macProvider).asError)
+          authenticationTagInput(ciphertext, additionalAuthenticatedData, initializationVector), provider = macProvider)
+          .asError)
         _ <- isTrue(macBytes.take(self.tagTruncationLength) === authenticationTag, IntegrityError).eLiftET
-        decrypted <- EitherT(Cipher.rawKeyDecrypt[F](self.javaAlgorithm, key.rightHalf, ciphertext, Some(iv),
+        decrypted <- EitherT(Cipher.rawKeyDecrypt[F](self.javaAlgorithm, key.rightHalf, ciphertext, Some(initializationVector),
             provider = cipherProvider).asError)
       yield decrypted
     eitherT.value
