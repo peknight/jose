@@ -2,7 +2,6 @@ package com.peknight.jose.jwe
 
 import cats.data.EitherT
 import cats.effect.{Async, Concurrent, Sync}
-import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.option.*
 import cats.{Applicative, Id}
@@ -45,10 +44,10 @@ trait JsonWebEncryptionCompanion:
           if doKeyValidation then
             algorithm.validateEncryptionKey(managementKey, encryptionAlgorithm.cekByteLength).eLiftET
           else ().rLiftET
-        agreementPartyUInfo <- decode[F](header.agreementPartyUInfo)
-        agreementPartyVInfo <- decode[F](header.agreementPartyVInfo)
-        initializationVector <- decode[F](header.initializationVector)
-        pbes2SaltInput <- decode[F](header.pbes2SaltInput)
+        agreementPartyUInfo <- decodeOption[F](header.agreementPartyUInfo)
+        agreementPartyVInfo <- decodeOption[F](header.agreementPartyVInfo)
+        initializationVector <- decodeOption[F](header.initializationVector)
+        pbes2SaltInput <- decodeOption[F](header.pbes2SaltInput)
         contentEncryptionKeys <- EitherT(algorithm.encryptKey[F](managementKey, encryptionAlgorithm.cekByteLength,
           encryptionAlgorithm.cekAlgorithm, cekOverride, Some(encryptionAlgorithm), agreementPartyUInfo,
           agreementPartyVInfo, initializationVector, pbes2SaltInput, header.pbes2Count, random, cipherProvider,
@@ -94,11 +93,11 @@ trait JsonWebEncryptionCompanion:
             algorithm.validateDecryptionKey(managementKey, encryptionAlgorithm.cekByteLength).eLiftET
           else ().rLiftET
         ephemeralPublicKey <- publicKey[F](header.ephemeralPublicKey, keyFactoryProvider)
-        agreementPartyUInfo <- decode[F](header.agreementPartyUInfo)
-        agreementPartyVInfo <- decode[F](header.agreementPartyVInfo)
-        initializationVectorH <- decode[F](header.initializationVector)
-        authenticationTagH <- decode[F](header.authenticationTag)
-        pbes2SaltInput <- decode[F](header.pbes2SaltInput)
+        agreementPartyUInfo <- decodeOption[F](header.agreementPartyUInfo)
+        agreementPartyVInfo <- decodeOption[F](header.agreementPartyVInfo)
+        initializationVectorH <- decodeOption[F](header.initializationVector)
+        authenticationTagH <- decodeOption[F](header.authenticationTag)
+        pbes2SaltInput <- decodeOption[F](header.pbes2SaltInput)
         cek <- EitherT(algorithm.decryptKey[F](managementKey, encryptedKey, encryptionAlgorithm.cekByteLength,
           encryptionAlgorithm.cekAlgorithm, keyDecipherModeOverride, Some(encryptionAlgorithm), ephemeralPublicKey,
           agreementPartyUInfo, agreementPartyVInfo, initializationVectorH, authenticationTagH, pbes2SaltInput,
@@ -117,7 +116,7 @@ trait JsonWebEncryptionCompanion:
         res
     eitherT.value
 
-  private def decode[F[_]: Applicative](option: Option[Base]): EitherT[F, Error, Option[ByteVector]] =
+  private[jwe] def decodeOption[F[_]: Applicative](option: Option[Base]): EitherT[F, Error, Option[ByteVector]] =
     option.map(_.decode[Id]) match
       case Some(Right(bytes)) => bytes.some.asRight.eLiftET[F]
       case Some(Left(error)) => error.asLeft.eLiftET[F]
