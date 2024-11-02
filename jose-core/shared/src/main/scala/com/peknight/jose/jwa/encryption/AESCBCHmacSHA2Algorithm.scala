@@ -15,8 +15,8 @@ trait AESCBCHmacSHA2Algorithm extends EncryptionAlgorithm with AEAD with AESCBCH
   type This = AEAD
   def encryption: AES
   def mac: HmacSHA2
-  def cekByteLength: Int = encryption.blockSize / 4
-  def tagTruncationLength: Int = encryption.blockSize / 8
+  def cekByteLength: Int = encryption.blockSize * 2
+  def tagTruncationLength: Int = encryption.blockSize
   def ivByteLength: Int = 16
   def javaAlgorithm: AES = AES / CBC / PKCS5Padding
   def cekAlgorithm: SecretKeySpecAlgorithm = javaAlgorithm
