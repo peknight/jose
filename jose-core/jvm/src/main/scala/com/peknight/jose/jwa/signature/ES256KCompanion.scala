@@ -17,7 +17,7 @@ trait ES256KCompanion extends ECDSAPlatform { self: ECDSA =>
         Base64UrlNoPad.unsafeFromString("Y5K6GofrdlWNLlfT8-AEyJyVZ3yJJcGgkGroHQCAhmk"),
         Some(Base64UrlNoPad.unsafeFromString("Vd99BKh6pxt3mXSDJzHuVrCq52xBXAKVahbuFb6dqBc"))
       )
-      jwk.privateKey[F]().flatMap {
+      jwk.toPrivateKey[F]().flatMap {
         case Right(Some(privateKey)) => handleSign[F](privateKey, ByteVector(2, 6)).map(_.isRight)
         case _ => false.pure[F]
       }

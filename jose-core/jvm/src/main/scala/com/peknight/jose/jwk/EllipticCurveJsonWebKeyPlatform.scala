@@ -16,7 +16,7 @@ import java.security.interfaces.{ECPrivateKey, ECPublicKey}
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
-  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
+  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
     val either =
       for
         xCoordinate <- self.xCoordinate.decodeToUnsignedBigInt[Id]
@@ -26,7 +26,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
           .asError
     either.fold(_.asLeft.pure, identity)
 
-  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[ECPrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decodeToUnsignedBigInt[Id].fold(
         _.asLeft.pure,

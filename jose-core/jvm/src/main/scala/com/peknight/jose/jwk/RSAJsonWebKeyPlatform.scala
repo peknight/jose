@@ -17,7 +17,7 @@ import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJsonWebKey =>
-  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
+  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]] =
     val either =
       for
         modulus <- self.modulus.decodeToUnsignedBigInt[Id]
@@ -26,7 +26,7 @@ trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJson
         RSA.publicKey[F](modulus, publicExponent, provider).map(_.asInstanceOf[PublicKey]).asError
     either.fold(_.asLeft.pure, identity)
 
-  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.privateExponent.fold(none[RSAPrivateKey].asRight[Error].pure[F]) { privateExponent =>
       val either =
         for

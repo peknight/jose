@@ -25,7 +25,7 @@ trait `RSA-OAEP-256Companion` extends RSAESAlgorithmPlatform { self: RSAESAlgori
     )
     val eitherT =
       for
-        publicKey <- EitherT(jwk.publicKey[F]())
+        publicKey <- EitherT(jwk.toPublicKey[F]())
         _ <- EitherT(encryptKey[F](publicKey, 16, AES).asError)
       yield
         ()

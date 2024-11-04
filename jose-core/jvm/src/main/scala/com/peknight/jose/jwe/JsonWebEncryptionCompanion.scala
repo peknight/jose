@@ -159,7 +159,7 @@ trait JsonWebEncryptionCompanion:
       case Some(jwk) =>
         for
           jwk <- typed[AsymmetricJsonWebKey](jwk).eLiftET
-          publicKey <- EitherT(jwk.publicKey[F](keyFactoryProvider))
+          publicKey <- EitherT(jwk.toPublicKey[F](keyFactoryProvider))
         yield Some(publicKey)
       case _ => none.rLiftET
 end JsonWebEncryptionCompanion

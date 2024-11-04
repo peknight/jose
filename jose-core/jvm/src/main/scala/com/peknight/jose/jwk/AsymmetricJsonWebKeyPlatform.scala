@@ -23,12 +23,12 @@ import java.security.cert.X509Certificate
 import java.security.{KeyPair, PrivateKey, PublicKey, Provider as JProvider}
 
 trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
-  def publicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]]
-  def privateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]]
+  def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]]
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]]
   def keyPair[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, KeyPair]] =
     Apply[[X] =>> F[Either[Error, X]]].map2(
-      publicKey[F](provider),
-      privateKey[F](provider).map(_.flatMap(_.toRight(MissingPublicKey)))
+      toPublicKey[F](provider),
+      toPrivateKey[F](provider).map(_.flatMap(_.toRight(MissingPublicKey)))
     )(new KeyPair(_, _))
 
   protected def handleCheckJsonWebKey: Either[Error, Unit] = ().asRight[Error]
@@ -36,7 +36,7 @@ trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
   def checkJsonWebKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Unit]] =
     val eitherT =
       for
-        publicKey <- EitherT(publicKey[F](provider))
+        publicKey <- EitherT(toPublicKey[F](provider))
         leafCertificate <- EitherT(getLeafCertificate[F](provider))
         _ <- checkBareKeyCertMatched(publicKey, leafCertificate).eLiftET
         _ <- handleCheckJsonWebKey.eLiftET
