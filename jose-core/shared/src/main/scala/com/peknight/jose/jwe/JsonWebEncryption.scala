@@ -53,11 +53,13 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     JsonWebEncryption(Right((header, `protected`)), sharedHeader, recipientHeader, encryptedKey, initializationVector,
       ciphertext, authenticationTag, additionalAuthenticatedData)
 
-  def jsonWebEncryptionParser: Parser0[JsonWebEncryption] =
+  private val jsonWebEncryptionParser: Parser0[JsonWebEncryption] =
     (Base64UrlNoPad.baseParser ~ (Parser.char('.') *> Base64UrlNoPad.baseParser) ~ (Parser.char('.') *> Base64UrlNoPad.baseParser) ~ (Parser.char('.') *> Base64UrlNoPad.baseParser) ~ (Parser.char('.') *> Base64UrlNoPad.baseParser)).map {
       case ((((p, encryptedKey), initializationVector), ciphertext), authenticationTag) =>
         JsonWebEncryption(p, None, None, encryptedKey, initializationVector, ciphertext, authenticationTag, None)
     }
+
+  def parse(value: String): Either[Parser.Error, JsonWebEncryption] = jsonWebEncryptionParser.parseAll(value)
 
   given codecJsonWebEncryption[F[_], S](using
     monad: Monad[F],

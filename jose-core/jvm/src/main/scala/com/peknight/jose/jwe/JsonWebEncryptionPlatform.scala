@@ -2,10 +2,12 @@ package com.peknight.jose.jwe
 
 import cats.data.EitherT
 import cats.effect.Async
+import cats.syntax.either.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.error.Error
+import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.encryption.KeyDecipherMode
-import com.peknight.jose.jwe.JsonWebEncryption.{decodeOption, handleDecrypt}
+import com.peknight.jose.jwe.JsonWebEncryption.handleDecrypt
 import com.peknight.security.provider.Provider
 import fs2.compression.Compression
 import scodec.bits.ByteVector
@@ -29,12 +31,17 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
         initializationVector <- EitherT(self.initializationVector.decode[F])
         ciphertext <- EitherT(self.ciphertext.decode[F])
         authenticationTag <- EitherT(self.authenticationTag.decode[F])
-        additionalAuthenticatedData <- decodeOption[F](self.additionalAuthenticatedData)
+        additionalAuthenticatedData <- getAdditionalAuthenticatedData.eLiftET
         header <- self.getUnprotectedHeader.eLiftET
         res <- EitherT(handleDecrypt[F](managementKey, encryptedKey, initializationVector, ciphertext,
-          authenticationTag, header, additionalAuthenticatedData, doKeyValidation, keyDecipherModeOverride, random,
+          authenticationTag, additionalAuthenticatedData, header, doKeyValidation, keyDecipherModeOverride, random,
           cipherProvider, keyAgreementProvider, keyFactoryProvider, macProvider, messageDigestProvider))
       yield
         res
     eitherT.value
+
+  private def getAdditionalAuthenticatedData: Either[Error, ByteVector] =
+    self.additionalAuthenticatedData
+      .fold(getProtectedHeader)(_.asRight)
+      .flatMap(base => ByteVector.encodeAscii(base.value).asError)
 }

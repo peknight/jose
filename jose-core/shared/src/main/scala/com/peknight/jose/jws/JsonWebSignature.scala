@@ -48,12 +48,14 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
   : JsonWebSignature =
     JsonWebSignature(Right((header, `protected`)), payload, signature)
 
-  val jsonWebSignatureParser: Parser0[JsonWebSignature] =
+  private val jsonWebSignatureParser: Parser0[JsonWebSignature] =
     (Base64UrlNoPad.baseParser ~ (Parser.char('.') *> Parser.charsWhile0(_ != '.')).rep(2)).flatMapE0 {
       case (headerBase, nel) =>
         val payload = nel.init.mkString(".")
         Base64UrlNoPad.baseParser.parseAll(nel.last).map(signature => JsonWebSignature(headerBase, payload, signature))
     }
+
+  def parse(value: String): Either[Parser.Error, JsonWebSignature] = jsonWebSignatureParser.parseAll(value)
 
   given codecJsonWebSignature[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],

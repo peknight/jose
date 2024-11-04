@@ -72,8 +72,9 @@ trait JsonWebEncryptionCompanion:
 
   def handleDecrypt[F[_]: Async: Compression](managementKey: Key, encryptedKey: ByteVector,
                                               initializationVector: ByteVector, ciphertext: ByteVector,
-                                              authenticationTag: ByteVector, header: JoseHeader,
-                                              additionalAuthenticatedData: Option[ByteVector] = None,
+                                              authenticationTag: ByteVector,
+                                              additionalAuthenticatedData: ByteVector,
+                                              header: JoseHeader,
                                               doKeyValidation: Boolean = true,
                                               keyDecipherModeOverride: Option[KeyDecipherMode] = None,
                                               random: Option[SecureRandom] = None,
@@ -102,11 +103,6 @@ trait JsonWebEncryptionCompanion:
           encryptionAlgorithm.cekAlgorithm, keyDecipherModeOverride, Some(encryptionAlgorithm), ephemeralPublicKey,
           agreementPartyUInfo, agreementPartyVInfo, initializationVectorH, authenticationTagH, pbes2SaltInput,
           header.pbes2Count, random, cipherProvider, keyAgreementProvider, macProvider, messageDigestProvider))
-        additionalAuthenticatedData <- additionalAuthenticatedData.map(_.rLiftET)
-          .getOrElse(toBase(header, Base64UrlNoPad)
-            .flatMap(protectedHeader => ByteVector.encodeAscii(protectedHeader.value))
-            .asError.eLiftET
-          )
         rawCek = ByteVector(cek.getEncoded)
         _ <- checkCek[F](encryptionAlgorithm, rawCek)
         decrypted <- EitherT(encryptionAlgorithm.decrypt[F](rawCek, initializationVector, ciphertext, authenticationTag,

@@ -193,7 +193,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
       algorithmIdBytes ++ partyUInfoBytes ++ partyVInfoBytes ++ suppPubInfo ++ suppPrivInfo
 
   private def prependDataLength(data: Option[ByteVector]): ByteVector =
-    data.fold(ByteVector.empty)(data => ByteVector.fromInt(data.length.toInt) ++ data)
+    data.fold(ByteVector.fromInt(0))(data => ByteVector.fromInt(data.length.toInt) ++ data)
 
   private def kdf[F[_]: Sync](messageDigestAlgorithm: MessageDigestAlgorithm, sharedSecret: ByteVector,
                               otherInfo: ByteVector, keyByteLength: Int, provider: Option[Provider | JProvider])
