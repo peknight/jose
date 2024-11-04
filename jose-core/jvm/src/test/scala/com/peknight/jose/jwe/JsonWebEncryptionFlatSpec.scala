@@ -7,12 +7,13 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
+import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwa.encryption.{A128KW, A256GCM, `A128CBC-HS256`, randomBytes}
+import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwk.JsonWebKey
-import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
-import com.peknight.validation.std.either.typed
+import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey}
+import com.peknight.security.cipher.AES
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -78,9 +79,8 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val encodedEncryptedKey = "6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ"
     val run =
       for
-        jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
-        octJwk <- typed[OctetSequenceJsonWebKey](jwk).eLiftET[IO]
-        managementKey <- octJwk.toKey.eLiftET[IO]
+        jwk <- decode[Id, OctetSequenceJsonWebKey](jwkJson).eLiftET[IO]
+        managementKey <- jwk.toKey.eLiftET[IO]
         contentEncryptionKeys <- EitherT(A128KW.encryptKey[IO](managementKey, `A128CBC-HS256`.cekByteLength,
           `A128CBC-HS256`.cekAlgorithm, Some(rawCek)))
         encryptedKey = Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey).value
@@ -111,6 +111,38 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       yield
         ciphertext == encodedCiphertext && authenticationTag == encodedAuthenticationTag && decrypted === plainTextBytes
 
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "ECDH-ES" should "succeed" in {
+    val receiverJwkJson = "\n{\"kty\":\"EC\",\n \"crv\":\"P-256\",\n \"x\":\"weNJy2HscCSM6AEDTDg04biOvhFhyyWvOHQfeF_PxMQ\",\n \"y\":\"e8lnCO-AlStT-NJVX-crhB7QRYhiix03illJOVAOyck\",\n \"d\":\"VEmDZpDXXK8p8N0Cndsxs924q6nS1RXFASRl6BfUqdw\"\n}"
+    val ephemeralJwkJson = "\n{\"kty\":\"EC\",\n \"crv\":\"P-256\",\n \"x\":\"gI0GAILBdu7T53akrFmMyGcsF3n5dO7MmwNBHKW5SV0\",\n \"y\":\"SLW_xSffzlPWrHEVI30DHM_4egVwt3NQqeUD7nMFpps\",\n \"d\":\"0_NxaRPUMQoAJt50Gz8YiTr8gRTwyEaCumd-MToTmIo\"\n}"
+    val agreementPartyUInfo = "QWxpY2U"
+    val agreementPartyVInfo = "Qm9i"
+    val encodedContentEncryptionKey = "VqqN6vgjbSBcIijNcacQGg"
+    val run =
+      for
+        receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
+        receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
+        receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
+        receiverPrivateKey <- receiverPrivateKey.toRight(OptionEmpty.label("receiverPrivateKey")).eLiftET[IO]
+        ephemeralJwk <- decode[Id, EllipticCurveJsonWebKey](ephemeralJwkJson).eLiftET[IO]
+        ephemeralPublicKey <- EitherT(ephemeralJwk.toPublicKey[IO]())
+        ephemeralPrivateKey <- EitherT(ephemeralJwk.toPrivateKey[IO]())
+        ephemeralPrivateKey <- ephemeralPrivateKey.toRight(OptionEmpty.label("ephemeralPrivateKey")).eLiftET[IO]
+        apuBase <- Base64UrlNoPad.fromString(agreementPartyUInfo).eLiftET[IO]
+        apvBase <- Base64UrlNoPad.fromString(agreementPartyVInfo).eLiftET[IO]
+        apu <- apuBase.decode[Id].eLiftET[IO]
+        apv <- apvBase.decode[Id].eLiftET[IO]
+        contentEncryptionKeys <- EitherT(`ECDH-ES`.handleEncryptKey[IO](receiverPublicKey, A128GCM.blockSize,
+          ephemeralPublicKey, ephemeralPrivateKey, Some(A128GCM), Some(apu), Some(apv)))
+        contentEncryptionKey = Base64UrlNoPad.fromByteVector(contentEncryptionKeys.contentEncryptionKey).value
+        decryptedKey <- EitherT(`ECDH-ES`.decryptKey[IO](receiverPrivateKey, contentEncryptionKeys.encryptedKey,
+          A128GCM.blockSize, AES, None, Some(A128GCM), Some(ephemeralPublicKey), Some(apu), Some(apv)))
+        key = Base64UrlNoPad.fromByteVector(ByteVector(decryptedKey.getEncoded)).value
+      yield
+        contentEncryptionKeys.encryptedKey.isEmpty && contentEncryptionKey == encodedContentEncryptionKey &&
+          key == encodedContentEncryptionKey
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end JsonWebEncryptionFlatSpec

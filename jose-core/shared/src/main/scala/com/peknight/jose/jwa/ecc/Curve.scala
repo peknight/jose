@@ -9,7 +9,7 @@ import com.peknight.security.error.UnknownAlgorithm
 import com.peknight.security.oid.ObjectIdentifier
 import com.peknight.security.spec.ECGenParameterSpecName
 
-trait Curve extends ECGenParameterSpecName:
+trait Curve extends ECGenParameterSpecName derives CanEqual:
   def name: String
 end Curve
 object Curve extends CurveCompanion:

@@ -16,7 +16,6 @@ import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
-import com.peknight.security.algorithm.Algorithm
 import com.peknight.security.key.agreement.{X25519, X448}
 import com.peknight.security.signature.{Ed25519, Ed448}
 import com.peknight.security.spec.NamedParameterSpecName
@@ -162,12 +161,68 @@ object JsonWebKey extends JsonWebKeyCompanion:
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
   end OctetKeyPairJsonWebKey
 
-  given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
-  : Codec[F, S, Cursor[S], JsonWebKey] =
-    given CodecConfiguration = CodecConfiguration.default
+  private val jsonWebKeyCodecConfiguration: CodecConfiguration =
+    CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withDiscriminator("kty")
       .withTransformConstructorNames(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
+
+  given codecEllipticCurveJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  : Codec[F, S, Cursor[S], EllipticCurveJsonWebKey] =
+    given CodecConfiguration = jsonWebKeyCodecConfiguration
+    Codec.derived[F, S, EllipticCurveJsonWebKey]
+
+  given jsonCodecEllipticCurveJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], EllipticCurveJsonWebKey] =
+    codecEllipticCurveJsonWebKey[F, Json]
+
+  given circeCodecEllipticCurveJsonWebKey: io.circe.Codec[EllipticCurveJsonWebKey] = codec[EllipticCurveJsonWebKey]
+
+  given codecRSAJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  : Codec[F, S, Cursor[S], RSAJsonWebKey] =
+    given CodecConfiguration = jsonWebKeyCodecConfiguration
+    Codec.derived[F, S, RSAJsonWebKey]
+
+  given jsonCodecRSAJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], RSAJsonWebKey] =
+    codecRSAJsonWebKey[F, Json]
+
+  given circeCodecRSAJsonWebKey: io.circe.Codec[RSAJsonWebKey] = codec[RSAJsonWebKey]
+
+  given codecOctetKeyPairJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  : Codec[F, S, Cursor[S], OctetKeyPairJsonWebKey] =
+    given CodecConfiguration = jsonWebKeyCodecConfiguration
+
+    Codec.derived[F, S, OctetKeyPairJsonWebKey]
+
+  given jsonCodecOctetKeyPairJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], OctetKeyPairJsonWebKey] =
+    codecOctetKeyPairJsonWebKey[F, Json]
+
+  given circeCodecOctetKeyPairJsonWebKey: io.circe.Codec[OctetKeyPairJsonWebKey] = codec[OctetKeyPairJsonWebKey]
+
+  given codecAsymmetricJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  : Codec[F, S, Cursor[S], AsymmetricJsonWebKey] =
+    given CodecConfiguration = jsonWebKeyCodecConfiguration
+
+    Codec.derived[F, S, AsymmetricJsonWebKey]
+
+  given jsonCodecAsymmetricJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], AsymmetricJsonWebKey] =
+    codecAsymmetricJsonWebKey[F, Json]
+
+  given circeCodecAsymmetricJsonWebKey: io.circe.Codec[AsymmetricJsonWebKey] = codec[AsymmetricJsonWebKey]
+
+  given codecOctetSequenceJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  : Codec[F, S, Cursor[S], OctetSequenceJsonWebKey] =
+    given CodecConfiguration = jsonWebKeyCodecConfiguration
+
+    Codec.derived[F, S, OctetSequenceJsonWebKey]
+
+  given jsonCodecOctetSequenceJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], OctetSequenceJsonWebKey] =
+    codecOctetSequenceJsonWebKey[F, Json]
+
+  given circeCodecOctetSequenceJsonWebKey: io.circe.Codec[OctetSequenceJsonWebKey] = codec[OctetSequenceJsonWebKey]
+
+  given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  : Codec[F, S, Cursor[S], JsonWebKey] =
+    given CodecConfiguration = jsonWebKeyCodecConfiguration
     Codec.derived[F, S, JsonWebKey]
 
   given jsonCodecJsonWebKey[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebKey] =

@@ -57,14 +57,31 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
       for
         _ <- canNotHaveKey(cekOverride, self).eLiftET
         keyPair <- generateKeyPair[F](managementKey, random, keyPairGeneratorProvider)
+        res <- EitherT(handleEncryptKey[F](managementKey, cekLength, keyPair.getPublic, keyPair.getPrivate,
+          encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo, keyAgreementProvider, messageDigestProvider))
+      yield
+        res
+    eitherT.value
+
+  def handleEncryptKey[F[_]: Sync](managementKey: Key,
+                                   cekLength: Int,
+                                   ephemeralPublicKey: PublicKey,
+                                   ephemeralPrivateKey: PrivateKey,
+                                   encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                                   agreementPartyUInfo: Option[ByteVector] = None,
+                                   agreementPartyVInfo: Option[ByteVector] = None,
+                                   keyAgreementProvider: Option[Provider | JProvider] = None,
+                                   messageDigestProvider: Option[Provider | JProvider] = None
+                                  ): F[Either[Error, ContentEncryptionKeys]] =
+    val eitherT =
+      for
         partyVPublicKey <- typed[PublicKey](managementKey).eLiftET
-        partyUPrivateKey = keyPair.getPrivate
-        keyAgreementAlgorithm = getKeyAgreementAlgorithm(partyUPrivateKey)
-        z <- EitherT(keyAgreementAlgorithm.generateSecret[F](partyUPrivateKey, partyVPublicKey,
+        keyAgreementAlgorithm = getKeyAgreementAlgorithm(ephemeralPrivateKey)
+        z <- EitherT(keyAgreementAlgorithm.generateSecret[F](ephemeralPrivateKey, partyVPublicKey,
           provider = keyAgreementProvider).asError)
         derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo,
           agreementPartyVInfo, messageDigestProvider)
-        ephemeralPublicKey <- JsonWebKey.fromPublicKey(keyPair.getPublic).eLiftET
+        ephemeralPublicKey <- JsonWebKey.fromPublicKey(ephemeralPublicKey).eLiftET
       yield
         ContentEncryptionKeys(derivedKey, ByteVector.empty, Some(ephemeralPublicKey))
     eitherT.value
