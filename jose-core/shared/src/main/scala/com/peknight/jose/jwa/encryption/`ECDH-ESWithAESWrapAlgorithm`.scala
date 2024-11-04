@@ -6,7 +6,6 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.HeaderParam.{apu, apv, epk}
-import com.peknight.security.cipher.AESWrap
 
 trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm with `ECDH-ESWithAESWrapAlgorithmPlatform`:
   def encryption: AESWrapAlgorithm
