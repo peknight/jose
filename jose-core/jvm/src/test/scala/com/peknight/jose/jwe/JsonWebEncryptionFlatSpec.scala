@@ -11,13 +11,13 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
-import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
+import com.peknight.jose.error.{MissingKey, MissingPrivateKey}
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.*
-import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey}
+import com.peknight.jose.jwk.{JsonWebKey, appendixA1, appendixA2}
 import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.cipher.AES
 import com.peknight.security.error.PointNotOnCurve
@@ -133,11 +133,11 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        receiverPrivateKey <- receiverPrivateKey.toRight(OptionEmpty.label("receiverPrivateKey")).eLiftET[IO]
+        receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
         ephemeralJwk <- decode[Id, EllipticCurveJsonWebKey](ephemeralJwkJson).eLiftET[IO]
         ephemeralPublicKey <- EitherT(ephemeralJwk.toPublicKey[IO]())
         ephemeralPrivateKey <- EitherT(ephemeralJwk.toPrivateKey[IO]())
-        ephemeralPrivateKey <- ephemeralPrivateKey.toRight(OptionEmpty.label("ephemeralPrivateKey")).eLiftET[IO]
+        ephemeralPrivateKey <- ephemeralPrivateKey.toRight(MissingPrivateKey.label("ephemeralPrivateKey")).eLiftET[IO]
         apuBase <- Base64UrlNoPad.fromString(agreementPartyUInfo).eLiftET[IO]
         apvBase <- Base64UrlNoPad.fromString(agreementPartyVInfo).eLiftET[IO]
         apu <- apuBase.decode[Id].eLiftET[IO]
@@ -181,7 +181,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        receiverPrivateKey <- receiverPrivateKey.toRight(OptionEmpty.label("receiverPrivateKey")).eLiftET[IO]
+        receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
         ephemeralJwk <- decode[Id, EllipticCurveJsonWebKey](ephemeralJwkJson).eLiftET[IO]
         ephemeralPublicKey <- EitherT(ephemeralJwk.toPublicKey[IO]())
         derivedKey <- EitherT(`ECDH-ES`.decryptKey[IO](receiverPrivateKey, ByteVector.empty, 32, AES, None,
@@ -218,7 +218,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, EllipticCurveJsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toPrivateKey[IO]())
-        key <- key.toRight(OptionEmpty.label("key")).eLiftET[IO]
+        key <- key.toRight(MissingKey.label("key")).eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
         decrypted <- EitherT(jwe.decrypt[IO](key))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
@@ -256,7 +256,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
       receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
       receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-      receiverPrivateKey <- receiverPrivateKey.toRight(OptionEmpty.label("receiverPrivateKey")).eLiftET[IO]
+      receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
       plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
       jwe <- EitherT(JsonWebEncryption.encrypt[IO](receiverPublicKey, plaintextBytes, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
@@ -282,7 +282,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        receiverPrivateKey <- receiverPrivateKey.toRight(OptionEmpty.label("receiverPrivateKey")).eLiftET[IO]
+        receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
         maliciousJwe <- JsonWebEncryption.parse(maliciousJweCompact).asError.eLiftET[IO]
         decrypted <- EitherT(maliciousJwe.decrypt[IO](receiverPrivateKey))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
@@ -294,19 +294,133 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     }.asserting(assert)
 
   "JsonWebEncryption" should "succeed with jwe example A3" in {
-    val jweCsFromAppdxA3Compact = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY.U0m_YmjN04DJvceFICbCVQ"
+    val jweCsFromAppendixA3Compact = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY.U0m_YmjN04DJvceFICbCVQ"
     val jwkJson = "\n{\"kty\":\"oct\",\n \"k\":\"GawgguFyGrWKav7AX4VKUg\"\n}"
-    val plaintext = "Live long and prosper."
     val run =
       for
         jwk <- decode[Id, OctetSequenceJsonWebKey](jwkJson).eLiftET[IO]
         key <- jwk.toKey.eLiftET[IO]
-        jwe <- JsonWebEncryption.parse(jweCsFromAppdxA3Compact).asError.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(jweCsFromAppendixA3Compact).asError.eLiftET[IO]
         decrypted <- EitherT(jwe.decrypt[IO](key))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
       yield
         res == plaintext
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
+
+  "JsonWebEncryption" should "succeed with jwe example A2" in {
+    val jweCsFromAppendixA2Compact = "eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-kFm1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKxGHZ7PcHALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3YvkkysZIFNPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPhcCdZ6XDP0_F8rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cFPgwCp6X-nZZd9OHBv-B3oWh2TbqmScqXMR4gp_A.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY.9hH0vgRfYgPnAHOd8stkvw"
+    val run =
+      for
+        privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
+        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(jweCsFromAppendixA2Compact).asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decrypt[IO](privateKey))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        res == plaintext
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebEncryption" should "succeed with jwe example A1" in {
+    val csCompact = "eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ.OKOawDo13gRp2ojaHV7LFpZcgV7T6DVZKTyKOMTYUmKoTCVJRgckCL9kiMT03JGeipsEdY3mx_etLbbWSrFr05kLzcSr4qKAq7YN7e9jwQRb23nfa6c9d-StnImGyFDbSv04uVuxIp5Zms1gNxKKK2Da14B8S4rzVRltdYwam_lDp5XnZAYpQdb76FdIKLaVmqgfwX7XWRxv2322i-vDxRfqNzo_tETKzpVLzfiwQyeyPGLBIO56YJ7eObdv0je81860ppamavo35UgoRdbYaBcoh9QcfylQr66oc6vFWXRcZ_ZT2LawVCWTIy3brGPi6UklfCpIMfIjf7iGdXKHzg.48V1_ALb6US04U3b.5eym8TW_c8SuK0ltJ3rpYIzOeDQz7TALvtu6UG9oMo4vpzs9tX_EFShS8iB7j6jiSdiwkIr3ajwQzaBtQD_A.XFBoMYUZodetZdvTiFvSkQ"
+    val plaintext = "The true sign of intelligence is not knowledge but imagination."
+    val run =
+      for
+        privateKey <- EitherT(appendixA1.toPrivateKey[IO]())
+        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(csCompact).asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decrypt[IO](privateKey))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        res == plaintext
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebEncryption" should "succeed with happy round trip RSA1_5 and A128CBC-HS256" in {
+    val plaintext = "Some text that's on double secret probation"
+    val run =
+      for
+        publicKey <- EitherT(appendixA2.toPublicKey[IO]())
+        privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
+        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
+        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, plaintextBytes, JoseHeader(Some(RSA1_5),
+          Some(`A128CBC-HS256`))))
+        compact <- jwe.compact.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(compact).asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decrypt[IO](privateKey))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        res == plaintext
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebEncryption" should "succeed with happy round trip RSA-OAEP and A128CBC-HS256" in {
+    val plaintext = "Some text that's on double secret probation"
+    val run =
+      for
+        publicKey <- EitherT(appendixA2.toPublicKey[IO]())
+        privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
+        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
+        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, plaintextBytes, JoseHeader(Some(`RSA-OAEP`),
+          Some(`A128CBC-HS256`))))
+        compact <- jwe.compact.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(compact).asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decrypt[IO](privateKey))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        res == plaintext
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebEncryption" should "succeed with happy round trip Direct and A128CBC-HS256" in {
+    val plaintext = "Some sensitive info"
+    val run =
+      for
+        key <- EitherT(`A128CBC-HS256`.cekAlgorithm.keySizeGenerateKey[IO](`A128CBC-HS256`.cekByteLength * 8).asError)
+        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(dir),
+          Some(`A128CBC-HS256`))))
+        compact <- jwe.compact.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(compact).asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decrypt[IO](key))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        res == plaintext
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  // def testAcceptingCompactSerializationWithMalformedJWE(): Unit = {
+  //   // modified to have only 4 parts, which isn't legal, from http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-14#appendix-A.3.11
+  //   val damaged_version_of_jweCsFromAppdxA3 = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0." + "6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ." + "AxY8DCtDaGlsbGljb3RoZQ." + "KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
+  //   val jwe = new JsonWebEncryption
+  //   jwe.setCompactSerialization(damaged_version_of_jweCsFromAppdxA3)
+  // }
+  //
+  // @Test(expected = classOf[InvalidAlgorithmException])
+  // @throws[JoseException]
+  // def testBlockListAlg(): Unit = {
+  //   val jwecs = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..LpJAcwq3RzCs-zPRQzT-jg.IO0ZwAhWnSF05dslZwaBKcHYOAKlSpt_l7Dl5ABrUS0.0KfkxQTFqTQjzfJIm8MNjg"
+  //   val jsonWebKey = JsonWebKey.Factory.newJwk("{\"kty\":\"oct\",\"k\":\"I95jRMEyRvD0t3LRgL1GSWTgkX5jznuhX4mce9bYV_A\"}")
+  //   val jwe = new JsonWebEncryption
+  //   jwe.setAlgorithmConstraints(new AlgorithmConstraints(BLOCK, DIRECT))
+  //   jwe.setCompactSerialization(jwecs)
+  //   jwe.setKey(jsonWebKey.getKey)
+  //   jwe.getPayload
+  // }
+  //
+  // @Test(expected = classOf[InvalidAlgorithmException])
+  // @throws[JoseException]
+  // def testBlockListEncAlg(): Unit = {
+  //   val jwecs = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..LpJAcwq3RzCs-zPRQzT-jg.IO0ZwAhWnSF05dslZwaBKcHYOAKlSpt_l7Dl5ABrUS0.0KfkxQTFqTQjzfJIm8MNjg"
+  //   val jsonWebKey = JsonWebKey.Factory.newJwk("{\"kty\":\"oct\",\"k\":\"I95jRMEyRvD0t3LRgL1GSWTgkX5jznuhX4mce9bYV_A\"}")
+  //   val jwe = new JsonWebEncryption
+  //   jwe.setContentEncryptionAlgorithmConstraints(new AlgorithmConstraints(BLOCK, AES_128_CBC_HMAC_SHA_256))
+  //   jwe.setCompactSerialization(jwecs)
+  //   jwe.setKey(jsonWebKey.getKey)
+  //   jwe.getPayload
+  // }
 
 end JsonWebEncryptionFlatSpec

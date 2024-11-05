@@ -13,6 +13,7 @@ import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.{asError, label, message}
+import com.peknight.jose.error.MissingKey
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.ContentEncryptionKeys
 import com.peknight.security.cipher.{AES, BlockCipher}
@@ -198,7 +199,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
   def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] = validateKey(managementKey)
 
   def validateKey(managementKey: Key): Either[Error, Unit] =
-    Option(managementKey).toRight(OptionEmpty.label("managementKey")).as(())
+    Option(managementKey).toRight(MissingKey.label("managementKey")).as(())
 
   def isAvailable[F[_]: Sync]: F[Boolean] = self.encryption.isAvailable[F]
 }

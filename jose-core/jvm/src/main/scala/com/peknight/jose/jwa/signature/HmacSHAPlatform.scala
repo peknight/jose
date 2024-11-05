@@ -3,9 +3,9 @@ package com.peknight.jose.jwa.signature
 import cats.effect.Sync
 import cats.syntax.functor.*
 import com.peknight.error.Error
-import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.label
+import com.peknight.jose.error.MissingKey
 import com.peknight.security.provider.Provider
 import com.peknight.validation.spire.math.interval.either.atOrAbove
 import scodec.bits.ByteVector
@@ -28,7 +28,7 @@ trait HmacSHAPlatform extends SignaturePlatform { self: HmacSHA =>
 
   def validateKey(key: Key): Either[Error, Unit] =
     Option(key.getEncoded)
-      .toRight(OptionEmpty.label("keyEncoded"))
+      .toRight(MissingKey.label("keyEncoded"))
       .map(_.length * 8)
       .flatMap(bitLength => atOrAbove(bitLength, self.digest.bitLength).label("keyBitLength"))
       .as(())
