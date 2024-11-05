@@ -1,12 +1,12 @@
 package com.peknight.jose.jwe
 
 import cats.Id
-import cats.syntax.traverse.*
-import cats.syntax.option.*
-import cats.syntax.functor.*
 import cats.data.EitherT
-import cats.effect.{IO, Sync}
 import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.effect.{IO, Sync}
+import cats.syntax.functor.*
+import cats.syntax.option.*
+import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
@@ -20,6 +20,7 @@ import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey}
 import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.cipher.AES
+import com.peknight.security.error.PointNotOnCurve
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -264,4 +265,48 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       res <- decrypted.decodeUtf8.asError.eLiftET[IO]
     yield
       res == plaintext
+
+  "ECDH-ES+A128KW" should "failed with invalid curve 1" in {
+    val maliciousJweCompact = "eyJhbGciOiJFQ0RILUVTK0ExMjhLVyIsImVuYyI6IkExMjhDQkMtSFMyNTYiLCJlcGsiOnsia3R5IjoiRUMiLCJ4IjoiZ1RsaTY1ZVRRN3otQmgxNDdmZjhLM203azJVaURpRzJMcFlrV0FhRkpDYyIsInkiOiJjTEFuakthNGJ6akQ3REpWUHdhOUVQclJ6TUc3ck9OZ3NpVUQta2YzMEZzIiwiY3J2IjoiUC0yNTYifX0.qGAdxtEnrV_3zbIxU2ZKrMWcejNltjA_dtefBFnRh9A2z9cNIqYRWg.pEA5kX304PMCOmFSKX_cEg.a9fwUrx2JXi1OnWEMOmZhXd94-bEGCH9xxRwqcGuG2AMo-AwHoljdsH5C_kcTqlXS5p51OB1tvgQcMwB5rpTxg.72CHiYFecyDvuUa43KKT6w"
+    pointNotOnCurve(maliciousJweCompact)
+  }
+
+  "ECDH-ES+A128KW" should "failed with invalid curve 2" in {
+    val maliciousJweCompact = "eyJhbGciOiJFQ0RILUVTK0ExMjhLVyIsImVuYyI6IkExMjhDQkMtSFMyNTYiLCJlcGsiOnsia3R5IjoiRUMiLCJ4IjoiWE9YR1E5XzZRQ3ZCZzN1OHZDSS1VZEJ2SUNBRWNOTkJyZnFkN3RHN29RNCIsInkiOiJoUW9XTm90bk56S2x3aUNuZUprTElxRG5UTnc3SXNkQkM1M1ZVcVZqVkpjIiwiY3J2IjoiUC0yNTYifX0.UGb3hX3ePAvtFB9TCdWsNkFTv9QWxSr3MpYNiSBdW630uRXRBT3sxw.6VpU84oMob16DxOR98YTRw.y1UslvtkoWdl9HpugfP0rSAkTw1xhm_LbK1iRXzGdpYqNwIG5VU33UBpKAtKFBoA1Kk_sYtfnHYAvn-aes4FTg.UZPN8h7FcvA5MIOq-Pkj8A"
+    pointNotOnCurve(maliciousJweCompact)
+  }
+
+  private def pointNotOnCurve(maliciousJweCompact: String): IO[Assertion] =
+    val receiverJwkJson = "\n{\"kty\":\"EC\",\n \"crv\":\"P-256\",\n \"x\":\"weNJy2HscCSM6AEDTDg04biOvhFhyyWvOHQfeF_PxMQ\",\n \"y\":\"e8lnCO-AlStT-NJVX-crhB7QRYhiix03illJOVAOyck\",\n \"d\":\"VEmDZpDXXK8p8N0Cndsxs924q6nS1RXFASRl6BfUqdw\"\n}"
+    val run =
+      for
+        receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
+        receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
+        receiverPrivateKey <- receiverPrivateKey.toRight(OptionEmpty.label("receiverPrivateKey")).eLiftET[IO]
+        maliciousJwe <- JsonWebEncryption.parse(maliciousJweCompact).asError.eLiftET[IO]
+        decrypted <- EitherT(maliciousJwe.decrypt[IO](receiverPrivateKey))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        true
+    run.value.map {
+      case Left(e: PointNotOnCurve) => true
+      case _ => false
+    }.asserting(assert)
+
+  "JsonWebEncryption" should "succeed with jwe example A3" in {
+    val jweCsFromAppdxA3Compact = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY.U0m_YmjN04DJvceFICbCVQ"
+    val jwkJson = "\n{\"kty\":\"oct\",\n \"k\":\"GawgguFyGrWKav7AX4VKUg\"\n}"
+    val plaintext = "Live long and prosper."
+    val run =
+      for
+        jwk <- decode[Id, OctetSequenceJsonWebKey](jwkJson).eLiftET[IO]
+        key <- jwk.toKey.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(jweCsFromAppdxA3Compact).asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decrypt[IO](key))
+        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      yield
+        res == plaintext
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
 end JsonWebEncryptionFlatSpec
