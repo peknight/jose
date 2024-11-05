@@ -392,35 +392,9 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  // def testAcceptingCompactSerializationWithMalformedJWE(): Unit = {
-  //   // modified to have only 4 parts, which isn't legal, from http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-14#appendix-A.3.11
-  //   val damaged_version_of_jweCsFromAppdxA3 = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0." + "6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ." + "AxY8DCtDaGlsbGljb3RoZQ." + "KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
-  //   val jwe = new JsonWebEncryption
-  //   jwe.setCompactSerialization(damaged_version_of_jweCsFromAppdxA3)
-  // }
-  //
-  // @Test(expected = classOf[InvalidAlgorithmException])
-  // @throws[JoseException]
-  // def testBlockListAlg(): Unit = {
-  //   val jwecs = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..LpJAcwq3RzCs-zPRQzT-jg.IO0ZwAhWnSF05dslZwaBKcHYOAKlSpt_l7Dl5ABrUS0.0KfkxQTFqTQjzfJIm8MNjg"
-  //   val jsonWebKey = JsonWebKey.Factory.newJwk("{\"kty\":\"oct\",\"k\":\"I95jRMEyRvD0t3LRgL1GSWTgkX5jznuhX4mce9bYV_A\"}")
-  //   val jwe = new JsonWebEncryption
-  //   jwe.setAlgorithmConstraints(new AlgorithmConstraints(BLOCK, DIRECT))
-  //   jwe.setCompactSerialization(jwecs)
-  //   jwe.setKey(jsonWebKey.getKey)
-  //   jwe.getPayload
-  // }
-  //
-  // @Test(expected = classOf[InvalidAlgorithmException])
-  // @throws[JoseException]
-  // def testBlockListEncAlg(): Unit = {
-  //   val jwecs = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..LpJAcwq3RzCs-zPRQzT-jg.IO0ZwAhWnSF05dslZwaBKcHYOAKlSpt_l7Dl5ABrUS0.0KfkxQTFqTQjzfJIm8MNjg"
-  //   val jsonWebKey = JsonWebKey.Factory.newJwk("{\"kty\":\"oct\",\"k\":\"I95jRMEyRvD0t3LRgL1GSWTgkX5jznuhX4mce9bYV_A\"}")
-  //   val jwe = new JsonWebEncryption
-  //   jwe.setContentEncryptionAlgorithmConstraints(new AlgorithmConstraints(BLOCK, AES_128_CBC_HMAC_SHA_256))
-  //   jwe.setCompactSerialization(jwecs)
-  //   jwe.setKey(jsonWebKey.getKey)
-  //   jwe.getPayload
-  // }
-
+  "JsonWebEncryption" should "failed with accepting compact serialization with malformed JWE" in {
+    // modified to have only 4 parts, which isn't legal, from http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-14#appendix-A.3.11
+    val damagedVersionOfJweCsFromAppendixA3 = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
+    assert(JsonWebEncryption.parse(damagedVersionOfJweCsFromAppendixA3).isLeft)
+  }
 end JsonWebEncryptionFlatSpec
