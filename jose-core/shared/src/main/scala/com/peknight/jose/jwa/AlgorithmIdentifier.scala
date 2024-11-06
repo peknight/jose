@@ -10,6 +10,7 @@ import scala.reflect.ClassTag
 
 trait AlgorithmIdentifier extends Algorithm with AlgorithmIdentifierPlatform:
   def identifier: String = algorithm
+  override def toString: String = identifier
 end AlgorithmIdentifier
 object AlgorithmIdentifier:
   def stringCodecAlgorithmIdentifier[F[_]: Applicative, A <: AlgorithmIdentifier : ClassTag](values: List[A])

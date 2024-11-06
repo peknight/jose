@@ -8,7 +8,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.JsonWebEncryption
-import com.peknight.jose.jwk.{JsonWebKey, KeyType, PublicKeyUseType}
+import com.peknight.jose.jwk.{JsonWebKey, KeyId, KeyType, PublicKeyUseType}
 import com.peknight.security.key.secret.PBKDF2
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -62,14 +62,13 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         keyBytes <- ByteVector.encodeUtf8(password).asError.eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         jwe <- JsonWebEncryption.parse(cs).asError.eLiftET[IO]
+        header <- jwe.getUnprotectedHeader.eLiftET[IO]
         decrypted <- EitherT(jwe.decrypt[IO](key))
-        // payload <- decrypted.decodeUtf8.asError.eLiftET
-        // jwk <- decode[Id, JsonWebKey](payload).eLiftET[IO]
-        // _ = println(jwk)
+        payload <- decrypted.decodeUtf8.asError.eLiftET
+        jwk <- decode[Id, JsonWebKey](payload).eLiftET[IO]
       yield
-        // jwk.keyID.contains("juliet@capulet.lit") && jwk.keyType == KeyType.RSA &&
-        //   jwk.publicKeyUse.contains(PublicKeyUseType.Encryption)
-        true
+        jwk.keyID.contains(KeyId("juliet@capulet.lit")) && jwk.keyType == KeyType.RSA &&
+          jwk.publicKeyUse.contains(PublicKeyUseType.Encryption)
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 

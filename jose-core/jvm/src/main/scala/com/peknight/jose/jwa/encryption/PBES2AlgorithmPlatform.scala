@@ -188,11 +188,17 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
 
   private def derive[F[_]: Sync](salt: ByteVector, iterationCount: Int, blockIndex: Int, prf: Mac): F[ByteVector] =
     prf.doFinalF[F](salt ++ ByteVector.fromInt(blockIndex)).flatMap { currentU =>
-      Monad[F].tailRecM[(Int, ByteVector, ByteVector), ByteVector]((2, currentU, currentU)) {
-        case (i, _, xorU) if i > iterationCount => xorU.asRight.pure
-        case (i, lastU, xorU) => prf.doFinalF[F](lastU).map(currentU => (i + 1, currentU, currentU.xor(xorU)).asLeft)
+      val currentUBytes = currentU.toArray
+      Monad[F].tailRecM[(Int, Array[Byte], Array[Byte]), ByteVector]((2, currentUBytes, currentUBytes)) {
+        case (i, _, xorU) if i > iterationCount => ByteVector(xorU).asRight.pure
+        case (i, lastU, xorU) =>
+          Sync[F].blocking(prf.doFinal(lastU)).map(currentU => (i + 1, currentU, xor(currentU, xorU)).asLeft)
       }
     }
+
+  private def xor(a: Array[Byte], b: Array[Byte]): Array[Byte] =
+    for i <- a.indices do b(i) = (a(i) ^ b(i)).toByte
+    b
 
   def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] = validateKey(managementKey)
 
