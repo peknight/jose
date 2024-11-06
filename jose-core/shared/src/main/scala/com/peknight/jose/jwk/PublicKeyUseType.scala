@@ -5,7 +5,7 @@ import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 
-enum PublicKeyUseType(val entryName: String):
+enum PublicKeyUseType(val entryName: String) derives CanEqual:
   case Signature extends PublicKeyUseType("sig")
   case Encryption extends PublicKeyUseType("enc")
 end PublicKeyUseType

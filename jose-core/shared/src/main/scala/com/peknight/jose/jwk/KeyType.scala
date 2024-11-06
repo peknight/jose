@@ -7,7 +7,7 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.{Optional, Required, `Recommended+`}
 
-enum KeyType(val name: String, val requirement: Requirement):
+enum KeyType(val name: String, val requirement: Requirement) derives CanEqual:
   case EllipticCurve extends KeyType("EC", `Recommended+`)
   case RSA extends KeyType("RSA", Required)
   case OctetSequence extends KeyType("oct", Required)
