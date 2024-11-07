@@ -1,7 +1,6 @@
 package com.peknight.jose.jwa.compression
 
-import cats.effect.kernel.Concurrent
-import cats.effect.{Async, Sync}
+import cats.effect.{Concurrent, Sync}
 import cats.syntax.applicative.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
