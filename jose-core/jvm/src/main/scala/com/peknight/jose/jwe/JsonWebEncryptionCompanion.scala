@@ -1,12 +1,11 @@
 package com.peknight.jose.jwe
 
+import cats.Applicative
 import cats.data.EitherT
 import cats.effect.{Async, Concurrent, Sync}
-import cats.syntax.either.*
 import cats.syntax.option.*
-import cats.{Applicative, Id}
 import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
-import com.peknight.codec.base.{Base, Base64UrlNoPad}
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
@@ -15,7 +14,7 @@ import com.peknight.jose.error.InvalidKeyLength
 import com.peknight.jose.jwa.encryption.{EncryptionAlgorithm, KeyDecipherMode, KeyManagementAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwx.{JoseHeader, toBase}
+import com.peknight.jose.jwx.{JoseHeader, decodeOption, toBase}
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.{isTrue, typed}
 import fs2.compression.Compression
@@ -44,10 +43,10 @@ trait JsonWebEncryptionCompanion:
           if doKeyValidation then
             algorithm.validateEncryptionKey(managementKey, encryptionAlgorithm.cekByteLength).eLiftET
           else ().rLiftET
-        agreementPartyUInfo <- decodeOption[F](header.agreementPartyUInfo)
-        agreementPartyVInfo <- decodeOption[F](header.agreementPartyVInfo)
-        initializationVector <- decodeOption[F](header.initializationVector)
-        pbes2SaltInput <- decodeOption[F](header.pbes2SaltInput)
+        agreementPartyUInfo <- decodeOption(header.agreementPartyUInfo).eLiftET[F]
+        agreementPartyVInfo <- decodeOption(header.agreementPartyVInfo).eLiftET[F]
+        initializationVector <- decodeOption(header.initializationVector).eLiftET[F]
+        pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[F]
         contentEncryptionKeys <- EitherT(algorithm.encryptKey[F](managementKey, encryptionAlgorithm.cekByteLength,
           encryptionAlgorithm.cekAlgorithm, cekOverride, Some(encryptionAlgorithm), agreementPartyUInfo,
           agreementPartyVInfo, initializationVector, pbes2SaltInput, header.pbes2Count, random, cipherProvider,
@@ -94,11 +93,11 @@ trait JsonWebEncryptionCompanion:
             algorithm.validateDecryptionKey(managementKey, encryptionAlgorithm.cekByteLength).eLiftET
           else ().rLiftET
         ephemeralPublicKey <- publicKey[F](header.ephemeralPublicKey, keyFactoryProvider)
-        agreementPartyUInfo <- decodeOption[F](header.agreementPartyUInfo)
-        agreementPartyVInfo <- decodeOption[F](header.agreementPartyVInfo)
-        initializationVectorH <- decodeOption[F](header.initializationVector)
-        authenticationTagH <- decodeOption[F](header.authenticationTag)
-        pbes2SaltInput <- decodeOption[F](header.pbes2SaltInput)
+        agreementPartyUInfo <- decodeOption(header.agreementPartyUInfo).eLiftET[F]
+        agreementPartyVInfo <- decodeOption(header.agreementPartyVInfo).eLiftET[F]
+        initializationVectorH <- decodeOption(header.initializationVector).eLiftET[F]
+        authenticationTagH <- decodeOption(header.authenticationTag).eLiftET[F]
+        pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[F]
         cek <- EitherT(algorithm.decryptKey[F](managementKey, encryptedKey, encryptionAlgorithm.cekByteLength,
           encryptionAlgorithm.cekAlgorithm, keyDecipherModeOverride, Some(encryptionAlgorithm), ephemeralPublicKey,
           agreementPartyUInfo, agreementPartyVInfo, initializationVectorH, authenticationTagH, pbes2SaltInput,
@@ -111,12 +110,6 @@ trait JsonWebEncryptionCompanion:
       yield
         res
     eitherT.value
-
-  private[jwe] def decodeOption[F[_]: Applicative](option: Option[Base]): EitherT[F, Error, Option[ByteVector]] =
-    option.map(_.decode[Id]) match
-      case Some(Right(bytes)) => bytes.some.asRight.eLiftET[F]
-      case Some(Left(error)) => error.asLeft.eLiftET[F]
-      case None => none.asRight.eLiftET[F]
 
   private def checkCek[F[_] : Applicative](encryptionAlgorithm: EncryptionAlgorithm, contentEncryptionKey: ByteVector)
   : EitherT[F, Error, Unit] =
@@ -131,7 +124,8 @@ trait JsonWebEncryptionCompanion:
       case Some(compressionAlgorithm) => EitherT(compressionAlgorithm.compress[F](plaintextBytes).asError)
       case None => plaintextBytes.rLiftET
 
-  private def decompress[F[_] : Concurrent : Compression](header: JoseHeader, data: ByteVector): EitherT[F, Error, ByteVector] =
+  private def decompress[F[_] : Concurrent : Compression](header: JoseHeader, data: ByteVector)
+  : EitherT[F, Error, ByteVector] =
     header.compressionAlgorithm match
       case Some(compressionAlgorithm) => EitherT(compressionAlgorithm.decompress[F](data))
       case None => data.rLiftET

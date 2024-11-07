@@ -1,11 +1,13 @@
 package com.peknight.jose
 
 import cats.Id
-import com.peknight.codec.{Decoder, Encoder}
+import cats.syntax.either.*
+import cats.syntax.option.*
 import com.peknight.codec.base.{Base, BaseAlphabetPlatform}
 import com.peknight.codec.circe.parser.decode
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.syntax.encoder.asS
+import com.peknight.codec.{Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import io.circe.Json
@@ -26,4 +28,9 @@ package object jwx:
       jsonString <- bytes.decodeUtf8.asError
       t <- decode[Id, T](jsonString)
     yield t
+  def decodeOption(option: Option[Base]): Either[Error, Option[ByteVector]] =
+    option.map(_.decode[Id]) match
+      case Some(Right(bytes)) => bytes.some.asRight
+      case Some(Left(error)) => error.asLeft
+      case None => none.asRight
 end jwx
