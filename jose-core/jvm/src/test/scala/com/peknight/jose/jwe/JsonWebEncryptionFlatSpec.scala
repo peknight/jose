@@ -133,11 +133,9 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
         ephemeralJwk <- decode[Id, EllipticCurveJsonWebKey](ephemeralJwkJson).eLiftET[IO]
         ephemeralPublicKey <- EitherT(ephemeralJwk.toPublicKey[IO]())
         ephemeralPrivateKey <- EitherT(ephemeralJwk.toPrivateKey[IO]())
-        ephemeralPrivateKey <- ephemeralPrivateKey.toRight(MissingPrivateKey.label("ephemeralPrivateKey")).eLiftET[IO]
         apuBase <- Base64UrlNoPad.fromString(agreementPartyUInfo).eLiftET[IO]
         apvBase <- Base64UrlNoPad.fromString(agreementPartyVInfo).eLiftET[IO]
         apu <- apuBase.decode[Id].eLiftET[IO]
@@ -181,7 +179,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
         ephemeralJwk <- decode[Id, EllipticCurveJsonWebKey](ephemeralJwkJson).eLiftET[IO]
         ephemeralPublicKey <- EitherT(ephemeralJwk.toPublicKey[IO]())
         derivedKey <- EitherT(`ECDH-ES`.decryptKey[IO](receiverPrivateKey, ByteVector.empty, 32, AES, None,
@@ -218,7 +215,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, EllipticCurveJsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toPrivateKey[IO]())
-        key <- key.toRight(MissingKey.label("key")).eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
         decrypted <- EitherT(jwe.decrypt[IO](key))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
@@ -256,7 +252,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
       receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
       receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-      receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
       plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
       jwe <- EitherT(JsonWebEncryption.encrypt[IO](receiverPublicKey, plaintextBytes, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
@@ -282,7 +277,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        receiverPrivateKey <- receiverPrivateKey.toRight(MissingPrivateKey.label("receiverPrivateKey")).eLiftET[IO]
         maliciousJwe <- JsonWebEncryption.parse(maliciousJweCompact).asError.eLiftET[IO]
         decrypted <- EitherT(maliciousJwe.decrypt[IO](receiverPrivateKey))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
@@ -313,7 +307,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCsFromAppendixA2Compact).asError.eLiftET[IO]
         decrypted <- EitherT(jwe.decrypt[IO](privateKey))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
@@ -328,7 +321,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         privateKey <- EitherT(appendixA1.toPrivateKey[IO]())
-        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
         jwe <- JsonWebEncryption.parse(csCompact).asError.eLiftET[IO]
         decrypted <- EitherT(jwe.decrypt[IO](privateKey))
         res <- decrypted.decodeUtf8.asError.eLiftET[IO]
@@ -343,7 +335,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
         plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, plaintextBytes, JoseHeader(Some(RSA1_5),
           Some(`A128CBC-HS256`))))
@@ -362,7 +353,6 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        privateKey <- privateKey.toRight(MissingPrivateKey.label("privateKey")).eLiftET[IO]
         plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, plaintextBytes, JoseHeader(Some(`RSA-OAEP`),
           Some(`A128CBC-HS256`))))

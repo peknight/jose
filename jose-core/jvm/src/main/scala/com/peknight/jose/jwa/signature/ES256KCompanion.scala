@@ -7,7 +7,6 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.jose.error.MissingPrivateKey
 import com.peknight.jose.jwa.ecc.`P-256K`
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import scodec.bits.ByteVector
@@ -25,7 +24,6 @@ trait ES256KCompanion extends ECDSAPlatform { self: ECDSA =>
           eccPrivateKey <- Base64UrlNoPad.fromString(eccPrivateKey).eLiftET[F]
           jwk = EllipticCurveJsonWebKey(`P-256K`, xCoordinate, yCoordinate, Some(eccPrivateKey))
           privateKey <- EitherT(jwk.toPrivateKey[F]())
-          privateKey <- privateKey.toRight(MissingPrivateKey).eLiftET[F]
           _ <- EitherT(handleSign[F](privateKey, ByteVector(2, 6)))
         yield ()
       eitherT.value.map(_.isRight)

@@ -26,7 +26,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
           .asError
     either.fold(_.asLeft.pure, identity)
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
+  def toPrivateKeyOption[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[ECPrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decodeToUnsignedBigInt[Id].fold(
         _.asLeft.pure,

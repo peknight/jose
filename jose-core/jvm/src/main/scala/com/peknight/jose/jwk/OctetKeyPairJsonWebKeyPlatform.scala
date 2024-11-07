@@ -25,7 +25,7 @@ trait OctetKeyPairJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self
         case curve => UnsupportedKeyAlgorithm(curve.parameterSpecName).asLeft.pure
     }.fold(_.asLeft.pure, identity)
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
+  def toPrivateKeyOption[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.eccPrivateKey.fold(none[PrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decode[Id].map { privateKeyBytes =>
         self.curve match

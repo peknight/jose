@@ -26,7 +26,7 @@ trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJson
         RSA.publicKey[F](modulus, publicExponent, provider).map(_.asInstanceOf[PublicKey]).asError
     either.fold(_.asLeft.pure, identity)
 
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
+  def toPrivateKeyOption[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]] =
     self.privateExponent.fold(none[RSAPrivateKey].asRight[Error].pure[F]) { privateExponent =>
       val either =
         for

@@ -24,12 +24,11 @@ import java.security.{KeyPair, PrivateKey, PublicKey, Provider as JProvider}
 
 trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
   def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]]
-  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]]
-  def keyPair[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, KeyPair]] =
-    Apply[[X] =>> F[Either[Error, X]]].map2(
-      toPublicKey[F](provider),
-      toPrivateKey[F](provider).map(_.flatMap(_.toRight(MissingPrivateKey)))
-    )(new KeyPair(_, _))
+  def toPrivateKeyOption[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Option[PrivateKey]]]
+  def toPrivateKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PrivateKey]] =
+    toPrivateKeyOption[F](provider).map(_.flatMap(_.toRight(MissingPrivateKey)))
+  def toKeyPair[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, KeyPair]] =
+    Apply[[X] =>> F[Either[Error, X]]].map2(toPublicKey[F](provider), toPrivateKey[F](provider))(new KeyPair(_, _))
 
   protected def handleCheckJsonWebKey: Either[Error, Unit] = ().asRight[Error]
 
