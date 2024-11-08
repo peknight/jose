@@ -187,7 +187,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       jweCompact <- jwe.compact.eLiftET[IO]
       jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
       decrypted <- EitherT(jwe.decrypt[IO](key))
-      decryptedPlaintext <- decrypted.decodeUtf8.asError.eLiftET
+      decryptedPlaintext <- decrypted.decodeUtf8.asError.eLiftET[IO]
     yield
       decryptedPlaintext == plaintext
 
