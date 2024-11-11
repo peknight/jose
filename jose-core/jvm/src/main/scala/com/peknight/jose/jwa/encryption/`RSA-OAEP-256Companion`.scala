@@ -9,8 +9,16 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.security.cipher.AES
+import com.peknight.security.digest.`SHA-256`
+import com.peknight.security.mgf.MGF1
+import com.peknight.security.spec.OAEPParameterSpec
+
+import java.security.spec.{AlgorithmParameterSpec, MGF1ParameterSpec}
+import javax.crypto.spec.PSource
 
 trait `RSA-OAEP-256Companion` extends RSAESAlgorithmPlatform { self: RSAESAlgorithm =>
+  override def algorithmParameterSpec: Option[AlgorithmParameterSpec] =
+    Some(OAEPParameterSpec(`SHA-256`, MGF1, MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT))
   override def isAvailable[F[_] : Sync]: F[Boolean] =
     val modulus = "sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1Wl" +
       "UzewbgBHod5pcM9H95GQRV3JDXboIRROSBigeC5yjU1hGzHHyXss8UDpre" +

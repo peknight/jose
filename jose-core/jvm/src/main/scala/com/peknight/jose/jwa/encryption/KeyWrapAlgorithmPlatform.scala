@@ -13,9 +13,12 @@ import com.peknight.security.provider.Provider
 import com.peknight.security.spec.SecretKeySpecAlgorithm
 import scodec.bits.ByteVector
 
+import java.security.spec.AlgorithmParameterSpec
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait KeyWrapAlgorithmPlatform { self: CipherAlgorithm =>
+
+  def algorithmParameterSpec: Option[AlgorithmParameterSpec] = None
 
   def encryptKey[F[_]: Sync](managementKey: Key,
                              cekLength: Int,
@@ -38,7 +41,7 @@ trait KeyWrapAlgorithmPlatform { self: CipherAlgorithm =>
       for
         contentEncryptionKey <- getBytesOrRandom[F](cekOverride.toRight(cekLength), random)
         encryptedKey <- self.keyWrap[F](managementKey, cekAlgorithm.secretKeySpec(contentEncryptionKey),
-          provider = cipherProvider)
+          algorithmParameterSpec, provider = cipherProvider)
       yield ContentEncryptionKeys(contentEncryptionKey, encryptedKey)
     run.asError
 
@@ -64,8 +67,10 @@ trait KeyWrapAlgorithmPlatform { self: CipherAlgorithm =>
     val run =
       keyDecipherModeOverride match
         case Some(Decrypt) =>
-          self.keyDecrypt[F](managementKey, encryptedKey, provider = cipherProvider).map(cekAlgorithm.secretKeySpec)
+          self.keyDecrypt[F](managementKey, encryptedKey, algorithmParameterSpec, provider = cipherProvider)
+            .map(cekAlgorithm.secretKeySpec)
         case _ =>
-          self.keyUnwrap[F](managementKey, encryptedKey, cekAlgorithm, SecretKey, provider = cipherProvider)
+          self.keyUnwrap[F](managementKey, encryptedKey, cekAlgorithm, SecretKey, algorithmParameterSpec,
+            provider = cipherProvider)
     run.asError
 }
