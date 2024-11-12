@@ -13,7 +13,6 @@ import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.error.{MissingKey, MissingPrivateKey}
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey}

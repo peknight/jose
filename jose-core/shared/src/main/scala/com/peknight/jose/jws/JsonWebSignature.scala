@@ -1,11 +1,10 @@
 package com.peknight.jose.jws
 
 import cats.parse.{Parser, Parser0}
-import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.{Id, Monad}
 import com.peknight.cats.parse.ext.syntax.parser.flatMapE0
-import com.peknight.codec.base.{Base, Base64UrlNoPad, BaseAlphabetPlatform}
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.decode
 import com.peknight.codec.circe.sum.jsonType.given
