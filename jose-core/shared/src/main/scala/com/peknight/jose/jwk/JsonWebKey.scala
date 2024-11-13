@@ -3,7 +3,7 @@ package com.peknight.jose.jwk
 import cats.data.NonEmptyList
 import cats.{Applicative, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
-import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
+import com.peknight.codec.base.{Base64, Base64UrlNoPad}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
@@ -32,7 +32,7 @@ sealed trait JsonWebKey:
   def algorithm: Option[JsonWebAlgorithm]
   def keyID: Option[KeyId]
   def x509URL: Option[Uri]
-  def x509CertificateChain: Option[NonEmptyList[Base64NoPad]]
+  def x509CertificateChain: Option[NonEmptyList[Base64]]
   def x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad]
   def x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
   def excludePrivate: JsonWebKey
@@ -83,7 +83,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
@@ -106,7 +106,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends AsymmetricJsonWebKey with RSAJsonWebKeyPlatform:
@@ -128,7 +128,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
@@ -153,7 +153,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
@@ -161,7 +161,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
   end OctetKeyPairJsonWebKey
 
-  private val jsonWebKeyCodecConfiguration: CodecConfiguration =
+  private[jwk] val jsonWebKeyCodecConfiguration: CodecConfiguration =
     CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withDiscriminator("kty")

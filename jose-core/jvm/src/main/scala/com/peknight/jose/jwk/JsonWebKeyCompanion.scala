@@ -3,7 +3,7 @@ package com.peknight.jose.jwk
 import cats.data.NonEmptyList
 import cats.syntax.either.*
 import cats.syntax.option.*
-import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
+import com.peknight.codec.base.{Base64, Base64UrlNoPad}
 import com.peknight.error.Error
 import com.peknight.jose.error.{NoSuchCurve, UnsupportedKey}
 import com.peknight.jose.jwa.JsonWebAlgorithm
@@ -38,7 +38,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): Either[Error, JsonWebKey] =
@@ -61,7 +61,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): Either[Error, JsonWebKey] =
@@ -78,7 +78,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): Either[Error, JsonWebKey] =
@@ -110,7 +110,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): Either[Error, EllipticCurveJsonWebKey] =
@@ -145,7 +145,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): RSAJsonWebKey =
@@ -176,7 +176,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): OctetSequenceJsonWebKey =
@@ -200,7 +200,7 @@ trait JsonWebKeyCompanion:
     algorithm: Option[JsonWebAlgorithm] = None,
     keyID: Option[KeyId] = None,
     x509URL: Option[Uri] = None,
-    x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+    x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
   ): Either[Error, OctetKeyPairJsonWebKey] =
