@@ -17,7 +17,7 @@ import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey}
 import com.peknight.jose.jwk.{JsonWebKey, appendixA1, appendixA2}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx.{JoseHeader, toBytes}
 import com.peknight.security.cipher.AES
 import com.peknight.security.error.PointNotOnCurve
 import org.scalatest.Assertion
@@ -37,7 +37,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val iv = ByteVector(3, 22, 60, 12, 43, 67, 104, 105, 108, 108, 105, 99, 111, 116, 104, 101)
     val run =
       for
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value
@@ -70,7 +70,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
-        plaintextBytes <- ByteVector.encodeUtf8(text).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(text).eLiftET[IO]
         rawCek <- EitherT(randomBytes[IO](`A128CBC-HS256`.cekByteLength).asError)
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, None).asError)
         decrypted <- EitherT(`A128CBC-HS256`.decrypt[IO](rawCek, contentEncryptionParts.initializationVector,
@@ -108,7 +108,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val iv = ByteVector(227, 197, 117, 252, 2, 219, 233, 68, 180, 225, 77, 219)
     val run =
       for
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
         contentEncryptionParts <- EitherT(A256GCM.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value
@@ -251,7 +251,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
       receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
       receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-      plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+      plaintextBytes <- toBytes(plaintext).eLiftET[IO]
       jwe <- EitherT(JsonWebEncryption.encrypt[IO](receiverPublicKey, plaintextBytes, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
       receiverJwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
@@ -334,7 +334,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, plaintextBytes, JoseHeader(Some(RSA1_5),
           Some(`A128CBC-HS256`))))
         compact <- jwe.compact.eLiftET[IO]
@@ -352,7 +352,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, plaintextBytes, JoseHeader(Some(`RSA-OAEP`),
           Some(`A128CBC-HS256`))))
         compact <- jwe.compact.eLiftET[IO]
@@ -369,7 +369,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         key <- EitherT(`A128CBC-HS256`.cekAlgorithm.keySizeGenerateKey[IO](`A128CBC-HS256`.cekByteLength * 8).asError)
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(dir),
           Some(`A128CBC-HS256`))))
         compact <- jwe.compact.eLiftET[IO]

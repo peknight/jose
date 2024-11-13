@@ -8,13 +8,13 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.encryption.{`A128CBC-HS256`, dir, randomBytes}
 import com.peknight.jose.jwe.JsonWebEncryption
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx.{JoseHeader, toBytes}
 import com.peknight.security.cipher.AES
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "Compression" should "success" in {
+  "Compression" should "succeed" in {
     val plaintext = "This should compress pretty good, it should, yes it should pretty good it should pretty good it " +
       "should it should it should it should pretty good it should pretty good it should pretty good it should pretty " +
       "good it should pretty good it should pretty good it should pretty good."
@@ -22,7 +22,7 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- EitherT(randomBytes[IO](32).asError)
         key = AES.secretKeySpec(keyBytes)
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         jweWithZip <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(dir),
           Some(`A128CBC-HS256`), Some(Deflate))))
         jweWithZipCompact <- jweWithZip.compact.eLiftET[IO]
@@ -47,13 +47,9 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwe <- JsonWebEncryption.parse(cs).asError.eLiftET[IO]
-        _ = println(jwe)
         header <- jwe.getUnprotectedHeader.eLiftET[IO]
-        _ = println(header)
       yield
         true
-    run.value.asserting(value =>
-      println(value)
-      assert(value.isLeft))
+    run.value.asserting(value => assert(value.isLeft))
   }
 end CompressionFlatSpec

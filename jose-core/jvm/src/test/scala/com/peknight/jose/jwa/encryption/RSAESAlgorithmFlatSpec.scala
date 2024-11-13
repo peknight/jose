@@ -15,7 +15,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.{ContentEncryptionKeys, JsonWebEncryption}
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.jose.jwk.{appendixA1, appendixA2}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx.{JoseHeader, toBytes}
 import com.peknight.security.cipher.{AES, RSA}
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -40,7 +40,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     "wxg\"}"
   private val examplePayload = "Well, as of this moment, they're on DOUBLE SECRET PROBATION!"
 
-  "RSA1_5" should "success with jwe example A2" in {
+  "RSA1_5" should "succeed with jwe example A2" in {
     val encodedEncryptedKey = "UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-kFm1NJn8LE9XShH59_i8J0PH" +
       "5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKxGHZ7PcHALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3YvkkysZIFNP" +
       "ccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPhcCdZ6XDP0_F8rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cF" +
@@ -60,7 +60,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSA1_5" should "success with round trip" in {
+  "RSA1_5" should "succeed with round trip" in {
     val run =
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
@@ -73,12 +73,12 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSAES" should "success with some round trips" in {
+  "RSAES" should "succeed with some round trips" in {
     val plaintext = "stuff"
     val tests = for alg <- RSAESAlgorithm.values yield
       for
         keyPair <- EitherT(RSA.keySizeGenerateKeyPair[IO](2048).asError)
-        plaintextBytes <- ByteVector.encodeUtf8(plaintext).asError.eLiftET[IO]
+        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](keyPair.getPublic, plaintextBytes, JoseHeader(Some(alg),
           Some(`A128CBC-HS256`))))
         jweCompact <- jwe.compact.eLiftET[IO]
@@ -163,7 +163,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSA-OAEP" should "success with jwe example A1" in {
+  "RSA-OAEP" should "succeed with jwe example A1" in {
     // only the key encryption part from
     // http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-25#appendix-A.1
     val encodedEncryptedKey = "OKOawDo13gRp2ojaHV7LFpZcgV7T6DVZKTyKOMTYUmKoTCVJRgckCL9kiMT03JGeipsEdY3mx_etLbbWSrFr0" +
@@ -183,7 +183,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSA-OAEP" should "success with round trip" in {
+  "RSA-OAEP" should "succeed with round trip" in {
     val run =
       for
         publicKey <- EitherT(appendixA1.toPublicKey[IO]())
@@ -195,12 +195,12 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSA-OAEP-256" should "success with round trip" in {
+  "RSA-OAEP-256" should "succeed with round trip" in {
     val run =
       for
         jwk <- decode[Id, RSAJsonWebKey](jwkJson).eLiftET[IO]
         publicKey <- EitherT(jwk.toPublicKey[IO]())
-        examplePayloadBytes <- ByteVector.encodeUtf8(examplePayload).asError.eLiftET[IO]
+        examplePayloadBytes <- toBytes(examplePayload).eLiftET[IO]
         jwe <- EitherT(JsonWebEncryption.encrypt[IO](publicKey, examplePayloadBytes,
           JoseHeader(Some(`RSA-OAEP-256`), Some(`A128CBC-HS256`))))
         jweCompact <- jwe.compact.eLiftET[IO]
@@ -213,7 +213,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSA-OAEP-256" should "success with working example from mail list" in {
+  "RSA-OAEP-256" should "succeed with working example from mail list" in {
     // http://www.ietf.org/mail-archive/web/jose/current/msg04131.html
     // okay it's my own example but it's all I've got right now
     val cs = "eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0." +

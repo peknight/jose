@@ -1,34 +1,27 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Foldable
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import cats.syntax.option.*
 import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
-import com.peknight.cats.instances.scodec.bits.byteVector.given
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.*
-import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwe.ContentEncryptionKeys
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.security.Security
-import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-256`}
+import com.peknight.security.digest.`SHA-256`
 import com.peknight.security.ecc.EC
 import com.peknight.security.key.agreement.{DiffieHellman, KeyAgreement, XDH}
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.SecretKeySpecAlgorithm
 import com.peknight.security.syntax.algorithmParameterSpec.generateKeyPair as paramsGenerateKeyPair
 import com.peknight.security.syntax.ecParameterSpec.{checkPointOnCurve, generateKeyPair as ecGenerateKeyPair}
-import com.peknight.security.syntax.messageDigest.{digestF, getDigestLengthF, updateF}
 import com.peknight.validation.std.either.typed
-import fs2.Stream
 import scodec.bits.ByteVector
 
 import java.security.interfaces.*
@@ -79,8 +72,8 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(ephemeralPrivateKey)
         z <- EitherT(keyAgreementAlgorithm.generateSecret[F](ephemeralPrivateKey, partyVPublicKey,
           provider = keyAgreementProvider).asError)
-        derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo,
-          agreementPartyVInfo, messageDigestProvider)
+        derivedKey <- EitherT(ConcatKeyDerivationFunction.kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm,
+          agreementPartyUInfo, agreementPartyVInfo, messageDigestProvider))
         ephemeralPublicKey <- JsonWebKey.fromPublicKey(ephemeralPublicKey).eLiftET
       yield
         ContentEncryptionKeys(derivedKey, ByteVector.empty, Some(ephemeralPublicKey))
@@ -115,8 +108,8 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(privateKey)
         z <- EitherT(keyAgreementAlgorithm.generateSecret[F](privateKey, ephemeralPublicKey,
           provider = keyAgreementProvider).asError)
-        derivedKey <- kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm, agreementPartyUInfo,
-          agreementPartyVInfo, messageDigestProvider)
+        derivedKey <- EitherT(ConcatKeyDerivationFunction.kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm,
+          agreementPartyUInfo, agreementPartyVInfo, messageDigestProvider))
       yield
         cekAlgorithm.secretKeySpec(derivedKey).asInstanceOf[Key]
     eitherT.value
@@ -167,60 +160,6 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
 
   private def getKeyAgreementAlgorithm(privateKey: PrivateKey): DiffieHellman =
     if privateKey.isInstanceOf[ECPrivateKey] then self else XDH
-
-  private def kdf[F[_]: Sync](messageDigestAlgorithm: MessageDigestAlgorithm, sharedSecret: ByteVector, cekLength: Int,
-                              algorithm: Option[AlgorithmIdentifier], agreementPartyUInfo: Option[ByteVector],
-                              agreementPartyVInfo: Option[ByteVector], provider: Option[Provider | JProvider]
-                             ): EitherT[F, Error, ByteVector] =
-    for
-      otherInfo <- otherInfo(cekLength, algorithm, agreementPartyUInfo, agreementPartyVInfo).eLiftET
-      derivedKey <- EitherT(kdf[F](messageDigestAlgorithm, sharedSecret, otherInfo, cekLength, provider).asError)
-    yield derivedKey
-
-  private def otherInfo(cekLength: Int, algorithm: Option[AlgorithmIdentifier], agreementPartyUInfo: Option[ByteVector],
-                        agreementPartyVInfo: Option[ByteVector]): Either[Error, ByteVector] =
-    for
-      algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(
-        enc => ByteVector.encodeUtf8(enc.identifier).map(_.some).asError
-      )
-    yield
-      val algorithmIdBytes = prependDataLength(algorithmId)
-      val partyUInfoBytes = prependDataLength(agreementPartyUInfo)
-      val partyVInfoBytes = prependDataLength(agreementPartyVInfo)
-      val keyBitLength = cekLength * 8
-      val suppPubInfo = ByteVector.fromInt(keyBitLength)
-      val suppPrivInfo = ByteVector.empty
-      algorithmIdBytes ++ partyUInfoBytes ++ partyVInfoBytes ++ suppPubInfo ++ suppPrivInfo
-
-  private def prependDataLength(data: Option[ByteVector]): ByteVector =
-    data.fold(ByteVector.fromInt(0))(data => ByteVector.fromInt(data.length.toInt) ++ data)
-
-  private def kdf[F[_]: Sync](messageDigestAlgorithm: MessageDigestAlgorithm, sharedSecret: ByteVector,
-                              otherInfo: ByteVector, keyByteLength: Int, provider: Option[Provider | JProvider])
-  : F[ByteVector] =
-    for
-      messageDigest <- messageDigestAlgorithm.getMessageDigest[F](provider)
-      digestLength <- messageDigest.getDigestLengthF[F]
-      reps = getReps(keyByteLength * 8, digestLength * 8)
-      digests <- Stream.emits(1 to reps).evalMap[F, ByteVector] { i =>
-        val counterBytes = ByteVector.fromInt(i)
-        for
-          _ <- messageDigest.updateF[F](counterBytes)
-          _ <- messageDigest.updateF[F](sharedSecret)
-          _ <- messageDigest.updateF[F](otherInfo)
-          digest <- messageDigest.digestF[F]
-        yield
-          digest
-      }.compile.toList
-    yield
-      val derivedKeyMaterial = Foldable[List].fold[ByteVector](digests)
-      if derivedKeyMaterial.length != keyByteLength then
-        derivedKeyMaterial.take(keyByteLength)
-      else derivedKeyMaterial
-
-  private def getReps(keyBitLength: Int, digestBitLength: Int): Int =
-    val repsD: Double = keyBitLength.toFloat / digestBitLength.toFloat
-    Math.ceil(repsD).toInt
 
   private def checkECKeyForDecrypt(privateKey: PrivateKey, ecPublicKey: ECPublicKey): Either[Error, Unit] =
     for
