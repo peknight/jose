@@ -17,6 +17,7 @@ import com.peknight.security.syntax.edECKey.{getParameterSpecName, rawPrivateKey
 import com.peknight.security.syntax.rsaKey.*
 import com.peknight.security.syntax.xecKey.{getParameterSpecName, rawPrivateKey, rawPublicKey}
 import com.peknight.validation.std.either.typed
+import io.circe.JsonObject
 import org.http4s.Uri
 import scodec.bits.ByteVector
 
@@ -40,16 +41,17 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ): Either[Error, JsonWebKey] =
     key match
       case publicKey: PublicKey =>
         fromPublicKey(publicKey, None, otherPrimesInfo, curve, publicKeyUse, keyOperations, algorithm, keyID, x509URL,
-          x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint)
+          x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint, ext)
       case privateKey: PrivateKey => UnsupportedKey(privateKey.getAlgorithm, privateKey).asLeft
       case k =>
         fromOctetSequenceKey(k, publicKeyUse, keyOperations, algorithm, keyID, x509URL, x509CertificateChain,
-          x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint
+          x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint, ext
         ).asRight
 
   def fromKeyPair(
@@ -63,10 +65,13 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
-  ): Either[Error, JsonWebKey] =
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
+  ): Either[Error, AsymmetricJsonWebKey] =
     fromPublicKey(keyPair.getPublic, Some(keyPair.getPrivate), otherPrimesInfo, curve, publicKeyUse, keyOperations,
-      algorithm, keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint)
+      algorithm, keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint,
+      ext
+    )
 
   def fromPublicKey(
     publicKey: PublicKey,
@@ -80,24 +85,25 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
-  ): Either[Error, JsonWebKey] =
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
+  ): Either[Error, AsymmetricJsonWebKey] =
     publicKey match
       case ecPublicKey: ECPublicKey =>
         for
           ecPrivateKeyOption <- typedPrivateKey[ECPrivateKey](privateKey)
           jwk <- fromEllipticCurveKey(ecPublicKey, ecPrivateKeyOption, curve, publicKeyUse, keyOperations, algorithm,
-            keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint)
+            keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint, ext)
         yield
           jwk
       case rsaPublicKey: RSAPublicKey =>
         typedPrivateKey[RSAPrivateKey](privateKey)
           .map(rsaPrivateKeyOption => fromRSAKey(rsaPublicKey, rsaPrivateKeyOption, otherPrimesInfo, publicKeyUse,
             keyOperations, algorithm, keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint,
-            x509CertificateSHA256Thumbprint))
+            x509CertificateSHA256Thumbprint, ext))
       case pubKey if octetKeyPairAlgorithm.exists(algorithm => algorithm.parameterSpecName == pubKey.getAlgorithm) =>
         fromOctetKeyPairKey(pubKey, privateKey, publicKeyUse, keyOperations, algorithm, keyID, x509URL,
-          x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint
+          x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint, ext
         )
       case pubKey => UnsupportedKey(pubKey.getAlgorithm, pubKey).asLeft
 
@@ -112,7 +118,8 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ): Either[Error, EllipticCurveJsonWebKey] =
     val ellipticCurve: EllipticCurve = ecPublicKey.getParams.getCurve
     for
@@ -133,7 +140,8 @@ trait JsonWebKeyCompanion:
         x509URL,
         x509CertificateChain,
         x509CertificateSHA1Thumbprint,
-        x509CertificateSHA256Thumbprint
+        x509CertificateSHA256Thumbprint,
+        ext
       )
 
   def fromRSAKey(
@@ -147,7 +155,8 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ): RSAJsonWebKey =
     RSAJsonWebKey(
       Base64UrlNoPad.fromByteVector(rsaPublicKey.rawModulus),
@@ -166,7 +175,8 @@ trait JsonWebKeyCompanion:
       x509URL,
       x509CertificateChain,
       x509CertificateSHA1Thumbprint,
-      x509CertificateSHA256Thumbprint
+      x509CertificateSHA256Thumbprint,
+      ext
     )
 
   def fromOctetSequenceKey(
@@ -178,7 +188,8 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ): OctetSequenceJsonWebKey =
     OctetSequenceJsonWebKey(
       Base64UrlNoPad.fromByteVector(ByteVector(key.getEncoded)),
@@ -189,7 +200,8 @@ trait JsonWebKeyCompanion:
       x509URL,
       x509CertificateChain,
       x509CertificateSHA1Thumbprint,
-      x509CertificateSHA256Thumbprint
+      x509CertificateSHA256Thumbprint,
+      ext
     )
 
   def fromOctetKeyPairKey(
@@ -202,7 +214,8 @@ trait JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ): Either[Error, OctetKeyPairJsonWebKey] =
     val either =
       publicKey match
@@ -239,7 +252,8 @@ trait JsonWebKeyCompanion:
         x509URL,
         x509CertificateChain,
         x509CertificateSHA1Thumbprint,
-        x509CertificateSHA256Thumbprint
+        x509CertificateSHA256Thumbprint,
+        ext
       )
     }
 

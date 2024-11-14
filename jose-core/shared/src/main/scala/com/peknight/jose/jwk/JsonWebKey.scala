@@ -10,22 +10,23 @@ import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
-import com.peknight.codec.{Codec, Decoder}
+import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
+import com.peknight.jose.jwx.ExtendedField
 import com.peknight.security.key.agreement.{X25519, X448}
 import com.peknight.security.signature.{Ed25519, Ed448}
 import com.peknight.security.spec.NamedParameterSpecName
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.http4s.Uri
 
 /**
  * https://datatracker.ietf.org/doc/html/rfc7517
  */
-sealed trait JsonWebKey:
+sealed trait JsonWebKey extends ExtendedField:
   def keyType: KeyType
   def publicKeyUse: Option[PublicKeyUseType]
   def keyOperations: Option[Seq[KeyOperationType]]
@@ -85,7 +86,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
     def excludePrivate: EllipticCurveJsonWebKey = copy(eccPrivateKey = None)
@@ -108,7 +110,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ) extends AsymmetricJsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
     def excludePrivate: RSAJsonWebKey = copy(
@@ -130,7 +133,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
     def excludePrivate: JsonWebKey = this
@@ -155,7 +159,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509URL: Option[Uri] = None,
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
-    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None
+    x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+    ext: Option[JsonObject] = None
   ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
@@ -164,10 +169,12 @@ object JsonWebKey extends JsonWebKeyCompanion:
   private[jwk] val jsonWebKeyCodecConfiguration: CodecConfiguration =
     CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-      .withDiscriminator("kty")
       .withTransformConstructorNames(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
+      .withDiscriminator("kty")
+      .withExtendedField("ext")
 
-  given codecEllipticCurveJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecEllipticCurveJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], EllipticCurveJsonWebKey] =
     given CodecConfiguration = jsonWebKeyCodecConfiguration
     Codec.derived[F, S, EllipticCurveJsonWebKey]
@@ -177,7 +184,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   given circeCodecEllipticCurveJsonWebKey: io.circe.Codec[EllipticCurveJsonWebKey] = codec[EllipticCurveJsonWebKey]
 
-  given codecRSAJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecRSAJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], RSAJsonWebKey] =
     given CodecConfiguration = jsonWebKeyCodecConfiguration
     Codec.derived[F, S, RSAJsonWebKey]
@@ -187,10 +195,10 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   given circeCodecRSAJsonWebKey: io.circe.Codec[RSAJsonWebKey] = codec[RSAJsonWebKey]
 
-  given codecOctetKeyPairJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecOctetKeyPairJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                             Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], OctetKeyPairJsonWebKey] =
     given CodecConfiguration = jsonWebKeyCodecConfiguration
-
     Codec.derived[F, S, OctetKeyPairJsonWebKey]
 
   given jsonCodecOctetKeyPairJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], OctetKeyPairJsonWebKey] =
@@ -198,10 +206,10 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   given circeCodecOctetKeyPairJsonWebKey: io.circe.Codec[OctetKeyPairJsonWebKey] = codec[OctetKeyPairJsonWebKey]
 
-  given codecAsymmetricJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecAsymmetricJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                           Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], AsymmetricJsonWebKey] =
     given CodecConfiguration = jsonWebKeyCodecConfiguration
-
     Codec.derived[F, S, AsymmetricJsonWebKey]
 
   given jsonCodecAsymmetricJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], AsymmetricJsonWebKey] =
@@ -209,10 +217,10 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   given circeCodecAsymmetricJsonWebKey: io.circe.Codec[AsymmetricJsonWebKey] = codec[AsymmetricJsonWebKey]
 
-  given codecOctetSequenceJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecOctetSequenceJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], OctetSequenceJsonWebKey] =
     given CodecConfiguration = jsonWebKeyCodecConfiguration
-
     Codec.derived[F, S, OctetSequenceJsonWebKey]
 
   given jsonCodecOctetSequenceJsonWebKey[F[_] : Monad]: Codec[F, Json, Cursor[Json], OctetSequenceJsonWebKey] =
@@ -220,7 +228,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   given circeCodecOctetSequenceJsonWebKey: io.circe.Codec[OctetSequenceJsonWebKey] = codec[OctetSequenceJsonWebKey]
 
-  given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                 Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], JsonWebKey] =
     given CodecConfiguration = jsonWebKeyCodecConfiguration
     Codec.derived[F, S, JsonWebKey]

@@ -7,11 +7,12 @@ import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 
 case class JsonWebKeySet(keys: List[JsonWebKey])
 object JsonWebKeySet:
-  given codecJsonWebKeySet[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S])
+  given codecJsonWebKeySet[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
+                                    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], JsonWebKeySet] =
     given CodecConfiguration = JsonWebKey.jsonWebKeyCodecConfiguration
     given Encoder[F, S, List[JsonWebKey]] = Encoder.encodeListA[F, S, JsonWebKey]

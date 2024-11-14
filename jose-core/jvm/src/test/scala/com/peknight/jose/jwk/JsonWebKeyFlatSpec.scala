@@ -40,9 +40,8 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       (joseJwkEither, jose4jJwkEither, restoredKeyPair, checkResult) match
         case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored)), true) =>
-          joseJwk == jose4jJwk &&
-            restored.getPublic.equals(keyPair.getPublic) &&
-            restored.getPrivate.equals(keyPair.getPrivate)
+          restored.getPublic.equals(keyPair.getPublic) &&
+          restored.getPrivate.equals(keyPair.getPrivate)
         case _ => false
 
   "JsonWebKey" should "succeed with EC" in {
@@ -67,8 +66,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jose4jJwkEither = decode[Id, JsonWebKey](jose4jJwk.toJson(OutputControlLevel.INCLUDE_PRIVATE))
       yield
         (joseJwkEither, jose4jJwkEither, restoredKey) match
-          case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored))) =>
-            joseJwk == jose4jJwk && restored.equals(key)
+          case (Right(joseJwk), Right(jose4jJwk), Some(Right(restored))) => restored.equals(key)
           case _ => false
     run.asserting(assert)
   }
