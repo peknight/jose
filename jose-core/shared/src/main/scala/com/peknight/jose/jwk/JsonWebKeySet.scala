@@ -11,12 +11,13 @@ import io.circe.{Json, JsonObject}
 
 case class JsonWebKeySet(keys: List[JsonWebKey])
 object JsonWebKeySet:
+  def apply(keys: JsonWebKey*): JsonWebKeySet = JsonWebKeySet(keys.toList)
   given codecJsonWebKeySet[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
                                     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
   : Codec[F, S, Cursor[S], JsonWebKeySet] =
     given CodecConfiguration = JsonWebKey.jsonWebKeyCodecConfiguration
     given Encoder[F, S, List[JsonWebKey]] = Encoder.encodeListA[F, S, JsonWebKey]
-    given Decoder[F, Cursor[S], List[JsonWebKey]] = Decoder.decodeListA[F, S, JsonWebKey]
+    given Decoder[F, Cursor[S], List[JsonWebKey]] = Decoder.decodeSeqIgnoreError[F, S, JsonWebKey, List](List.newBuilder)
     Codec.derived[F, S, JsonWebKeySet]
   given jsonCodecJsonWebKeySet[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebKeySet] =
     codecJsonWebKeySet[F, Json]
