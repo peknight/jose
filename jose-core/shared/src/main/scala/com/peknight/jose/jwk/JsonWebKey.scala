@@ -169,8 +169,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   given stringDecodeBase64[F[_] : Applicative]: Decoder[F, String, Base64] =
     Decoder.applicative[F, String, Base64](t =>
-      Base64.baseParser.parseAll(t.replaceAll("\\s*+", "").replaceAll("=*+$", ""))
-        .left.map(DecodingFailure.apply)
+      Base64.baseParser.parseAll(t.replaceAll("\\s*+", "")).left.map(DecodingFailure.apply)
     )
 
   given decodeBase64[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Base64] =
