@@ -8,6 +8,7 @@ import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
@@ -165,6 +166,24 @@ object JsonWebKey extends JsonWebKeyCompanion:
     val keyType: KeyType = OctetKeyPair
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
   end OctetKeyPairJsonWebKey
+
+  given stringDecodeBase64[F[_] : Applicative]: Decoder[F, String, Base64] =
+    Decoder.applicative[F, String, Base64](t =>
+      Base64.baseParser.parseAll(t.replaceAll("\\s*+", "").replaceAll("=*+$", ""))
+        .left.map(DecodingFailure.apply)
+    )
+
+  given decodeBase64[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Base64] =
+    Decoder.decodeS[F, S, Base64]
+
+  given stringDecodeBase64UrlNoPad[F[_]: Applicative]: Decoder[F, String, Base64UrlNoPad] =
+    Decoder.applicative[F, String, Base64UrlNoPad](t =>
+      Base64UrlNoPad.baseParser.parseAll(t.replaceAll("\\s*+", "").replaceAll("=*+$", ""))
+        .left.map(DecodingFailure.apply)
+    )
+
+  given decodeBase64UrlNoPad[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Base64UrlNoPad] =
+    Decoder.decodeS[F, S, Base64UrlNoPad]
 
   private[jwk] val jsonWebKeyCodecConfiguration: CodecConfiguration =
     CodecConfiguration.default
