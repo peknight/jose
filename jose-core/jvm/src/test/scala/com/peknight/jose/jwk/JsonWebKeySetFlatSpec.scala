@@ -4,20 +4,24 @@ import cats.Id
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.jose.jwa.ecc.{`P-256`, `P-521`}
 import com.peknight.jose.jwa.encryption.A128KW
 import com.peknight.jose.jwa.signature.RS256
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey, RSAJsonWebKey}
-import com.peknight.jose.jwk.PublicKeyUseType.Signature
+import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
 import com.peknight.security.cipher.RSA
+import com.peknight.security.syntax.ecParameterSpec.publicKey
 import com.peknight.validation.std.either.typed
 import io.circe.syntax.*
 import org.scalatest.flatspec.AsyncFlatSpec
 
-import java.security.interfaces.RSAPublicKey
+import java.security.interfaces.{ECPublicKey, RSAPublicKey}
+import java.security.spec.ECPoint
 
 class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKeySet" should "succeed with one bad apple" in {
@@ -253,5 +257,38 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           jwk.keyType == KeyType.RSA && jwk.keyID.contains(keyID) && jwk.publicKeyUse.contains(Signature) &&
           publicKey.getModulus == key.getModulus && publicKey.getPublicExponent == key.getPublicExponent
     run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySet" should "succeed with from ec public key and back" in {
+    List(`P-256`.ecParameterSpec.publicKey[IO](x256, y256), `P-521`.ecParameterSpec.publicKey[IO](x521, y521))
+      .map { io =>
+        for
+          publicKey <- EitherT(io.asError)
+          kid = "kkiidd"
+          keyID = KeyId(kid)
+          webKey <- JsonWebKey.fromEllipticCurveKey(publicKey, keyID = Some(keyID), publicKeyUse = Some(Encryption))
+            .eLiftET[IO]
+          jwkSet = JsonWebKeySet(webKey)
+          json = jwkSet.asJson.deepDropNullValues.noSpaces
+          parsedJwkSet <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+          jwk <- parsedJwkSet.keys.find(_.keyID.contains(keyID)).toRight(OptionEmpty).eLiftET[IO]
+          ecJsonWebKey <- typed[EllipticCurveJsonWebKey](jwk).eLiftET
+          parsedPublicKey <- EitherT(ecJsonWebKey.toPublicKey[IO]())
+          parsedPublicKey <- typed[ECPublicKey](parsedPublicKey).eLiftET[IO]
+        yield
+          given CanEqual[java.security.spec.EllipticCurve, java.security.spec.EllipticCurve] = CanEqual.derived
+          given CanEqual[ECPoint, ECPoint] = CanEqual.derived
+          json.contains(Encryption.entryName) && json.contains(kid) && parsedJwkSet.keys.length == 1 &&
+            jwk.keyType == KeyType.EllipticCurve && jwk.keyID.contains(keyID) &&
+            jwk.publicKeyUse.contains(Encryption) && publicKey.getW.getAffineX == parsedPublicKey.getW.getAffineX &&
+            publicKey.getW.getAffineY == parsedPublicKey.getW.getAffineY &&
+            publicKey.getParams.getCofactor == parsedPublicKey.getParams.getCofactor &&
+            publicKey.getParams.getCurve == parsedPublicKey.getParams.getCurve &&
+            publicKey.getParams.getGenerator == parsedPublicKey.getParams.getGenerator &&
+            publicKey.getParams.getOrder == parsedPublicKey.getParams.getOrder
+      }
+      .sequence
+      .map(_.forall(identity))
+      .value.asserting(value => assert(value.getOrElse(false)))
   }
 end JsonWebKeySetFlatSpec

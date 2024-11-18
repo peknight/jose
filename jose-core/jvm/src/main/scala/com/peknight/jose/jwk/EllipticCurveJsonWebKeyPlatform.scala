@@ -9,10 +9,10 @@ import cats.syntax.option.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
-import com.peknight.security.ecc.EC
 import com.peknight.security.provider.Provider
+import com.peknight.security.syntax.ecParameterSpec.{checkPointOnCurve, privateKey, publicKey}
 
-import java.security.interfaces.{ECPrivateKey, ECPublicKey}
+import java.security.interfaces.ECPrivateKey
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: EllipticCurveJsonWebKey =>
@@ -22,7 +22,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
         xCoordinate <- self.xCoordinate.decodeToUnsignedBigInt[Id]
         yCoordinate <- self.yCoordinate.decodeToUnsignedBigInt[Id]
       yield
-        EC.publicKey[F](xCoordinate, yCoordinate, self.curve.ecParameterSpec, provider).map(_.asInstanceOf[PublicKey])
+        self.curve.ecParameterSpec.publicKey[F](xCoordinate, yCoordinate, provider).map(_.asInstanceOf[PublicKey])
           .asError
     either.fold(_.asLeft.pure, identity)
 
@@ -30,7 +30,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
     self.eccPrivateKey.fold(none[ECPrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decodeToUnsignedBigInt[Id].fold(
         _.asLeft.pure,
-        eccPrivateKey => EC.privateKey[F](eccPrivateKey, self.curve.ecParameterSpec, provider).asError
+        eccPrivateKey => self.curve.ecParameterSpec.privateKey[F](eccPrivateKey, provider).asError
           .map(_.map(privateKey => privateKey.asInstanceOf[PrivateKey].some))
       )
     }
@@ -39,7 +39,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
     for
       xCoordinate <- self.xCoordinate.decodeToUnsignedBigInt[Id]
       yCoordinate <- self.yCoordinate.decodeToUnsignedBigInt[Id]
-      _ <- EC.checkPointOnCurve(xCoordinate, yCoordinate, self.curve.ecParameterSpec)
+      _ <- self.curve.ecParameterSpec.checkPointOnCurve(xCoordinate, yCoordinate)
     yield
       ()
 }
