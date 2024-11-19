@@ -7,10 +7,6 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
-import com.peknight.security.cipher.RSA
-import com.peknight.security.digest.`SHA-2`
-import com.peknight.security.mgf.{MGF, MGF1}
-import com.peknight.security.oid.ObjectIdentifier
 
 trait `RSASSA-PSS` extends RSASSA with com.peknight.security.signature.`RSASSA-PSS` with `RSASSA-PSSPlatform`:
   def requirement: Requirement = Optional

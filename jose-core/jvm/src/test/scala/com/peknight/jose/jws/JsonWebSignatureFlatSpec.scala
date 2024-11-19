@@ -6,10 +6,13 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.frLiftET
 import com.peknight.codec.base.Base64UrlNoPad
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.*
 import com.peknight.jose.jwt.{JsonWebToken, JsonWebTokenClaims}
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.security.Security
+import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.cipher.{AES, RSA}
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -35,6 +38,8 @@ class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   def testKeys(algorithm: JsonWebAlgorithm, signingKey: Key, verificationKey: Key, checkEquals: Boolean = true): IO[Boolean] =
     val eitherT =
       for
+        provider <- EitherT(BouncyCastleProvider[IO].asError)
+        _ <- EitherT(Security.addProvider[IO](provider).asError)
         signature <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader.jwtHeader(algorithm),
           jwtClaims, Some(signingKey)))
         verify <- EitherT(signature.verify[IO](Some(verificationKey)))
