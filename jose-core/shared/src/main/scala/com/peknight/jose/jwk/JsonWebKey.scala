@@ -27,7 +27,7 @@ import org.http4s.Uri
 /**
  * https://datatracker.ietf.org/doc/html/rfc7517
  */
-sealed trait JsonWebKey extends ExtendedField:
+sealed trait JsonWebKey extends ExtendedField with JsonWebKeyPlatform:
   def keyType: KeyType
   def publicKeyUse: Option[PublicKeyUseType]
   def keyOperations: Option[Seq[KeyOperationType]]
@@ -38,6 +38,7 @@ sealed trait JsonWebKey extends ExtendedField:
   def x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad]
   def x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad]
   def excludePrivate: JsonWebKey
+  def thumbprintHashInput: String
 end JsonWebKey
 object JsonWebKey extends JsonWebKeyCompanion:
   private val memberNameMap: Map[String, String] = com.peknight.jose.memberNameMap ++ Map(
@@ -92,6 +93,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
   ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
     def excludePrivate: EllipticCurveJsonWebKey = copy(eccPrivateKey = None)
+    def thumbprintHashInput: String =
+      s"""{"crv":"${curve.name}","kty":"${keyType.name}","x":"${xCoordinate.value}","y":"${yCoordinate.value}"}"""
   end EllipticCurveJsonWebKey
 
   case class RSAJsonWebKey(
@@ -123,6 +126,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
       secondFactorCRTExponent = None,
       firstCRTCoefficient = None
     )
+    def thumbprintHashInput: String =
+      s"""{"e":"${exponent.value}","kty":"${keyType.name}","n":"${modulus.value}"}"""
   end RSAJsonWebKey
 
   case class OctetSequenceJsonWebKey(
@@ -139,6 +144,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
   ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
     def excludePrivate: JsonWebKey = this
+    def thumbprintHashInput: String =
+      s"""{"k":"${keyValue.value}","kty":"${keyType.name}"}"""
   end OctetSequenceJsonWebKey
 
   given stringCodecNamedParameterSpecName[F[_]: Applicative]: Codec[F, String, String, NamedParameterSpecName] =
@@ -165,20 +172,13 @@ object JsonWebKey extends JsonWebKeyCompanion:
   ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)
+    def thumbprintHashInput: String =
+      s"""{"crv":"${curve.parameterSpecName}","kty":"${keyType.name}","x":"${xCoordinate.value}"}"""
   end OctetKeyPairJsonWebKey
-
-  given stringDecodeBase64[F[_] : Applicative]: Decoder[F, String, Base64] =
-    Decoder.applicative[F, String, Base64](t =>
-      Base64.baseParser.parseAll(t.replaceAll("\\s*+", "")).left.map(DecodingFailure.apply)
-    )
-
-  given decodeBase64[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Base64] =
-    Decoder.decodeS[F, S, Base64]
 
   given stringDecodeBase64UrlNoPad[F[_]: Applicative]: Decoder[F, String, Base64UrlNoPad] =
     Decoder.applicative[F, String, Base64UrlNoPad](t =>
-      Base64UrlNoPad.baseParser.parseAll(t.replaceAll("\\s*+", "").replaceAll("=*+$", ""))
-        .left.map(DecodingFailure.apply)
+      Base64UrlNoPad.baseParser.parseAll(t.replaceAll("=*+$", "")).left.map(DecodingFailure.apply)
     )
 
   given decodeBase64UrlNoPad[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Base64UrlNoPad] =
