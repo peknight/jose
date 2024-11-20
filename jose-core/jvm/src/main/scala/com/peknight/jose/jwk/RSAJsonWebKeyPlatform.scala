@@ -13,7 +13,7 @@ import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.security.cipher.RSA
 import com.peknight.security.provider.Provider
 
-import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
+import java.security.interfaces.RSAPrivateKey
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
 
 trait RSAJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { self: RSAJsonWebKey =>
