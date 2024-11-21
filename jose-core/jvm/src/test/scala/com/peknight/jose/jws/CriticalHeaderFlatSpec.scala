@@ -72,7 +72,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       .asserting(value => assert(value.getOrElse(false)))
   }
 
-  "CriticalHeader" should "succeed with bad crit" in {
+  "CriticalHeader" should "succeed with simple round trip" in {
     val payload = "This family is in a rut. We gotta shake things up. We're driving to Walley World."
     val run =
       for
