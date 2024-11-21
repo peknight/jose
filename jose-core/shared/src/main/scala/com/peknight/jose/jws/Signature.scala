@@ -8,7 +8,7 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.jose.jws.JsonWebSignature.concat
-import com.peknight.jose.jwx.{HeaderEither, JoseHeader, fromBase, toBase}
+import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
@@ -25,6 +25,8 @@ trait Signature extends HeaderEither:
 
   def compact(payload: String): Either[Error, String] =
     getProtectedHeader.map(h => s"${concat(h, payload)}.${signature.value}")
+  def detachedContentCompact: Either[Error, String] =
+    getProtectedHeader.map(h => s"${h.value}..${signature.value}")
 end Signature
 object Signature:
   case class Signature private (

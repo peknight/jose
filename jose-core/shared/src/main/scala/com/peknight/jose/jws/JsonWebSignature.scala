@@ -54,6 +54,9 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
         Base64UrlNoPad.baseParser.parseAll(nel.last).map(signature => JsonWebSignature(headerBase, payload, signature))
     }
 
+  def parse(detachedContentCompact: String, payload: String): Either[Parser.Error, JsonWebSignature] =
+    parse(detachedContentCompact.split("\\.\\.", 2).mkString(s".$payload."))
+
   def parse(value: String): Either[Parser.Error, JsonWebSignature] = jsonWebSignatureParser.parseAll(value)
 
   given codecJsonWebSignature[F[_], S](using

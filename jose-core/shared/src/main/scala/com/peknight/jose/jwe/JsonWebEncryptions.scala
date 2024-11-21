@@ -9,12 +9,10 @@ import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
-import com.peknight.jose.jwe.Recipient
 import com.peknight.jose.jwe.Recipient.codecRecipient
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
