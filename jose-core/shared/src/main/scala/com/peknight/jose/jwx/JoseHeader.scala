@@ -2,6 +2,9 @@ package com.peknight.jose.jwx
 
 import cats.Monad
 import cats.data.NonEmptyList
+import cats.syntax.either.*
+import cats.syntax.functor.*
+import cats.syntax.traverse.*
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.iso.codec
@@ -13,12 +16,14 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
+import com.peknight.jose.error.UnrecognizedCriticalHeader
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.EncryptionAlgorithm
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
 import com.peknight.jose.jwt.JsonWebToken
-import com.peknight.jose.memberNameMap
+import com.peknight.jose.{memberNameMap, base64UrlEncodePayloadLabel}
+import com.peknight.validation.std.either.isTrue
 import io.circe.{Json, JsonObject}
 import org.http4s.Uri
 
@@ -49,11 +54,10 @@ case class JoseHeader(
                      ) extends ExtendedField:
   def isBase64UrlEncodePayload: Boolean = base64UrlEncodePayload.getOrElse(true)
   def base64UrlEncodePayload(b64: Boolean): JoseHeader =
-    val label = "b64"
     if b64 then
-      copy(critical = removeCritical(label), base64UrlEncodePayload = None)
+      copy(critical = removeCritical(base64UrlEncodePayloadLabel), base64UrlEncodePayload = None)
     else
-      copy(critical = addCritical(label), base64UrlEncodePayload = Some(false))
+      copy(critical = addCritical(base64UrlEncodePayloadLabel), base64UrlEncodePayload = Some(false))
   end base64UrlEncodePayload
 
   def addExt(label: String, value: Json): JoseHeader =
@@ -63,6 +67,13 @@ case class JoseHeader(
 
   def removeExt(label: String): JoseHeader =
     copy(critical = removeCritical(label), ext = ext.map(_.remove(label)).filterNot(_.isEmpty))
+
+  def checkCritical(knownCriticalHeaders: List[String]): Either[UnrecognizedCriticalHeader, Unit] =
+    critical match
+      case Some(critical) =>
+        critical.traverse(header => isTrue(knownCriticalHeaders.contains(header), UnrecognizedCriticalHeader(header)))
+          .as(())
+      case None => ().asRight
 
   private def addCritical(label: String): Option[List[String]] =
     Some(critical.map(crit => if crit.contains(label) then crit else crit :+ label).getOrElse(List(label)))

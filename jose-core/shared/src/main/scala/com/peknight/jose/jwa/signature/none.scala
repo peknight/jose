@@ -6,8 +6,6 @@ import com.peknight.error.Error
 import com.peknight.jose.error.{CanNotHaveKey, JoseError}
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
-import com.peknight.security.error.InvalidSignature
-import com.peknight.validation.std.either.isTrue
 import scodec.bits.ByteVector
 
 import java.security.Key

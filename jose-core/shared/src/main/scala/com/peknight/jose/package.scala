@@ -1,6 +1,7 @@
 package com.peknight
 
 package object jose:
+  private[jose] val base64UrlEncodePayloadLabel: String = "b64"
   private[jose] val memberNameMap: Map[String, String] =
     Map(
       "algorithm" -> "alg",
@@ -29,6 +30,6 @@ package object jose:
       "pbes2Count" -> "p2c",
 
       // rfc7797
-      "base64UrlEncodePayload" -> "b64",
+      "base64UrlEncodePayload" -> base64UrlEncodePayloadLabel,
     )
 end jose

@@ -11,7 +11,7 @@ import com.peknight.security.digest.`SHA-1`
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class JsonWebKeyThumbprintFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebKeyThumbprint" should "success with RSA from RFC7638 example 3.1" in {
+  "JsonWebKeyThumbprint" should "succeed with RSA from RFC7638 example 3.1" in {
     // http://tools.ietf.org/html/rfc7638#section-3.1
     val n = "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCi" +
       "FV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0" +
@@ -37,7 +37,7 @@ class JsonWebKeyThumbprintFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeyThumbprint" should "success with kid derivation using jwk thumb compare" in {
+  "JsonWebKeyThumbprint" should "succeed with kid derivation using jwk thumb compare" in {
     // kid values from an external source that were derived using 7638 JWK thumbprint
     // this test is just to confirm that we get the same value when calculating the 7638 JWK thumbprint
     // (they seem to have also confused the x5t stuff but that's superfluous to this check)

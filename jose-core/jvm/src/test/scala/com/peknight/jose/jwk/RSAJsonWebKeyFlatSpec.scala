@@ -29,7 +29,7 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     "TGoVEn2bKVRUCgu-GjBVaYLU6f3l9kJfFNS3E0QbVdxzubSu3Mkqzjkn439X0M_V51gfpRLI9JYanrC4D4qAdGcopV_0ZHHzQlBjudU2QvXt4eh" +
     "NYTCBr6XCLQUShb1juUO1ZdiYoFaFQT5Tw8bGUl_x_jTj3ccPDVZFD9pIuhLhBOneufuBiB4cS98l2SR_RQyGWSeWjnczT0QU91p1DhOVRuOopz" +
     "nQ\"}"
-  "RSAJsonWebKey" should "success with parse example with private" in {
+  "RSAJsonWebKey" should "succeed with parse example with private" in {
     val run =
       for
         jwk <- decode[Id, JsonWebKey](rsaJwkWithPrivateKey).eLiftET[IO]
@@ -45,7 +45,7 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSAJsonWebKey" should "success with from key with private" in {
+  "RSAJsonWebKey" should "succeed with from key with private" in {
     val run =
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
@@ -60,7 +60,7 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSAJsonWebKey" should "success with from key with crt private and back and again" in {
+  "RSAJsonWebKey" should "succeed with from key with crt private and back and again" in {
     val json = "{\"kty\":\"RSA\",\"n\":\"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFx" +
       "uhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY" +
       "368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksI" +
@@ -80,7 +80,7 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     doKeyWithCrtPrivateAndBackAndAgain(json)
   }
 
-  "RSAJsonWebKey" should "success with from crt and back with jws appendix A2" in {
+  "RSAJsonWebKey" should "succeed with from crt and back with jws appendix A2" in {
     val json = "{\"kty\":\"RSA\",\"n\":\"ofgWCuLjybRlzo0tZWJjNiuSfb4p4fAkd_wWJcyQoTbji9k0l8W26mPddxHmfHQp-Vaw-4qPCJr" +
       "cS2mJPMEzP1Pt0Bm4d4QlL-yRT-SFd2lZS-pCgNMsD1W_YpRPEwOWvG6b32690r2jZ47soMZo9wGzjb_7OMg0LOL-bSf63kpaSHSXndS5z5re" +
       "xMdbBYUsLA9e-KXBdQOS-UTo7WTBEMa2R2CapHg665xsmtdVMTBQY4uDZlxvb3qCo5ZwKh9kG4LT6_I5IhlJH7aGhyxXFvUK-DWNmoudF8NAc" +
@@ -118,7 +118,7 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           privateKey == privateKeyAgain
     run.value.asserting(value => assert(value.getOrElse(false)))
 
-  "RSAJsonWebKey" should "success with to json with public key only jwk and include private settings" in {
+  "RSAJsonWebKey" should "succeed with to json with public key only jwk and include private settings" in {
     val run =
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)

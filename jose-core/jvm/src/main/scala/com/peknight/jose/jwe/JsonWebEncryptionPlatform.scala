@@ -16,6 +16,7 @@ import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
   def decrypt[F[_]: Async: Compression](managementKey: Key,
+                                        knownCriticalHeaders: List[String] = List.empty[String],
                                         doKeyValidation: Boolean = true,
                                         keyDecipherModeOverride: Option[KeyDecipherMode] = None,
                                         random: Option[SecureRandom] = None,
@@ -33,6 +34,7 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
         authenticationTag <- EitherT(self.authenticationTag.decode[F])
         additionalAuthenticatedData <- getAdditionalAuthenticatedData.eLiftET
         header <- self.getUnprotectedHeader.eLiftET
+        _ <- header.checkCritical(knownCriticalHeaders).eLiftET
         res <- EitherT(handleDecrypt[F](managementKey, encryptedKey, initializationVector, ciphertext,
           authenticationTag, additionalAuthenticatedData, header, doKeyValidation, keyDecipherModeOverride, random,
           cipherProvider, keyAgreementProvider, keyFactoryProvider, macProvider, messageDigestProvider))
