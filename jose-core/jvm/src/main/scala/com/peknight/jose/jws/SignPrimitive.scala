@@ -22,6 +22,9 @@ case class SignPrimitive(header: JoseHeader, key: Option[Key] = None, doKeyValid
   def signBytes[F[_]: Sync](payload: ByteVector): F[Either[Error, JsonWebSignature]] =
     JsonWebSignature.signBytes[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
 
+  def signUtf8[F[_]: Sync](payload: String): F[Either[Error, JsonWebSignature]] =
+    JsonWebSignature.signUtf8[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+
   def sign[F[_]: Sync](payload: String): F[Either[Error, JsonWebSignature]] =
     JsonWebSignature.sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
 

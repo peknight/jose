@@ -24,6 +24,8 @@ import scodec.bits.ByteVector
 import java.security.PublicKey
 
 class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
+
+
   "ECDSA Algorithm" should "succeed with encoding decoding" in {
     val rBytes = ByteVector(14, 209, 33, 83, 121, 99, 108, 72, 60, 47, 127, 21, 88, 7, 212, 2, 163, 178, 40, 3, 58, 249,
       124, 126, 23, 129, 154, 195, 22, 158, 166, 101)

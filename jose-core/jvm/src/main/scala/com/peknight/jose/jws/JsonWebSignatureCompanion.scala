@@ -12,6 +12,7 @@ import com.peknight.jose.error.{MissingKey, UnsupportedSignatureAlgorithm}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{SignaturePlatform, none}
 import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, toBytes}
+import com.peknight.jose.jwx
 import com.peknight.jose.jwx.{JoseHeader, toBase}
 import com.peknight.security.error.InvalidSignature
 import com.peknight.security.provider.Provider
@@ -38,6 +39,15 @@ trait JsonWebSignatureCompanion:
     encodePayload(payload, header.isBase64UrlEncodePayload).fold(
       _.asLeft.pure[F],
       payload => sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+    )
+
+  def signUtf8[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None,
+                            doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
+                            random: Option[SecureRandom] = None, provider: Option[Provider | JProvider] = None)
+  : F[Either[Error, JsonWebSignature]] =
+    jwx.toBytes(payload).fold(
+      _.asLeft.pure[F],
+      payload => signBytes[F](header, payload, key,doKeyValidation, useLegacyName, random, provider)
     )
 
   def sign[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None, doKeyValidation: Boolean = true,

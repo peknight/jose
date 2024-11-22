@@ -1,7 +1,6 @@
-package com.peknight.jose
+package com.peknight.jose.jwx
 
 import com.peknight.jose.jwa.signature.HS256
-import com.peknight.jose.jwx.JoseHeader
 import io.circe.parser.decode
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
