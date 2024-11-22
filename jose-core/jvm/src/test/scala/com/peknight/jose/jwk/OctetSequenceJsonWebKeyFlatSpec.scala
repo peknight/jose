@@ -26,9 +26,8 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         parsedKey <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
-        parsedKey <- typed[OctetSequenceJsonWebKey](parsedKey).eLiftET[IO]
         json = parsedKey.asJson.deepDropNullValues.noSpaces
-        key <- parsedKey.toKey.eLiftET[IO]
+        key <- EitherT(parsedKey.toKey[IO]())
         jwk <- JsonWebKey.fromKey(Hmac.secretKeySpec(keyBytes)).eLiftET[IO]
         json2 = jwk.asJson.deepDropNullValues.noSpaces
       yield
@@ -44,8 +43,7 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- JsonWebKey.fromKey(AES.secretKeySpec(rawInputBytes)).eLiftET[IO]
         json = jwk.asJson.deepDropNullValues.noSpaces
         jwkFromJson <- decode[Id, JsonWebKey](json).eLiftET[IO]
-        jwkFromJson <- typed[OctetSequenceJsonWebKey](jwkFromJson).eLiftET[IO]
-        key <- jwkFromJson.toKey.eLiftET[IO]
+        key <- EitherT(jwkFromJson.toKey[IO]())
         encoded = ByteVector(key.getEncoded)
       yield
         rawInputBytes.length == encoded.length && rawInputBytes === encoded

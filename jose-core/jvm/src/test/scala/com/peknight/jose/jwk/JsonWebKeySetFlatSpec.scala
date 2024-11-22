@@ -224,12 +224,10 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwkSet <- decode[Id, JsonWebKeySet](jwkJson).eLiftET[IO]
         jwk1 <- jwkSet.keys.find(_.algorithm.contains(A128KW)).toRight(OptionEmpty).eLiftET[IO]
-        jwk1 <- typed[OctetSequenceJsonWebKey](jwk1).eLiftET[IO]
-        key1 <- jwk1.toKey.eLiftET[IO]
+        key1 <- EitherT(jwk1.toKey[IO]())
         jwk2 <- jwkSet.keys.find(_.keyID.contains(KeyId("HMAC key used in JWS A.1 example"))).toRight(OptionEmpty)
           .eLiftET[IO]
-        jwk2 <- typed[OctetSequenceJsonWebKey](jwk2).eLiftET[IO]
-        key2 <- jwk2.toKey.eLiftET[IO]
+        key2 <- EitherT(jwk2.toKey[IO]())
       yield
         val flag1 =
           jwkSet.keys match

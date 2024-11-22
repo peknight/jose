@@ -25,9 +25,10 @@ import org.http4s.Uri
 import scodec.bits.ByteVector
 
 import java.security.cert.X509Certificate
-import java.security.{PublicKey, Provider as JProvider}
+import java.security.{Key, PublicKey, Provider as JProvider}
 
 trait JsonWebKeyPlatform { self: JsonWebKey =>
+  def toKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Key]]
 
   def calculateThumbprint[F[_]: Sync](hashAlgorithm: MessageDigestAlgorithm = `SHA-256`,
                                       provider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =

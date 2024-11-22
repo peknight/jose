@@ -12,7 +12,7 @@ import com.peknight.jose.error.MissingPrivateKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.security.provider.Provider
 
-import java.security.{KeyPair, PrivateKey, PublicKey, Provider as JProvider}
+import java.security.{Key, KeyPair, PrivateKey, PublicKey, Provider as JProvider}
 
 trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
   def toPublicKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, PublicKey]]
@@ -21,6 +21,8 @@ trait AsymmetricJsonWebKeyPlatform { self: AsymmetricJsonWebKey =>
     toPrivateKeyOption[F](provider).map(_.flatMap(_.toRight(MissingPrivateKey)))
   def toKeyPair[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, KeyPair]] =
     Apply[[X] =>> F[Either[Error, X]]].map2(toPublicKey[F](provider), toPrivateKey[F](provider))(new KeyPair(_, _))
+  def toKey[F[_]: Sync](provider: Option[Provider | JProvider] = None): F[Either[Error, Key]] =
+    toPublicKey[F](provider).map(_.map(_.asInstanceOf[Key]))
 
   protected def handleCheckJsonWebKey: Either[Error, Unit] = ().asRight[Error]
 
