@@ -41,4 +41,12 @@ object JsonWebSignatureTestOps:
       _ <- isTrue(parsedJwsWithKey2Payload == payload, Error("parsedPayload2 must equal")).eLiftET[IO]
     yield
       ()
+
+  def testBadKeyOnVerify(compact: String, key: Option[Key], provider: Option[Provider | JProvider] = None)
+  : EitherT[IO, Error, Unit] =
+    for
+      jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+      _ <- EitherT(jws.check[IO](key, provider = provider).map(_.swap.asError))
+    yield
+      ()
 end JsonWebSignatureTestOps

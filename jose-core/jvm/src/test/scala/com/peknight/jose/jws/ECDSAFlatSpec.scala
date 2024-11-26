@@ -11,14 +11,16 @@ import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwa.ecc.{`P-256K`, `P-256`}
-import com.peknight.jose.jwa.signature.{ES256, ES256K}
+import com.peknight.jose.jwa.ecc.{`P-256K`, `P-256`, `P-384`, `P-521`}
+import com.peknight.jose.jwa.signature.{ES256, ES256K, ES384, ES512}
+import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwk.{JsonWebKey, x256, y256}
-import com.peknight.jose.jws.JsonWebSignatureTestOps.testBasicRoundTrip
+import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnVerify, testBasicRoundTrip}
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.Security
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
+import com.peknight.security.cipher.RSA
+import com.peknight.security.mac.Hmac
 import com.peknight.security.signature.ECDSA.{convertConcatenatedToDER, convertDERToConcatenated}
 import com.peknight.validation.std.either.isTrue
 import org.scalatest.Assertion
@@ -674,6 +676,90 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- EitherT(jws.check[IO](Some(key), provider = Some(provider)))
         payload <- jws.decodePayloadUtf8.eLiftET[IO]
         _ <- isTrue(payload == """{"sub":"meh"}""", Error("payload must equal")).eLiftET[IO]
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with P-384 round trip gen keys" in {
+    val run =
+      for
+        keyPair1 <- EitherT(`P-384`.generateKeyPair[IO]().asError)
+        keyPair2 <- EitherT(`P-384`.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("The umlaut (/\u02C8\u028Amla\u028At/ UUM-lowt) refers to a sound shift.", ES384,
+          keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate, keyPair2.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with P-521 round trip gen keys" in {
+    val run =
+      for
+        keyPair1 <- EitherT(`P-521`.generateKeyPair[IO]().asError)
+        keyPair2 <- EitherT(`P-521`.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("?????", ES512, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
+          keyPair2.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with P-256 round trip example keys and gen keys" in {
+    val run =
+      for
+        priv1 <- EitherT(`P-256`.privateKey[IO](d256).asError)
+        pub1 <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        keyPair <- EitherT(`P-256`.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("something here", ES256, priv1, pub1, keyPair.getPrivate, keyPair.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with P-521 round trip example keys and gen keys" in {
+    val run =
+      for
+        priv1 <- EitherT(`P-521`.privateKey[IO](d521).asError)
+        pub1 <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
+        keyPair <- EitherT(`P-521`.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("touch\u00df", ES512, priv1, pub1, keyPair.getPrivate, keyPair.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "failed with bad keys" in {
+    val cs256 = "eyJhbGciOiJFUzI1NiJ9.UEFZTE9BRCEhIQ.WcL6cqkJSkzwK4Y85Lj96l-_WVmII6foW8d7CJNgdgDxi6NnTdXQD1Ze2vdXGcE" +
+      "rIu9sJX9EXkmiaHSd0GQkgA"
+    val cs384 = "eyJhbGciOiJFUzM4NCJ9.VGhlIHVtbGF1dCAoIC8_P21sYT90LyB1dW0tbG93dCkgcmVmZXJzIHRvIGEgc291bmQgc2hpZnQu.U" +
+      "O2zG037CLktsDeHJ71w48DmTMmCjsEEKhFGSE1uBQUG8rRZousdJR8p2rykZglU2RdWG48AE4Rf5_WfiZuP5ANC_bLgiOz1rwlSe6ds2romfd" +
+      "Q-enn7KTvr9Cmqt2Ot"
+    val cs512 = "eyJhbGciOiJFUzUxMiJ9.Pz8_Pz8.AJS7SrxiK6zpJkXjV4iWM_oUcE294hV3RK-y5uQD2Otx-UwZNFEH6L66ww5ukQ7R1rykiW" +
+      "d9PNjzlzrgwfJqF2KyASmO6Hz7dZr9EYPIX6rrEpWjsp1tDJ0_Hq45Rk2eJ5z3cFTIpVu6V7CGXwVWvVCDQzcGpmZIFR939aI49Z_HWT7b"
+    val run =
+      for
+        rsaPrivateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        hmacKey = Hmac.secretKeySpec(ByteVector.fill(2048)(0))
+        rsaPublicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        ec256PrivateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
+        ec521PrivateKey <- EitherT(`P-521`.privateKey[IO](d521).asError)
+        ec256PublicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        ec521PublicKey <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
+        test1 =
+          for
+            cs <- List(cs256, cs384, cs512)
+            key <- List(Some(rsaPrivateKey), None, Some(hmacKey), Some(rsaPublicKey), Some(ec256PrivateKey),
+              Some(ec521PrivateKey))
+          yield
+            testBadKeyOnVerify(cs, key)
+        test2 = List(
+          testBadKeyOnVerify(cs256, Some(ec521PublicKey)),
+          testBadKeyOnVerify(cs384, Some(ec521PublicKey)),
+          testBadKeyOnVerify(cs384, Some(ec256PublicKey)),
+          testBadKeyOnVerify(cs512, Some(ec256PublicKey)),
+        )
+        _ <- (test1 ::: test2).sequence
       yield
         ()
     run.value.asserting(value => assert(value.isRight))
