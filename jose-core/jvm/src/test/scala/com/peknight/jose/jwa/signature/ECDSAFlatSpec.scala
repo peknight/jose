@@ -1,4 +1,4 @@
-package com.peknight.jose.jws
+package com.peknight.jose.jwa.signature
 
 import cats.Id
 import cats.data.EitherT
@@ -15,6 +15,7 @@ import com.peknight.jose.jwa.ecc.{`P-256K`, `P-256`, `P-384`, `P-521`}
 import com.peknight.jose.jwa.signature.{ES256, ES256K, ES384, ES512}
 import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
+import com.peknight.jose.jws.JsonWebSignature
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnVerify, testBasicRoundTrip}
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.Security
