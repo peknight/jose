@@ -11,7 +11,6 @@ import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.signature.ES256
 import com.peknight.jose.jwk.{d256, x256, y256}
 import com.peknight.jose.jwx.JoseHeader
-import com.peknight.security.syntax.ecParameterSpec.{privateKey, publicKey}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
@@ -26,7 +25,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       .traverse { cs =>
         for
           jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
-          publicKey <- EitherT(`P-256`.ecParameterSpec.publicKey[IO](x256, y256).asError)
+          publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
           _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
           _ <- EitherT(jws.check[IO](Some(publicKey), List(headerName)))
           payload <- jws.decodePayloadUtf8.eLiftET[IO]
@@ -74,12 +73,12 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val payload = "This family is in a rut. We gotta shake things up. We're driving to Walley World."
     val run =
       for
-        privateKey <- EitherT(`P-256`.ecParameterSpec.privateKey[IO](d256).asError)
+        privateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
         jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(ES256), critical = Some(List("nope"))), payload,
           Some(privateKey)))
         jwsCompactSerialization <- jws.compact.eLiftET[IO]
         jws <- JsonWebSignature.parse(jwsCompactSerialization).asError.eLiftET[IO]
-        publicKey <- EitherT(`P-256`.ecParameterSpec.publicKey[IO](x256, y256).asError)
+        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
         _ <- EitherT(jws.check[IO](Some(publicKey), List("nope")))
         parsedPayload <- jws.decodePayloadUtf8.eLiftET[IO]

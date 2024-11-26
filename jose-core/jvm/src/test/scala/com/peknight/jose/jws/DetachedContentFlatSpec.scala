@@ -10,7 +10,6 @@ import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.signature.ES256
 import com.peknight.jose.jwk.{d256, x256, y256}
 import com.peknight.jose.jwx.JoseHeader
-import com.peknight.security.syntax.ecParameterSpec.{privateKey, publicKey}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class DetachedContentFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
@@ -18,12 +17,12 @@ class DetachedContentFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val payload = "Issue #48"
     val run =
       for
-        privateKey <- EitherT(`P-256`.ecParameterSpec.privateKey[IO](d256).asError)
+        privateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
         jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(ES256)), payload, Some(privateKey)))
         detachedContentCompact <- jws.detachedContentCompact.eLiftET[IO]
         encodedPayload = jws.payload
         compact <- jws.compact.eLiftET[IO]
-        publicKey <- EitherT(`P-256`.ecParameterSpec.publicKey[IO](x256, y256).asError)
+        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         parsedDetachedJws <- JsonWebSignature.parse(detachedContentCompact, encodedPayload).asError.eLiftET[IO]
         _ <- EitherT(parsedDetachedJws.check[IO](Some(publicKey)))
         parsedDetachedPayload <- parsedDetachedJws.decodePayloadUtf8.eLiftET[IO]

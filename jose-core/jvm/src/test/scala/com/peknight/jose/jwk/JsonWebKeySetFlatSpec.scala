@@ -16,7 +16,6 @@ import com.peknight.jose.jwa.signature.RS256
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey, RSAJsonWebKey}
 import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
 import com.peknight.security.cipher.{AES, RSA}
-import com.peknight.security.syntax.ecParameterSpec.publicKey
 import com.peknight.validation.std.either.typed
 import io.circe.syntax.*
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -259,7 +258,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "JsonWebKeySet" should "succeed with from ec public key and back" in {
-    List(`P-256`.ecParameterSpec.publicKey[IO](x256, y256), `P-521`.ecParameterSpec.publicKey[IO](x521, y521))
+    List(`P-256`.publicKey[IO](x256, y256), `P-521`.publicKey[IO](x521, y521))
       .map { io =>
         for
           publicKey <- EitherT(io.asError)

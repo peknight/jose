@@ -6,7 +6,6 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.StringType
 import com.peknight.security.error.UnknownAlgorithm
-import com.peknight.security.oid.ObjectIdentifier
 import com.peknight.security.spec.ECGenParameterSpecName
 
 trait Curve extends ECGenParameterSpecName derives CanEqual:
@@ -15,7 +14,10 @@ end Curve
 object Curve extends CurveCompanion:
   given stringCodecCurve[F[_]: Applicative]: Codec[F, String, String, Curve] =
     Codec.applicative[F, String, String, Curve](_.name)(
-      name => values.find(_.name == name).toRight(DecodingFailure(UnknownAlgorithm(name)))
+      name => values
+        .find(curve => curve.name == name || curve.parameterSpecName == name)
+        .orElse(if prime256v1.name == name then Some(prime256v1) else None)
+        .toRight(DecodingFailure(UnknownAlgorithm(name)))
     )
   given codecCurve[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Curve] =
     Codec.codecS[F, S, Curve]

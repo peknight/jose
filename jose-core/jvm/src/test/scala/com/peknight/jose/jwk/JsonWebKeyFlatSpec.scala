@@ -12,7 +12,6 @@ import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwk.JsonWebKey.*
 import com.peknight.jose.jwk.KeyOperationType.*
 import com.peknight.security.cipher.RSA
-import com.peknight.security.syntax.ecParameterSpec.{privateKey, publicKey}
 import com.peknight.validation.std.either.typed
 import io.circe.syntax.*
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -87,7 +86,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKey" should "succeed with factory with EC public key" in {
     val run =
       for
-        publicKey <- EitherT(`P-256`.ecParameterSpec.publicKey[IO](x256, y256).asError)
+        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         jwk <- JsonWebKey.fromKey(publicKey).eLiftET[IO]
         _ <- isEllipticCurve(jwk)
       yield
@@ -96,7 +95,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "JsonWebKey" should "failed with factory with EC private key" in {
-    `P-256`.ecParameterSpec.privateKey[IO](d256).asserting(privateKey => assert(JsonWebKey.fromKey(privateKey).isLeft))
+    `P-256`.privateKey[IO](d256).asserting(privateKey => assert(JsonWebKey.fromKey(privateKey).isLeft))
   }
 
   "JsonWebKey" should "succeed with EC single jwk to and from json" in {

@@ -10,7 +10,6 @@ import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import com.peknight.security.provider.Provider
-import com.peknight.security.syntax.ecParameterSpec.{checkPointOnCurve, privateKey, publicKey}
 
 import java.security.interfaces.ECPrivateKey
 import java.security.{PrivateKey, PublicKey, Provider as JProvider}
@@ -22,7 +21,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
         xCoordinate <- self.xCoordinate.decodeToUnsignedBigInt[Id]
         yCoordinate <- self.yCoordinate.decodeToUnsignedBigInt[Id]
       yield
-        self.curve.ecParameterSpec.publicKey[F](xCoordinate, yCoordinate, provider).map(_.asInstanceOf[PublicKey])
+        self.curve.publicKey[F](xCoordinate, yCoordinate, provider).map(_.asInstanceOf[PublicKey])
           .asError
     either.fold(_.asLeft.pure, identity)
 
@@ -30,8 +29,9 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
     self.eccPrivateKey.fold(none[ECPrivateKey].asRight[Error].pure[F]) { eccPrivateKey =>
       eccPrivateKey.decodeToUnsignedBigInt[Id].fold(
         _.asLeft.pure,
-        eccPrivateKey => self.curve.ecParameterSpec.privateKey[F](eccPrivateKey, provider).asError
-          .map(_.map(privateKey => privateKey.asInstanceOf[PrivateKey].some))
+        eccPrivateKey => self.curve.privateKey[F](eccPrivateKey, provider).asError.map(
+          _.map(privateKey => privateKey.asInstanceOf[PrivateKey].some)
+        )
       )
     }
 
@@ -39,7 +39,7 @@ trait EllipticCurveJsonWebKeyPlatform extends AsymmetricJsonWebKeyPlatform { sel
     for
       xCoordinate <- self.xCoordinate.decodeToUnsignedBigInt[Id]
       yCoordinate <- self.yCoordinate.decodeToUnsignedBigInt[Id]
-      _ <- self.curve.ecParameterSpec.checkPointOnCurve(xCoordinate, yCoordinate)
+      _ <- self.curve.checkPointOnCurve(xCoordinate, yCoordinate)
     yield
       ()
 }

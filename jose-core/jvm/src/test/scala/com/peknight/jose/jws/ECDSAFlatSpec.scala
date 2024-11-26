@@ -11,12 +11,16 @@ import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwa.ecc.`P-256`
+import com.peknight.jose.jwa.ecc.{`P-256K`, `P-256`}
+import com.peknight.jose.jwa.signature.{ES256, ES256K}
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jwk.{JsonWebKey, x256, y256}
+import com.peknight.jose.jws.JsonWebSignatureTestOps.testBasicRoundTrip
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
+import com.peknight.security.Security
+import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.signature.ECDSA.{convertConcatenatedToDER, convertDERToConcatenated}
-import com.peknight.security.syntax.ecParameterSpec.publicKey
+import com.peknight.validation.std.either.isTrue
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -24,7 +28,6 @@ import scodec.bits.ByteVector
 import java.security.PublicKey
 
 class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-
 
   "ECDSA Algorithm" should "succeed with encoding decoding" in {
     val rBytes = ByteVector(14, 209, 33, 83, 121, 99, 108, 72, 60, 47, 127, 21, 88, 7, 212, 2, 163, 178, 40, 3, 58, 249,
@@ -146,7 +149,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     val run =
       for
-        publicKey <- EitherT(`P-256`.ecParameterSpec.publicKey[IO](x256, y256).asError)
+        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- expectInvalidSignature(jws, publicKey)
       yield ()
     run.value.asserting(value => assert(value.isRight))
@@ -158,7 +161,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "________vOb6racXnoTzucrC_GMlUQ"
     val run =
       for
-        publicKey <- EitherT(`P-256`.ecParameterSpec.publicKey[IO](x256, y256).asError)
+        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- expectInvalidSignature(jws, publicKey)
       yield ()
     run.value.asserting(value => assert(value.isRight))
@@ -627,4 +630,52 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
+  "ECDSA" should "succeed with P-256 round trip gen keys" in {
+    val run =
+      for
+        keyPair1 <- EitherT(`P-256`.generateKeyPair[IO]().asError)
+        keyPair2 <- EitherT(`P-256`.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("PAYLOAD!!!", ES256, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
+          keyPair2.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with ES256K round trip gen keys" in {
+    val run =
+      for
+        provider <- EitherT(BouncyCastleProvider[IO].asError)
+        _ <- EitherT(Security.addProvider[IO](provider).asError)
+        keyPair1 <- EitherT(ES256K.curve.generateKeyPair[IO](provider = Some(provider)).asError)
+        keyPair1Jwk <- JsonWebKey.fromKeyPair(keyPair1).eLiftET[IO]
+        keyPair1Jwk <- JsonWebKey.fromKeyPair(keyPair1).eLiftET[IO]
+        keyPair1 <- EitherT(keyPair1Jwk.toKeyPair[IO](provider = Some(provider)))
+        keyPair2 <- EitherT(`P-256K`.generateKeyPair[IO](provider = Some(provider)).asError)
+        _ <- testBasicRoundTrip("k", ES256K, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
+          keyPair2.getPublic, Some(provider))
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with external ES256K" in {
+    val jwsCs = "eyJraWQiOiJtZWgiLCJhbGciOiJFUzI1NksifQ.eyJzdWIiOiJtZWgifQ.-5KBGAoCZYkE-1cpU8gQZ1SfLCAxd5P0TtDAEuCAh" +
+      "Pl57eTMTFqNLXiM09J4lgq0IA35OxNgxIxn3WNFUAXEZg"
+    val jwkJson = "{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"secp256k1\",\"kid\":\"meh\",\"x\":\"cWwaOcRUqZE6UMUtOPL" +
+      "cNIIouiM7GrdO_gWV47e837I\",\"y\":\"N2vLlH7f_2Y54zKfbUSSQyQxb5oozybb2SsM-eRYpMU\"}"
+    val run =
+      for
+        provider <- EitherT(BouncyCastleProvider[IO].asError)
+        _ <- EitherT(Security.addProvider[IO](provider).asError)
+        jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCs).asError.eLiftET[IO]
+        key <- EitherT(jwk.toKey[IO](provider = Some(provider)))
+        _ <- EitherT(jws.check[IO](Some(key), provider = Some(provider)))
+        payload <- jws.decodePayloadUtf8.eLiftET[IO]
+        _ <- isTrue(payload == """{"sub":"meh"}""", Error("payload must equal")).eLiftET[IO]
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
 end ECDSAFlatSpec
