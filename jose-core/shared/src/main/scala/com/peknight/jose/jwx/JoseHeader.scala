@@ -82,7 +82,8 @@ case class JoseHeader(
     critical.map(_.filterNot(_ == label)).filterNot(_.isEmpty)
 end JoseHeader
 object JoseHeader:
-  def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader = JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))
+  def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader =
+    JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))
   given codecJoseHeader[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]

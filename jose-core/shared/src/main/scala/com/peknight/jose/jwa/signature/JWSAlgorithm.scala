@@ -10,7 +10,8 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 trait JWSAlgorithm extends JsonWebAlgorithm
 object JWSAlgorithm:
   val values: List[JWSAlgorithm] =
-    HmacSHA.values :::
+    EdDSA ::
+      HmacSHA.values :::
       `RSASSA-PKCS1-v1_5`.values :::
       ECDSA.values :::
       `RSASSA-PSS`.values :::
