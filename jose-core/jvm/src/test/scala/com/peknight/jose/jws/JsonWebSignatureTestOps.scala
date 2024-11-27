@@ -42,7 +42,11 @@ object JsonWebSignatureTestOps:
     yield
       ()
 
-  def testBadKeyOnVerify(compact: String, key: Option[Key], provider: Option[Provider | JProvider] = None)
+  def testBadKeyOnSign(alg: JWSAlgorithm, key: Option[Key] = None, provider: Option[Provider | JProvider] = None)
+  : IO[Boolean] =
+      JsonWebSignature.signUtf8[IO](JoseHeader(Some(alg)), "whatever", key).map(_.isLeft)
+
+  def testBadKeyOnVerify(compact: String, key: Option[Key] = None, provider: Option[Provider | JProvider] = None)
   : EitherT[IO, Error, Unit] =
     for
       jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]

@@ -6,10 +6,13 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.JsonWebSignature
+import com.peknight.jose.jws.JsonWebSignatureTestOps.testBasicRoundTrip
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.security.signature.{Ed25519, Ed448}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
@@ -25,38 +28,79 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwk <- decode[Id, AsymmetricJsonWebKey](jwkJson).eLiftET[IO]
-        _ = println(1)
         jkt <- EitherT(jwk.calculateBase64UrlEncodedThumbprint[IO]())
-        _ = println(2)
         privateKey <- EitherT(jwk.toPrivateKey[IO]())
-        _ = println(3)
         jwsSigner <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(EdDSA)), expectedPayload, Some(privateKey)))
-        _ = println(4)
         jws <- jwsSigner.compact.eLiftET[IO]
-        _ = println(5)
         jwkPubOnly <- decode[Id, AsymmetricJsonWebKey](jwkJsonPubOnly).eLiftET[IO]
-        _ = println(6)
         jktPublicOnly <- EitherT(jwkPubOnly.calculateBase64UrlEncodedThumbprint[IO]())
-        _ = println(7)
         publicKey <- EitherT(jwkPubOnly.toPublicKey[IO]())
-        _ = println(8)
         jwsVerifier <- JsonWebSignature.parse(expectedJws).asError.eLiftET[IO]
-        _ = println(9)
         _ <- EitherT(jwsVerifier.check[IO](Some(publicKey)))
-        _ = println(10)
         payload <- jwsVerifier.decodePayloadUtf8.eLiftET[IO]
-        _ = println(11)
         alteredJwsVerifier <- JsonWebSignature.parse(alteredJws).asError.eLiftET[IO]
-        _ = println(12)
         _ <- EitherT(alteredJwsVerifier.check[IO](Some(publicKey)).map(_.swap.asError))
-        _ = println(13)
       yield
         jkt.value == "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k" && jws == expectedJws &&
           jktPublicOnly.value == "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k" && payload == expectedPayload
-    run.value.asserting(value =>
-      println(value)
-      assert(value.getOrElse(false)))
+    run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
+  "EdDSA" should "succeed with verify produced else where" in {
+    val jwkJson1 = """{"kty":"OKP","crv":"Ed25519","x":"sipir4_DXRPiq3vgQPbX5EIZjhdxFVO0bwcVnIFZxQA"}"""
+    val jwkJson2 = "{\"kty\":\"OKP\",\"d\":\"-g8nVY3FlaY9SNE1c5Edn6kQXXQN13SVLCmdlKYgqYM\",\"crv\":\"Ed25519\",\"x" +
+      "\":\"sipir4_DXRPiq3vgQPbX5EIZjhdxFVO0bwcVnIFZxQA\"}"
+    val jws = "eyJhbGciOiJFZERTQSJ9.bWVo.BieQMHmbP-qyMnrbUV_mySYcoDqaxTrQGkGOZ5KGcAZ_8uwwSlds62O8yeHvp5sc4FnEas8XbJi" +
+      "lf3-FQbQrAQ"
+    val run =
+      for
+        jwk1 <- decode[Id, AsymmetricJsonWebKey](jwkJson1).eLiftET[IO]
+        publicKey <- EitherT(jwk1.toPublicKey[IO]())
+        jwsObject1 <- JsonWebSignature.parse(jws).asError.eLiftET[IO]
+        _ <- EitherT(jwsObject1.check[IO](Some(publicKey)))
+        payload <- jwsObject1.decodePayloadUtf8.eLiftET[IO]
+        jwk2 <- decode[Id, AsymmetricJsonWebKey](jwkJson2).eLiftET[IO]
+        privateKey <- EitherT(jwk2.toPrivateKey[IO]())
+        jwsObject2 <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(EdDSA)), "meh", Some(privateKey)))
+        compact <- jwsObject2.compact.eLiftET[IO]
+      yield
+        payload == "meh" && compact == jws
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
 
+  "EdDSA" should "succeed with Ed25519 round trip gen keys" in {
+    val run =
+      for
+        keyPair1 <- EitherT(Ed25519.generateKeyPair[IO]().asError)
+        keyPair2 <- EitherT(Ed25519.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("Little Ed", EdDSA, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
+          keyPair2.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "EdDSA" should "succeed with Ed448 round trip gen keys" in {
+    val run =
+      for
+        keyPair1 <- EitherT(Ed448.generateKeyPair[IO]().asError)
+        keyPair2 <- EitherT(Ed448.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("Big Ed", EdDSA, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
+          keyPair2.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "EdDSA" should "succeed with Ed mixed round trip gen keys" in {
+    val run =
+      for
+        keyPair1 <- EitherT(Ed25519.generateKeyPair[IO]().asError)
+        keyPair2 <- EitherT(Ed448.generateKeyPair[IO]().asError)
+        _ <- testBasicRoundTrip("Cousin Eddie", EdDSA, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
+          keyPair2.getPublic)
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
 end EdDSAFlatSpec
