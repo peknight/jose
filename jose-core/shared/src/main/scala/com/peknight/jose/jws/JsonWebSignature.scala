@@ -20,6 +20,7 @@ import com.peknight.jose.jwx.{JoseHeader, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
+import java.nio.charset.Charset
 import scala.reflect.ClassTag
 
 /**
@@ -33,6 +34,7 @@ case class JsonWebSignature private[jws] (
 ) extends Signature with JsonWebSignaturePlatform:
   def decodePayload: Either[Error, ByteVector] = decodePayload(payload)
   def decodePayloadUtf8: Either[Error, String] = decodePayloadUtf8(payload)
+  def decodePayloadString(charset: Charset): Either[Error, String] = decodePayloadString(payload, charset)
   def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[Error, T] = decodePayloadJson(payload)
   def compact: Either[Error, String] = compact(payload)
 end JsonWebSignature
@@ -99,6 +101,16 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
         base <- Base64UrlNoPad.fromString(payload)
         bytes <- base.decode[Id]
         res <- bytes.decodeUtf8.asError
+      yield
+        res
+    else payload.asRight
+
+  def decodePayloadString(payload: String, charset: Charset, base64UrlEncodePayload: Boolean): Either[Error, String] =
+    if base64UrlEncodePayload then
+      for
+        base <- Base64UrlNoPad.fromString(payload)
+        bytes <- base.decode[Id]
+        res <- bytes.decodeString(charset).asError
       yield
         res
     else payload.asRight

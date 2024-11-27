@@ -12,6 +12,8 @@ import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
+import java.nio.charset.Charset
+
 trait Signature extends HeaderEither:
   def signature: Base64UrlNoPad
   def isBase64UrlEncodePayload: Either[Error, Boolean] =
@@ -22,6 +24,9 @@ trait Signature extends HeaderEither:
 
   def decodePayloadUtf8(payload: String): Either[Error, String] =
     isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadUtf8(payload, b64))
+
+  def decodePayloadString(payload: String, charset: Charset): Either[Error, String] =
+    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadString(payload, charset, b64))
 
   def decodePayloadJson[T](payload: String)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
     isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadJson(payload, b64))
