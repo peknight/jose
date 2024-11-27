@@ -20,7 +20,7 @@ import com.peknight.jose.jwx.{JoseHeader, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 import scala.reflect.ClassTag
 
 /**
@@ -33,8 +33,9 @@ case class JsonWebSignature private[jws] (
   signature: Base64UrlNoPad
 ) extends Signature with JsonWebSignaturePlatform:
   def decodePayload: Either[Error, ByteVector] = decodePayload(payload)
-  def decodePayloadUtf8: Either[Error, String] = decodePayloadUtf8(payload)
-  def decodePayloadString(charset: Charset): Either[Error, String] = decodePayloadString(payload, charset)
+  def decodePayloadUtf8: Either[Error, String] = decodePayloadString()
+  def decodePayloadString(charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
+    decodePayloadString(payload, charset)
   def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[Error, T] = decodePayloadJson(payload)
   def compact: Either[Error, String] = compact(payload)
 end JsonWebSignature
@@ -94,16 +95,6 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   def decodePayload(payload: String, base64UrlEncodePayload: Boolean): Either[Error, ByteVector] =
     if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]) else jwx.toBytes(payload)
-
-  def decodePayloadUtf8(payload: String, base64UrlEncodePayload: Boolean): Either[Error, String] =
-    if base64UrlEncodePayload then
-      for
-        base <- Base64UrlNoPad.fromString(payload)
-        bytes <- base.decode[Id]
-        res <- bytes.decodeUtf8.asError
-      yield
-        res
-    else payload.asRight
 
   def decodePayloadString(payload: String, charset: Charset, base64UrlEncodePayload: Boolean): Either[Error, String] =
     if base64UrlEncodePayload then

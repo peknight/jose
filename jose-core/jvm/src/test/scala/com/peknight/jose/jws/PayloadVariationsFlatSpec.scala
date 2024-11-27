@@ -1,17 +1,24 @@
 package com.peknight.jose.jws
 
+import cats.Id
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.codec.circe.parser.decode
+import com.peknight.error.syntax.`try`.asError as tryAsError
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwa.signature.RS256
-import com.peknight.jose.jwk.{d, e, n}
+import com.peknight.jose.jwa.signature.{ES256, RS256}
+import com.peknight.jose.jwk.*
+import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
+
+import java.nio.charset.{Charset, StandardCharsets}
+import scala.util.Try
 
 class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "PayloadVariations" should "succeed with raw bytes as payload" in {
@@ -31,6 +38,61 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
       yield
         bytesIn === bytesOut
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "PayloadVariations" should "failed with get payload bytes throws on bad signature" in {
+    val bytesIn = ByteVector(12, 6, -16, 44, 0, -17, -128, 113, 126, 14, 43, -121, 123, 35, -40, -7, 37, 79, 10, 45, 77,
+      77)
+    val wrongKeyJson = "{\"kty\":\"RSA\",\"e\":\"AQAB\",\"n\":\"xLyNk8AVckm8PPwxHfenLe1MvDHJL4UsOqGgbyAsEBqrATEg0aap" +
+      "HuwJPFoiRCHQW0cgA8B9V8_MElHtMmU89VLRIeln7WCouCasO1rl2DHvBZAGhDLX5yDNTPs8-jrrZKqE_KgJQZV0KphDcwIVwgljtswPLiP2F" +
+      "gqjbnUivVM7wHbMR6kdl_FP-VwmWJFUYCtHVOJ9DalhATFndThCZ-LAgjt6tAuWiW6kEUtXuX3RfMNHh1AOufLeHp7ywmh6DhSfOjcBNVHz9W" +
+      "i6vlAPhYpk2G9xXtE9-78z76lR2T0YtULN7xDRwHSq1ub_T3Y4whxp4jYbVWRuOkqifz3TuQ\"}"
+    val run =
+      for
+        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        jws <- EitherT(JsonWebSignature.signBytes[IO](JoseHeader(Some(RS256)), bytesIn, Some(privateKey)))
+        compact <- jws.compact.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        wrongKey <- decode[Id, AsymmetricJsonWebKey](wrongKeyJson).eLiftET[IO]
+        publicKey <- EitherT(wrongKey.toKey[IO]())
+        bytesOut <- parsedJws.decodePayload.eLiftET[IO]
+        _ <- EitherT(parsedJws.check[IO](Some(publicKey)).map(_.swap.asError))
+      yield
+        bytesIn === bytesOut
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "PayloadVariations" should "succeed with payload char encoding ASCII" in {
+    val run =
+      for
+        privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "pronounced as'-key", Some(privateKey),
+          StandardCharsets.US_ASCII))
+        compact <- jws.compact.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
+        payload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
+        _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
+      yield
+        payload == "pronounced as'-key"
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "PayloadVariations" should "succeed with payload char encoding ISO8859_15" in {
+    val run =
+      for
+        charset <- Try(Charset.forName("ISO8859_15")).tryAsError.eLiftET[IO]
+        privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "€Ÿ", Some(privateKey), charset))
+        compact <- jws.compact.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
+        payload <- parsedJws.decodePayloadString(charset).eLiftET[IO]
+        _ <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).swap.asError.eLiftET[IO]
+        _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
+      yield
+        payload == "€Ÿ"
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end PayloadVariationsFlatSpec

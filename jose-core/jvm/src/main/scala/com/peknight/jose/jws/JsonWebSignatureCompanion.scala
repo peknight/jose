@@ -8,6 +8,7 @@ import cats.syntax.functor.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
+import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{MissingKey, UnsupportedSignatureAlgorithm}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{SignaturePlatform, none}
@@ -20,6 +21,7 @@ import com.peknight.validation.std.either.isTrue
 import io.circe.Json
 import scodec.bits.ByteVector
 
+import java.nio.charset.{Charset, StandardCharsets}
 import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait JsonWebSignatureCompanion:
@@ -45,7 +47,14 @@ trait JsonWebSignatureCompanion:
                             doKeyValidation: Boolean = true, useLegacyName: Boolean = false,
                             random: Option[SecureRandom] = None, provider: Option[Provider | JProvider] = None)
   : F[Either[Error, JsonWebSignature]] =
-    jwx.toBytes(payload).fold(
+    signString[F](header, payload, key, StandardCharsets.UTF_8, doKeyValidation, useLegacyName, random, provider)
+
+  def signString[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None,
+                             charset: Charset = StandardCharsets.UTF_8, doKeyValidation: Boolean = true,
+                             useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
+                             provider: Option[Provider | JProvider] = None)
+  : F[Either[Error, JsonWebSignature]] =
+    ByteVector.encodeString(payload)(charset).asError.fold(
       _.asLeft.pure[F],
       payload => signBytes[F](header, payload, key,doKeyValidation, useLegacyName, random, provider)
     )
