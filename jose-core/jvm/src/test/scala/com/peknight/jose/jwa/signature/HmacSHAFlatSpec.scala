@@ -1,10 +1,13 @@
 package com.peknight.jose.jwa.signature
 
+import cats.Id
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.either.asError
+import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnSign, testBadKeyOnVerify}
 import com.peknight.jose.jws.{JsonWebSignature, JsonWebSignatureTestOps}
 import com.peknight.jose.jwx.JoseHeader
@@ -16,12 +19,19 @@ import scodec.bits.ByteVector
 import javax.crypto.spec.SecretKeySpec
 
 class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  val key1: SecretKeySpec = Hmac.secretKeySpec(ByteVector(-41, -1, 60, 1, 1, 45, -92, -114, 8, -1, -60, 7, 54, -16, 16,
-    14, -20, -85, 56, 103, 4, 10, -56, 120, 37, -48, 6, 9, 110, -96, 27, -4, 41, -99, 60, 91, 49, 70, -99, -14, -108,
-    -81, 60, 37, 104, -116, 106, 104, -2, -95, 56, 103, 64, 10, -56, 120, 37, -48, 6, 9, 110, -96, 27, -4))
-  val key2: SecretKeySpec = Hmac.secretKeySpec(ByteVector(-67, 34, -45, 50, 13, 84, -79, 124, -16, -44, 26, -39, 4, -1,
-    26, 9, 38, 78, -107, 39, -81, 75, -18, 38, 96, 34, 13, 79, -73, 62, -60, 52, 71, -99, 60, 91, 124, 70, -9, -14,
-    -108, -104, 6, 7, 104, -116, 6, 64, -2, -95, 56, 103, 64, 10, -56, 120, 37, -48, 6, 9, 110, -92, 27, -4))
+  private val key1: SecretKeySpec = Hmac.secretKeySpec(ByteVector(-41, -1, 60, 1, 1, 45, -92, -114, 8, -1, -60, 7, 54,
+    -16, 16, 14, -20, -85, 56, 103, 4, 10, -56, 120, 37, -48, 6, 9, 110, -96, 27, -4, 41, -99, 60, 91, 49, 70, -99, -14,
+    -108, -81, 60, 37, 104, -116, 106, 104, -2, -95, 56, 103, 64, 10, -56, 120, 37, -48, 6, 9, 110, -96, 27, -4))
+  private val key2: SecretKeySpec = Hmac.secretKeySpec(ByteVector(-67, 34, -45, 50, 13, 84, -79, 124, -16, -44, 26, -39,
+    4, -1, 26, 9, 38, 78, -107, 39, -81, 75, -18, 38, 96, 34, 13, 79, -73, 62, -60, 52, 71, -99, 60, 91, 124, 70, -9,
+    -14, -108, -104, 6, 7, 104, -116, 6, 64, -2, -95, 56, 103, 64, 10, -56, 120, 37, -48, 6, 9, 110, -92, 27, -4))
+
+  // these are from http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-39#appendix-A.1
+  private val jwsCompact = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dH" +
+    "A6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+  private val payload = "{\"iss\":\"joe\",\r\n \"exp\":1300819380,\r\n \"http://example.com/is_root\":true}"
+  private val jwkJson = "{\"kty\":\"oct\",\"k\":\"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcg" +
+    "UuTwjAzZr1Z9CAow\"}"
 
   "HmacSHA" should "succeed with HS256 A" in {
     testBasicRoundTrip("some content that is the payload", HS256)
@@ -99,6 +109,19 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(HS256)), "whatever", Some(key)).map(_.swap.asError))
       yield
         cs.nonEmpty
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "HmacSHA" should "succeed with HS256 verify example" in {
+    val run =
+      for
+        jws <- JsonWebSignature.parse(jwsCompact).asError.eLiftET[IO]
+        jsonWebKey <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
+        key <- EitherT(jsonWebKey.toKey[IO]())
+        _ <- EitherT(jws.check[IO](Some(key)))
+        decodedPayload <- jws.decodePayloadUtf8.eLiftET[IO]
+      yield
+        decodedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end HmacSHAFlatSpec

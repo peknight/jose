@@ -765,4 +765,53 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         ()
     run.value.asserting(value => assert(value.isRight))
   }
+
+  "ECDSA" should "succeed with ES256 verify example" in {
+    // http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-39#appendix-A.3
+    val compact = "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19y" +
+      "b290Ijp0cnVlfQ.DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQxfKTUJqPP3-Kg6NU1Q"
+    val run =
+      for
+        jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        _ <- EitherT(jws.check[IO](Some(publicKey)))
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with ES512 verify example" in {
+    // http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-39#appendix-A.4
+    val compact = "eyJhbGciOiJFUzUxMiJ9.UGF5bG9hZA.AdwMgeerwtHoh-l192l60hp9wAHZFVJbLfD_UxMi70cwnZOYaRI1bKPWROc-mZZqw" +
+      "qT2SI-KGDKB34XO0aw_7XdtAG8GaSwFKdCAPZgoXD2YBJZCPEX3xKpRwcdOO8KpEHwJjyqOgzDO7iKvU8vcnwNrmxYbSW9ERBXukOXolLzeO_Jn"
+    val run =
+      for
+        jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        publicKey <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
+        _ <- EitherT(jws.check[IO](Some(publicKey)))
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
+  "ECDSA" should "succeed with ES512 verify example from draft 14" in {
+    // http://www.ietf.org/mail-archive/web/jose/current/msg03018.html
+    val jwsCs = "eyJhbGciOiJFUzUxMiJ9.UGF5bG9hZA.AdwMgeerwtHoh-l192l60hp9wAHZFVJbLfD_UxMi70cwnZOYaRI1bKPWROc-mZZqwqT" +
+      "2SI-KGDKB34XO0aw_7XdtAG8GaSwFKdCAPZgoXD2YBJZCPEX3xKpRwcdOO8KpEHwJjyqOgzDO7iKvU8vcnwNrmxYbSW9ERBXukOXolLzeO_Jn"
+    val jwkJson = "{\"kty\":\"EC\",\"crv\":\"P-521\",\"x\":\"AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG" +
+      "_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk\",\"y\":\"ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kk" +
+      "d0AZMaZmh9ubmf63e3kyMj2\",\"d\":\"AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0" +
+      "d53vM9mE15j2C\"}"
+    val run =
+      for
+        jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCs).asError.eLiftET[IO]
+        key <- EitherT(jwk.toKey[IO]())
+        _ <- EitherT(jws.check[IO](Some(key)))
+        payload <- jws.decodePayloadUtf8.eLiftET[IO]
+      yield
+        ()
+    run.value.asserting(value => assert(value.isRight))
+  }
+
 end ECDSAFlatSpec

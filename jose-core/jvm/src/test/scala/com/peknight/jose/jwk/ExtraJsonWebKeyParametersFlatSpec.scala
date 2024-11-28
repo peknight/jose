@@ -18,7 +18,7 @@ import java.security.{Key, PublicKey}
 class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKey" should "succeed with parsing custom params" in {
     val json = "{\"kty\":\"EC\",\"x\":\"14PCFt8uuLb6mbfn1XTOHzcSfZk0nU_AGe2hq91Gvl4\",\"y\":\"U0rLlwB8be5YM2ajGyactl" +
-      "plFol7FKJrN83mNAOpuss\",\"crv\":\"P-256\",\"meh\":\"just some value\",\"number\":860}";
+      "plFol7FKJrN83mNAOpuss\",\"crv\":\"P-256\",\"meh\":\"just some value\",\"number\":860}"
     val flag = decode[Id, JsonWebKey](json).map{ jwk =>
       val json = jwk.asJson.deepDropNullValues.noSpaces
       jwk.ext.flatMap(_("meh")).flatMap(_.asString).contains("just some value") &&

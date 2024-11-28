@@ -2,6 +2,7 @@ package com.peknight.jose.jws
 
 import cats.Id
 import cats.data.EitherT
+import com.peknight.error.syntax.applicativeError.asError
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
@@ -9,9 +10,10 @@ import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwa.signature.HS256
-import com.peknight.jose.jwk.JsonWebKey
+import com.peknight.jose.jwa.signature.{HS256, RS256}
+import com.peknight.jose.jwk.{JsonWebKey, d, e, n}
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -116,6 +118,29 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         payloadBase.value == "JC4wMg" && parsedPayload == payload && compact == jwscsWithB64 &&
           headerJson == """{"alg":"HS256","b64":false,"crit":["b64"]}""" && flag &&
           signedBase.value == detachedJws.signature.value
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "UnencodedPayloadOption" should "succeed with compact serialization unencoded payload" in {
+    // https://bitbucket.org/b_c/jose4j/issues/156 shows the b64:false didn't work (0.6.5 and prior)
+    // with compact serialization.
+    val payload1 = """{"key": "value"}"""
+    val payload2 = "I want a hamburger. No, a cheeseburger. I want a hotdog. I want a milkshake."
+    val run =
+      for
+        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        signerJws1 <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
+          payload1, Some(privateKey)))
+        compact1 <- signerJws1.compact.eLiftET[IO]
+        verifierJws <- JsonWebSignature.parse(compact1).asError.eLiftET[IO]
+        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        _ <- EitherT(verifierJws.check[IO](Some(publicKey)))
+        verifierPayload <- verifierJws.decodePayloadUtf8.eLiftET[IO]
+        signerJws2 <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
+          payload2, Some(privateKey)))
+        compact2 <- signerJws2.compact.eLiftET[IO]
+      yield
+        compact1.contains(payload1) && verifierPayload == payload1 && compact2.contains(payload2)
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end UnencodedPayloadOptionFlatSpec

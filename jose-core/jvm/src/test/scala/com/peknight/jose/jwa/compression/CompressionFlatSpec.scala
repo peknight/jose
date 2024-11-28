@@ -11,7 +11,6 @@ import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jwx.{JoseHeader, toBytes}
 import com.peknight.security.cipher.AES
 import org.scalatest.flatspec.AsyncFlatSpec
-import scodec.bits.ByteVector
 
 class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "Compression" should "succeed" in {
