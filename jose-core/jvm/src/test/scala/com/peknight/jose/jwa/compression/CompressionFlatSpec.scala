@@ -8,7 +8,7 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.encryption.{`A128CBC-HS256`, dir, randomBytes}
 import com.peknight.jose.jwe.JsonWebEncryption
-import com.peknight.jose.jwx.{JoseHeader, toBytes}
+import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.cipher.AES
 import org.scalatest.flatspec.AsyncFlatSpec
 
@@ -21,14 +21,13 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- EitherT(randomBytes[IO](32).asError)
         key = AES.secretKeySpec(keyBytes)
-        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
-        jweWithZip <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(dir),
+        jweWithZip <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(dir),
           Some(`A128CBC-HS256`), Some(Deflate))))
         jweWithZipCompact <- jweWithZip.compact.eLiftET[IO]
         jweWithZip <- JsonWebEncryption.parse(jweWithZipCompact).asError.eLiftET[IO]
         decryptedPlaintextWithZipBytes <- EitherT(jweWithZip.decrypt[IO](key))
         decryptedPlaintextWithZip <- decryptedPlaintextWithZipBytes.decodeUtf8.asError.eLiftET[IO]
-        jweWithoutZip <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(dir),
+        jweWithoutZip <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(dir),
           Some(`A128CBC-HS256`))))
         jweWithoutZipCompact <- jweWithoutZip.compact.eLiftET[IO]
         jweWithoutZip <- JsonWebEncryption.parse(jweWithoutZipCompact).asError.eLiftET[IO]

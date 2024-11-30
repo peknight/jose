@@ -132,8 +132,7 @@ class ECDHESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- decode[Id, EllipticCurveJsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toPrivateKey[IO]())
         jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
-        decrypted <- EitherT(jwe.decrypt[IO](key))
-        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+        res <- EitherT(jwe.decryptUtf8[IO](key))
       yield
         res == text
     run.value.asserting(value => assert(value.getOrElse(false)))

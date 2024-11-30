@@ -183,8 +183,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     for
       keyBytes <- toBytes(password).eLiftET[IO]
       key = PBKDF2.secretKeySpec(keyBytes)
-      plaintextBytes <- toBytes(plaintext).eLiftET[IO]
-      jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(alg), Some(enc))))
+      jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
       jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
       decrypted <- EitherT(jwe.decrypt[IO](key))
@@ -197,8 +196,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- toBytes("passtheword").eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
-        plaintextBytes <- toBytes("meh").eLiftET[IO]
-        jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(`PBES2-HS256+A128KW`),
+        jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, "meh", JoseHeader(Some(`PBES2-HS256+A128KW`),
           Some(`A128CBC-HS256`))))
         jweCompact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
@@ -220,9 +218,8 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- toBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
-        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         pbes2SaltInput <- EitherT(randomBytes[IO](saltByteLength).asError)
-        jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(`PBES2-HS384+A192KW`),
+        jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(`PBES2-HS384+A192KW`),
           Some(`A192CBC-HS384`), pbes2SaltInput = Some(Base64UrlNoPad.fromByteVector(pbes2SaltInput)),
           pbes2Count = Some(iterationCount))))
         jweCompact <- jwe.compact.eLiftET[IO]
@@ -245,15 +242,11 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- toBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
-        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
-        jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(`PBES2-HS256+A128KW`),
-          Some(`A128CBC-HS256`), pbes2Count = Some(iterationCount))))
+        _ <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(`PBES2-HS256+A128KW`),
+          Some(`A128CBC-HS256`), pbes2Count = Some(iterationCount))).map(_.swap.asError))
       yield
-        jwe
-    run.value.map {
-      case Left(error) => true
-      case _ => false
-    }.asserting(assert)
+        ()
+    run.value.asserting(value => assert(value.isRight))
   }
 
   "PBES2" should "failed with too little salt rejected" in {
@@ -263,15 +256,11 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- toBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
-        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
         pbes2SaltInput <- Base64UrlNoPad.fromString("bWVo").eLiftET[IO]
-        jwe <- EitherT(JsonWebEncryption.encrypt[IO](key, plaintextBytes, JoseHeader(Some(`PBES2-HS256+A128KW`),
-          Some(`A128CBC-HS256`), pbes2SaltInput = Some(pbes2SaltInput))))
+        _ <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(`PBES2-HS256+A128KW`),
+          Some(`A128CBC-HS256`), pbes2SaltInput = Some(pbes2SaltInput))).map(_.swap.asError))
       yield
-        jwe
-    run.value.map {
-      case Left(error) => true
-      case _ => false
-    }.asserting(assert)
+        ()
+    run.value.asserting(value => assert(value.isRight))
   }
 end PBES2AlgorithmFlatSpec

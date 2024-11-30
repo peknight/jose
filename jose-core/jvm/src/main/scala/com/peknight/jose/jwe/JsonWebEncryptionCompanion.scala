@@ -1,10 +1,13 @@
 package com.peknight.jose.jwe
 
-import cats.Applicative
 import cats.data.EitherT
 import cats.effect.{Async, Concurrent, Sync}
+import cats.syntax.applicative.*
+import cats.syntax.either.*
 import cats.syntax.option.*
+import cats.{Applicative, Id}
 import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
+import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
@@ -14,15 +17,63 @@ import com.peknight.jose.error.InvalidKeyLength
 import com.peknight.jose.jwa.encryption.{EncryptionAlgorithm, KeyDecipherMode, KeyManagementAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwx.{JoseHeader, decodeOption, toBase}
+import com.peknight.jose.jwx.{JoseHeader, decodeOption, toBase, toJsonBytes}
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.{isTrue, typed}
 import fs2.compression.Compression
+import io.circe.Json
 import scodec.bits.ByteVector
 
+import java.nio.charset.{Charset, StandardCharsets}
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait JsonWebEncryptionCompanion:
+  def encryptJson[F[_], A](managementKey: Key, plaintextValue: A, header: JoseHeader,
+                           cekOverride: Option[ByteVector] = None, ivOverride: Option[ByteVector] = None,
+                           doKeyValidation: Boolean = true, random: Option[SecureRandom] = None,
+                           cipherProvider: Option[Provider | JProvider] = None,
+                           keyAgreementProvider: Option[Provider | JProvider] = None,
+                           keyPairGeneratorProvider: Option[Provider | JProvider] = None,
+                           macProvider: Option[Provider | JProvider] = None,
+                           messageDigestProvider: Option[Provider | JProvider] = None
+                          )(using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
+    toJsonBytes(plaintextValue) match
+      case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
+      case Right(plaintext) => encrypt[F](managementKey, plaintext, header, cekOverride, ivOverride, doKeyValidation,
+        random, cipherProvider, keyAgreementProvider, keyPairGeneratorProvider, macProvider, messageDigestProvider)
+
+  def encryptUtf8[F[_]: Async: Compression](managementKey: Key, plaintextString: String, header: JoseHeader,
+                                            cekOverride: Option[ByteVector] = None,
+                                            ivOverride: Option[ByteVector] = None,
+                                            doKeyValidation: Boolean = true,
+                                            random: Option[SecureRandom] = None,
+                                            cipherProvider: Option[Provider | JProvider] = None,
+                                            keyAgreementProvider: Option[Provider | JProvider] = None,
+                                            keyPairGeneratorProvider: Option[Provider | JProvider] = None,
+                                            macProvider: Option[Provider | JProvider] = None,
+                                            messageDigestProvider: Option[Provider | JProvider] = None
+                                           ): F[Either[Error, JsonWebEncryption]] =
+    encryptString[F](managementKey, plaintextString, header, StandardCharsets.UTF_8, cekOverride, ivOverride,
+      doKeyValidation, random, cipherProvider, keyAgreementProvider, keyPairGeneratorProvider, macProvider,
+      messageDigestProvider)
+
+  def encryptString[F[_]: Async: Compression](managementKey: Key, plaintextString: String, header: JoseHeader,
+                                              charset: Charset = StandardCharsets.UTF_8,
+                                              cekOverride: Option[ByteVector] = None,
+                                              ivOverride: Option[ByteVector] = None,
+                                              doKeyValidation: Boolean = true,
+                                              random: Option[SecureRandom] = None,
+                                              cipherProvider: Option[Provider | JProvider] = None,
+                                              keyAgreementProvider: Option[Provider | JProvider] = None,
+                                              keyPairGeneratorProvider: Option[Provider | JProvider] = None,
+                                              macProvider: Option[Provider | JProvider] = None,
+                                              messageDigestProvider: Option[Provider | JProvider] = None
+                                             ): F[Either[Error, JsonWebEncryption]] =
+    ByteVector.encodeString(plaintextString)(charset) match
+      case Left(error) => Error(error).asLeft[JsonWebEncryption].pure[F]
+      case Right(plaintext) => encrypt[F](managementKey, plaintext, header, cekOverride, ivOverride, doKeyValidation,
+        random, cipherProvider, keyAgreementProvider, keyPairGeneratorProvider, macProvider, messageDigestProvider)
+
   def encrypt[F[_]: Async: Compression](managementKey: Key, plaintext: ByteVector, header: JoseHeader,
                                         cekOverride: Option[ByteVector] = None,
                                         ivOverride: Option[ByteVector] = None,

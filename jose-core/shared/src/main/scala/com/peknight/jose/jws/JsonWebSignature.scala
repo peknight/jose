@@ -16,7 +16,7 @@ import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwx
-import com.peknight.jose.jwx.{JoseHeader, toBase}
+import com.peknight.jose.jwx.{JoseHeader, fromBase, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
@@ -111,9 +111,7 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
     if base64UrlEncodePayload then
       for
         base64 <- Base64UrlNoPad.fromString(payload)
-        bytes <- base64.decode[Id]
-        json <- bytes.decodeUtf8.asError
-        res <- decode[Id, T](json)
+        res <- fromBase[T](base64)
       yield res
     else decode[Id, T](payload)
 end JsonWebSignature

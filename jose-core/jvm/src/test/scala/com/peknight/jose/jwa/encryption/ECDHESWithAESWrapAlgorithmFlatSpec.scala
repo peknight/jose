@@ -14,7 +14,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
-import com.peknight.jose.jwx.{JoseHeader, toBytes}
+import com.peknight.jose.jwx.JoseHeader
 import com.peknight.security.error.PointNotOnCurve
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -53,12 +53,10 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
       receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
       receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-      plaintextBytes <- toBytes(plaintext).eLiftET[IO]
-      jwe <- EitherT(JsonWebEncryption.encrypt[IO](receiverPublicKey, plaintextBytes, JoseHeader(Some(alg), Some(enc))))
+      jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](receiverPublicKey, plaintext, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
       receiverJwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
-      decrypted <- EitherT(receiverJwe.decrypt[IO](receiverPrivateKey))
-      res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+      res <- EitherT(receiverJwe.decryptUtf8[IO](receiverPrivateKey))
     yield
       res == plaintext
 
@@ -89,8 +87,7 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
         maliciousJwe <- JsonWebEncryption.parse(maliciousJweCompact).asError.eLiftET[IO]
-        decrypted <- EitherT(maliciousJwe.decrypt[IO](receiverPrivateKey))
-        res <- decrypted.decodeUtf8.asError.eLiftET[IO]
+        res <- EitherT(maliciousJwe.decryptUtf8[IO](receiverPrivateKey))
       yield
         true
     run.value.map {

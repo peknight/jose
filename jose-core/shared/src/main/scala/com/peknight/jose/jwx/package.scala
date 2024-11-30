@@ -22,11 +22,12 @@ package object jwx:
   def toBase[T, B <: Base : ClassTag](t: T, base: BaseAlphabetPlatform[?, B])(using Encoder[Id, Json, T])
   : Either[Error, B] =
     toJsonBytes[T](t).map(base.fromByteVector)
+  def fromJsonBytes[T](bytes: ByteVector)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
+    bytes.decodeUtf8.asError.flatMap(decode[Id, T])
   def fromBase[T](b: Base)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
     for
       bytes <- b.decode[Id]
-      jsonString <- bytes.decodeUtf8.asError
-      t <- decode[Id, T](jsonString)
+      t <- fromJsonBytes[T](bytes)
     yield t
   def decodeOption(option: Option[Base]): Either[Error, Option[ByteVector]] =
     option.map(_.decode[Id]) match
