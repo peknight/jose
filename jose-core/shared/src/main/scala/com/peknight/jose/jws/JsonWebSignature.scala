@@ -16,7 +16,7 @@ import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwx
-import com.peknight.jose.jwx.{JoseHeader, fromBase, toBase}
+import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure, fromBase, toBase}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
@@ -31,7 +31,7 @@ case class JsonWebSignature private[jws] (
   headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
   payload: String,
   signature: Base64UrlNoPad
-) extends Signature with JsonWebSignaturePlatform:
+) extends Signature with JsonWebStructure with JsonWebSignaturePlatform:
   def decodePayload: Either[Error, ByteVector] = decodePayload(payload)
   def decodePayloadUtf8: Either[Error, String] = decodePayloadString()
   def decodePayloadString(charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =

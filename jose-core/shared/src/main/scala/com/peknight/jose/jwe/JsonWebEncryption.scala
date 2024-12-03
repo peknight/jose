@@ -14,7 +14,7 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.error.Error
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
-import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
+import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure}
 import io.circe.{Json, JsonObject}
 
 case class JsonWebEncryption private[jwe] (
@@ -26,7 +26,7 @@ case class JsonWebEncryption private[jwe] (
                                             ciphertext: Base64UrlNoPad,
                                             authenticationTag: Base64UrlNoPad,
                                             additionalAuthenticatedData: Option[Base64UrlNoPad]
-                                          ) extends HeaderEither with JsonWebEncryptionPlatform:
+                                          ) extends JsonWebStructure with JsonWebEncryptionPlatform:
   def compact: Either[Error, String] =
     getProtectedHeader.map(h =>
       s"${h.value}.${encryptedKey.value}.${initializationVector.value}.${ciphertext.value}.${authenticationTag.value}"
