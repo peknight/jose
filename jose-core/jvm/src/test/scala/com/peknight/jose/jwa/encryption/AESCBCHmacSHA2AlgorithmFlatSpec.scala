@@ -7,7 +7,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx.stringEncodeToBytes
+import com.peknight.jose.jwx.{bytesDecodeToString, stringEncodeToBytes}
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -46,7 +46,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         authenticationTagBase <- Base64UrlNoPad.fromString(encodedAuthenticationTag).eLiftET[IO]
         authenticationTag <- EitherT(authenticationTagBase.decode[IO])
         decrypted <- EitherT(`A128CBC-HS256`.decrypt[IO](rawCek, iv, ciphertext, authenticationTag, aad))
-        decryptedText <- decrypted.decodeUtf8.asError.eLiftET
+        decryptedText <- bytesDecodeToString(decrypted).eLiftET
       yield
         decryptedText == plaintext
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -62,7 +62,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, None).asError)
         decrypted <- EitherT(`A128CBC-HS256`.decrypt[IO](rawCek, contentEncryptionParts.initializationVector,
           contentEncryptionParts.ciphertext, contentEncryptionParts.authenticationTag, aad))
-        decryptedText <- decrypted.decodeUtf8.asError.eLiftET
+        decryptedText <- bytesDecodeToString(decrypted).eLiftET
       yield
         decryptedText == text
     run.value.asserting(value => assert(value.getOrElse(false)))

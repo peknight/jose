@@ -35,10 +35,10 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwkPubOnly <- decode[Id, AsymmetricJsonWebKey](jwkJsonPubOnly).eLiftET[IO]
         jktPublicOnly <- EitherT(jwkPubOnly.calculateBase64UrlEncodedThumbprint[IO]())
         publicKey <- EitherT(jwkPubOnly.toPublicKey[IO]())
-        jwsVerifier <- JsonWebSignature.parse(expectedJws).asError.eLiftET[IO]
+        jwsVerifier <- JsonWebSignature.parse(expectedJws).eLiftET[IO]
         _ <- EitherT(jwsVerifier.check[IO](Some(publicKey)))
-        payload <- jwsVerifier.decodePayloadUtf8.eLiftET[IO]
-        alteredJwsVerifier <- JsonWebSignature.parse(alteredJws).asError.eLiftET[IO]
+        payload <- jwsVerifier.decodePayloadString().eLiftET[IO]
+        alteredJwsVerifier <- JsonWebSignature.parse(alteredJws).eLiftET[IO]
         _ <- EitherT(alteredJwsVerifier.check[IO](Some(publicKey)).map(_.swap.asError))
       yield
         jkt.value == "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k" && jws == expectedJws &&
@@ -56,9 +56,9 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk1 <- decode[Id, AsymmetricJsonWebKey](jwkJson1).eLiftET[IO]
         publicKey <- EitherT(jwk1.toPublicKey[IO]())
-        jwsObject1 <- JsonWebSignature.parse(jws).asError.eLiftET[IO]
+        jwsObject1 <- JsonWebSignature.parse(jws).eLiftET[IO]
         _ <- EitherT(jwsObject1.check[IO](Some(publicKey)))
-        payload <- jwsObject1.decodePayloadUtf8.eLiftET[IO]
+        payload <- jwsObject1.decodePayloadString().eLiftET[IO]
         jwk2 <- decode[Id, AsymmetricJsonWebKey](jwkJson2).eLiftET[IO]
         privateKey <- EitherT(jwk2.toPrivateKey[IO]())
         jwsObject2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(EdDSA)), "meh", Some(privateKey)))

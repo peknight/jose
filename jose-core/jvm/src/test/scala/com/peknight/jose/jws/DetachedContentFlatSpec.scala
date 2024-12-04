@@ -23,13 +23,13 @@ class DetachedContentFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         encodedPayload = jws.payload
         compact <- jws.compact.eLiftET[IO]
         publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
-        parsedDetachedJws <- JsonWebSignature.parse(detachedContentCompact, encodedPayload).asError.eLiftET[IO]
+        parsedDetachedJws <- JsonWebSignature.parse(detachedContentCompact, encodedPayload).eLiftET[IO]
         _ <- EitherT(parsedDetachedJws.check[IO](Some(publicKey)))
-        parsedDetachedPayload <- parsedDetachedJws.decodePayloadUtf8.eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        parsedDetachedPayload <- parsedDetachedJws.decodePayloadString().eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
-        parsedPayload <- parsedJws.decodePayloadUtf8.eLiftET[IO]
-        parsedPartJws <- JsonWebSignature.parse(detachedContentCompact).asError.eLiftET[IO]
+        parsedPayload <- parsedJws.decodePayloadString().eLiftET[IO]
+        parsedPartJws <- JsonWebSignature.parse(detachedContentCompact).eLiftET[IO]
         partVerify <- EitherT(parsedPartJws.verify[IO](Some(publicKey)))
       yield
         parsedDetachedPayload == payload && parsedPayload == payload && !partVerify

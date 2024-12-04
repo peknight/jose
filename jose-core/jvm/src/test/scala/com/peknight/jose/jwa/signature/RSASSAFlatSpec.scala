@@ -40,7 +40,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        jws <- JsonWebSignature.parse(jwsCompact).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
         _ <- EitherT(jws.check[IO](Some(publicKey)))
       yield
         ()
@@ -113,9 +113,9 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(alg)), payload, Some(privateKey),
         useLegacyName = useLegacyName, provider = provider))
       compact <- jws.compact.eLiftET[IO]
-      parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+      parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
       _ <- EitherT(parsedJws.check[IO](Some(publicKey), useLegacyName = useLegacyName, provider = provider))
-      parsedPayload <- parsedJws.decodePayloadUtf8.eLiftET[IO]
+      parsedPayload <- parsedJws.decodePayloadString().eLiftET[IO]
       _ <- isTrue(parsedPayload == payload, Error("payload must equal")).eLiftET[IO]
     yield
       ()
@@ -190,9 +190,9 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val payload = "stuff here"
     for
       publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-      jws <- JsonWebSignature.parse(jwsCompact).asError.eLiftET[IO]
+      jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
       _ <- EitherT(jws.check[IO](Some(publicKey), useLegacyName = useLegacyName, provider = provider))
-      parsedPayload <- jws.decodePayloadUtf8.eLiftET[IO]
+      parsedPayload <- jws.decodePayloadString().eLiftET[IO]
       _ <- isTrue(parsedPayload == payload, Error("payload must equal")).eLiftET[IO]
     yield
       ()

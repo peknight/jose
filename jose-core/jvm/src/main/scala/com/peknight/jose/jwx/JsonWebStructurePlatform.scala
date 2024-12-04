@@ -12,8 +12,8 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.UnsupportedJsonWebStructure
 import com.peknight.jose.jwa.encryption.KeyDecipherMode
 import com.peknight.jose.jwa.signature.none
-import com.peknight.jose.jwe.JsonWebEncryption
-import com.peknight.jose.jws.JsonWebSignature
+import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
+import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
 import com.peknight.security.provider.Provider
 import fs2.compression.Compression
 import io.circe.Json
@@ -23,109 +23,52 @@ import java.nio.charset.{Charset, StandardCharsets}
 import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait JsonWebStructurePlatform { self: JsonWebStructure =>
-  def getPayloadJson[F[_], A](skipSignatureVerification: Boolean = false,
-                              skipVerificationKeyResolutionOnNone: Boolean = false,
-                              knownCriticalHeaders: List[String] = List.empty[String],
-                              doKeyValidation: Boolean = true,
-                              useLegacyName: Boolean = false,
-                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                              random: Option[SecureRandom] = None,
-                              cipherProvider: Option[Provider | JProvider] = None,
-                              keyAgreementProvider: Option[Provider | JProvider] = None,
-                              keyFactoryProvider: Option[Provider | JProvider] = None,
-                              macProvider: Option[Provider | JProvider] = None,
-                              messageDigestProvider: Option[Provider | JProvider] = None,
-                              signatureProvider: Option[Provider | JProvider] = None)
-                             (verificationKey: JsonWebSignature => F[Either[Error, Option[Key]]])
-                             (decryptionKey: JsonWebEncryption => F[Either[Error, Key]])
-                             (using Async[F], Compression[F], Decoder[Id, Cursor[Json], A])
-  : F[Either[Error, A]] =
-    getPayloadBytes[F](skipSignatureVerification, skipVerificationKeyResolutionOnNone, knownCriticalHeaders,
-      doKeyValidation, useLegacyName, keyDecipherModeOverride, random, cipherProvider, keyAgreementProvider,
-      keyFactoryProvider, macProvider, messageDigestProvider, signatureProvider
-    )(verificationKey)(decryptionKey).map(_.flatMap(bytesDecodeToJson[A]))
-
-  def getPayloadUtf8[F[_]:Async: Compression](skipSignatureVerification: Boolean = false,
-                                              skipVerificationKeyResolutionOnNone: Boolean = false,
-                                              knownCriticalHeaders: List[String] = List.empty[String],
-                                              doKeyValidation: Boolean = true,
-                                              useLegacyName: Boolean = false,
-                                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                                              random: Option[SecureRandom] = None,
-                                              cipherProvider: Option[Provider | JProvider] = None,
-                                              keyAgreementProvider: Option[Provider | JProvider] = None,
-                                              keyFactoryProvider: Option[Provider | JProvider] = None,
-                                              macProvider: Option[Provider | JProvider] = None,
-                                              messageDigestProvider: Option[Provider | JProvider] = None,
-                                              signatureProvider: Option[Provider | JProvider] = None)
-                                             (verificationKey: JsonWebSignature => F[Either[Error, Option[Key]]])
-                                             (decryptionKey: JsonWebEncryption => F[Either[Error, Key]])
-  : F[Either[Error, String]] =
-    getPayloadString[F](StandardCharsets.UTF_8, skipSignatureVerification, skipVerificationKeyResolutionOnNone,
-      knownCriticalHeaders, doKeyValidation, useLegacyName, keyDecipherModeOverride, random, cipherProvider,
-      keyAgreementProvider, keyFactoryProvider, macProvider, messageDigestProvider, signatureProvider
-    )(verificationKey)(decryptionKey)
-
-  def getPayloadString[F[_]:Async: Compression](charset: Charset = StandardCharsets.UTF_8,
-                                                skipSignatureVerification: Boolean = false,
-                                                skipVerificationKeyResolutionOnNone: Boolean = false,
-                                                knownCriticalHeaders: List[String] = List.empty[String],
-                                                doKeyValidation: Boolean = true,
-                                                useLegacyName: Boolean = false,
-                                                keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                                                random: Option[SecureRandom] = None,
-                                                cipherProvider: Option[Provider | JProvider] = None,
-                                                keyAgreementProvider: Option[Provider | JProvider] = None,
-                                                keyFactoryProvider: Option[Provider | JProvider] = None,
-                                                macProvider: Option[Provider | JProvider] = None,
-                                                messageDigestProvider: Option[Provider | JProvider] = None,
-                                                signatureProvider: Option[Provider | JProvider] = None)
-                                               (verificationKey: JsonWebSignature => F[Either[Error, Option[Key]]])
-                                               (decryptionKey: JsonWebEncryption => F[Either[Error, Key]])
-  : F[Either[Error, String]] =
-    getPayloadBytes[F](skipSignatureVerification, skipVerificationKeyResolutionOnNone, knownCriticalHeaders,
-      doKeyValidation, useLegacyName, keyDecipherModeOverride, random, cipherProvider, keyAgreementProvider,
-      keyFactoryProvider, macProvider, messageDigestProvider, signatureProvider
-    )(verificationKey)(decryptionKey).map(_.flatMap(_.decodeString(charset).asError))
-
-  def getPayloadBytes[F[_]:Async: Compression](skipSignatureVerification: Boolean = false,
-                                               skipVerificationKeyResolutionOnNone: Boolean = false,
-                                               knownCriticalHeaders: List[String] = List.empty[String],
-                                               doKeyValidation: Boolean = true,
-                                               useLegacyName: Boolean = false,
-                                               keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                                               random: Option[SecureRandom] = None,
-                                               cipherProvider: Option[Provider | JProvider] = None,
-                                               keyAgreementProvider: Option[Provider | JProvider] = None,
-                                               keyFactoryProvider: Option[Provider | JProvider] = None,
-                                               macProvider: Option[Provider | JProvider] = None,
-                                               messageDigestProvider: Option[Provider | JProvider] = None,
-                                               signatureProvider: Option[Provider | JProvider] = None)
-                                              (verificationKey: JsonWebSignature => F[Either[Error, Option[Key]]])
-                                              (decryptionKey: JsonWebEncryption => F[Either[Error, Key]])
-  : F[Either[Error, ByteVector]] =
-    val eitherT =
-      self match
-        case jwe: JsonWebEncryption =>
-          for
-            key <- EitherT(decryptionKey(jwe))
-            payload <- EitherT(jwe.decrypt[F](key, knownCriticalHeaders, doKeyValidation, keyDecipherModeOverride,
-              random, cipherProvider, keyAgreementProvider, keyFactoryProvider, macProvider, messageDigestProvider))
-          yield
-            payload
-        case jws: JsonWebSignature =>
-          if skipSignatureVerification then jws.decodePayload.eLiftET[F]
-          else
-            for
-              header <- jws.getUnprotectedHeader.eLiftET[F]
-              noneAlg = header.algorithm.contains(none)
-              key <-
-                if noneAlg && skipVerificationKeyResolutionOnNone then None.rLiftET[F, Error]
-                else EitherT(verificationKey(jws))
-              _ <- EitherT(jws.check[F](key, knownCriticalHeaders, doKeyValidation, useLegacyName, signatureProvider))
-              payload <- jws.decodePayload.eLiftET[F]
-            yield
-              payload
-        case _ => UnsupportedJsonWebStructure(self).lLiftET[F, ByteVector]
-    eitherT.value
+//   def getPayloadBytes[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
+//                                                (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
+//                                                (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+//   : F[Either[Error, ByteVector]] =
+//     val eitherT =
+//       self match
+//         case jwe: JsonWebEncryption =>
+//           for
+//             primitive <- EitherT(decryptionPrimitiveF(jwe, configuration))
+//             payload <- EitherT(jwe.decrypt[F](primitive.managementKey, primitive.configuration))
+//           yield
+//             payload
+//         case jws: JsonWebSignature =>
+//           if configuration.skipSignatureVerification then jws.decodePayload(configuration.charset).eLiftET[F]
+//           else
+//             for
+//               header <- jws.getUnprotectedHeader.eLiftET[F]
+//               noneAlg = header.algorithm.contains(none)
+//               primitive <-
+//                 if noneAlg && configuration.skipVerificationKeyResolutionOnNone then
+//                   VerificationPrimitive(None, configuration).rLiftET[F, Error]
+//                 else EitherT(verificationPrimitiveF(jws, configuration))
+//               _ <- EitherT(jws.check[F](primitive.key, primitive.configuration))
+//               payload <- jws.decodePayload(primitive.configuration.charset).eLiftET[F]
+//             yield
+//               payload
+//         case _ => UnsupportedJsonWebStructure(self).lLiftET[F, ByteVector]
+//     eitherT.value
+//
+//   def getPayloadString[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
+//                                                 (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
+//                                                 (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+//   : F[Either[Error, String]] =
+//     doHandleGetPayload[F, String](configuration)(verificationPrimitiveF)(decryptionPrimitiveF)(bytes => bytesDecodeToString(bytes, configuration.charset))
+//
+//   def getPayloadJson[F[_], A](configuration: JoseConfiguration = JoseConfiguration.default)
+//                              (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
+//                              (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+//                              (using Async[F], Compression[F], Decoder[Id, Cursor[Json], A])
+//   : F[Either[Error, A]] =
+//     doHandleGetPayload[F, A](configuration)(verificationPrimitiveF)(decryptionPrimitiveF)(bytes => bytesDecodeToJson[A](bytes, configuration.charset))
+//
+//   private def doHandleGetPayload[F[_]: Async: Compression, A](configuration: JoseConfiguration = JoseConfiguration.default)
+//                                                              (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
+//                                                              (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+//                                                              (decode: ByteVector => Either[Error, A])
+//   : F[Either[Error, A]] =
+//     getPayloadBytes[F](configuration)(verificationPrimitiveF)(decryptionPrimitiveF).map(_.flatMap(decode))
 }

@@ -142,7 +142,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     for
       jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
       key <- EitherT(jwk.toKey[IO]())
-      jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
+      jws <- JsonWebSignature.parse(cs).eLiftET[IO]
       _ <- EitherT(jws.check[IO](Some(key)))
     yield
       ()
@@ -628,7 +628,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   private def expectInvalidSignature(jws: String, key: PublicKey): EitherT[IO, Error, Unit] =
     for
-      jws <- JsonWebSignature.parse(jws).asError.eLiftET[IO]
+      jws <- JsonWebSignature.parse(jws).eLiftET[IO]
       _ <- EitherT(jws.check[IO](Some(key)).map(_.swap.asError))
     yield
       ()
@@ -672,10 +672,10 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         provider <- EitherT(BouncyCastleProvider[IO].asError)
         _ <- EitherT(Security.addProvider[IO](provider).asError)
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
-        jws <- JsonWebSignature.parse(jwsCs).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCs).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO](provider = Some(provider)))
         _ <- EitherT(jws.check[IO](Some(key), provider = Some(provider)))
-        payload <- jws.decodePayloadUtf8.eLiftET[IO]
+        payload <- jws.decodePayloadString().eLiftET[IO]
         _ <- isTrue(payload == """{"sub":"meh"}""", Error("payload must equal")).eLiftET[IO]
       yield
         ()
@@ -772,7 +772,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "b290Ijp0cnVlfQ.DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQxfKTUJqPP3-Kg6NU1Q"
     val run =
       for
-        jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- EitherT(jws.check[IO](Some(publicKey)))
       yield
@@ -786,7 +786,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "qT2SI-KGDKB34XO0aw_7XdtAG8GaSwFKdCAPZgoXD2YBJZCPEX3xKpRwcdOO8KpEHwJjyqOgzDO7iKvU8vcnwNrmxYbSW9ERBXukOXolLzeO_Jn"
     val run =
       for
-        jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
         _ <- EitherT(jws.check[IO](Some(publicKey)))
       yield
@@ -805,10 +805,10 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
-        jws <- JsonWebSignature.parse(jwsCs).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCs).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO]())
         _ <- EitherT(jws.check[IO](Some(key)))
-        payload <- jws.decodePayloadUtf8.eLiftET[IO]
+        payload <- jws.decodePayloadString().eLiftET[IO]
       yield
         ()
     run.value.asserting(value => assert(value.isRight))

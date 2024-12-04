@@ -24,12 +24,12 @@ object JsonWebSignatureTestOps:
         provider = provider))
       serializationWithKey1 <- jwsWithKey1.compact.eLiftET[IO]
       serializationWithKey2 <- jwsWithKey2.compact.eLiftET[IO]
-      parsedJwsWithKey1 <- JsonWebSignature.parse(serializationWithKey1).asError.eLiftET[IO]
-      parsedJwsWithKey2 <- JsonWebSignature.parse(serializationWithKey2).asError.eLiftET[IO]
-      jwsWithKey1Payload <- jwsWithKey1.decodePayloadUtf8.eLiftET[IO]
-      jwsWithKey2Payload <- jwsWithKey2.decodePayloadUtf8.eLiftET[IO]
-      parsedJwsWithKey1Payload <- parsedJwsWithKey1.decodePayloadUtf8.eLiftET[IO]
-      parsedJwsWithKey2Payload <- parsedJwsWithKey2.decodePayloadUtf8.eLiftET[IO]
+      parsedJwsWithKey1 <- JsonWebSignature.parse(serializationWithKey1).eLiftET[IO]
+      parsedJwsWithKey2 <- JsonWebSignature.parse(serializationWithKey2).eLiftET[IO]
+      jwsWithKey1Payload <- jwsWithKey1.decodePayloadString().eLiftET[IO]
+      jwsWithKey2Payload <- jwsWithKey2.decodePayloadString().eLiftET[IO]
+      parsedJwsWithKey1Payload <- parsedJwsWithKey1.decodePayloadString().eLiftET[IO]
+      parsedJwsWithKey2Payload <- parsedJwsWithKey2.decodePayloadString().eLiftET[IO]
       _ <- isTrue(serializationWithKey1 != serializationWithKey2, Error("compact cannot equal")).eLiftET[IO]
       _ <- EitherT(parsedJwsWithKey1.check[IO](Some(verificationKey1), provider = provider))
       _ <- EitherT(parsedJwsWithKey2.check[IO](Some(verificationKey2), provider = provider))
@@ -49,7 +49,7 @@ object JsonWebSignatureTestOps:
   def testBadKeyOnVerify(compact: String, key: Option[Key] = None, provider: Option[Provider | JProvider] = None)
   : EitherT[IO, Error, Unit] =
     for
-      jws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+      jws <- JsonWebSignature.parse(compact).eLiftET[IO]
       _ <- EitherT(jws.check[IO](key, provider = provider).map(_.swap.asError))
     yield
       ()

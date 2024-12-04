@@ -115,11 +115,11 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "HmacSHA" should "succeed with HS256 verify example" in {
     val run =
       for
-        jws <- JsonWebSignature.parse(jwsCompact).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
         jsonWebKey <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jsonWebKey.toKey[IO]())
         _ <- EitherT(jws.check[IO](Some(key)))
-        decodedPayload <- jws.decodePayloadUtf8.eLiftET[IO]
+        decodedPayload <- jws.decodePayloadString().eLiftET[IO]
       yield
         decodedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))

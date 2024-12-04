@@ -2,9 +2,11 @@ package com.peknight
 
 package object jose:
   private[jose] val base64UrlEncodePayloadLabel: String = "b64"
+  private[jose] val algorithmLabel: String = "alg"
+  private[jose] val encryptionAlgorithmLabel: String = "enc"
   private[jose] val memberNameMap: Map[String, String] =
     Map(
-      "algorithm" -> "alg",
+      "algorithm" -> algorithmLabel,
       "keyID" -> "kid",
       "x509URL" -> "x5u",
       "x509CertificateChain" -> "x5c",
@@ -16,7 +18,7 @@ package object jose:
       "type" -> "typ",
       "contentType" -> "cty",
       "critical" -> "crit",
-      "encryptionAlgorithm" -> "enc",
+      "encryptionAlgorithm" -> encryptionAlgorithmLabel,
       "compressionAlgorithm" -> "zip",
 
       "ephemeralPublicKey" -> "epk",

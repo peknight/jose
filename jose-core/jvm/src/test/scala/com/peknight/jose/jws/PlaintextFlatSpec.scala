@@ -22,9 +22,9 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "Plaintext" should "succeed with example decode" in {
     val run =
       for
-        jws <- JsonWebSignature.parse(jwsCompact).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
         _ <- EitherT(jws.check[IO]())
-        parsedPayload <- jws.decodePayloadUtf8.eLiftET[IO]
+        parsedPayload <- jws.decodePayloadString().eLiftET[IO]
       yield
         parsedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -47,7 +47,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "Plaintext" should "failed with verify with key no good" in {
     val run =
       for
-        jws <- JsonWebSignature.parse(jwsCompact).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
         _ <- EitherT(jws.check[IO](Some(key)).map(_.swap.asError))
       yield
         ()
@@ -60,9 +60,9 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "0OCwiYWNyIjozfQ."
     val run =
       for
-        jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(cs).eLiftET[IO]
         _ <- EitherT(jws.check[IO]())
-        _ <- jws.decodePayloadUtf8.eLiftET[IO]
+        _ <- jws.decodePayloadString().eLiftET[IO]
       yield
         ()
     run.value.asserting(value => assert(value.isRight))

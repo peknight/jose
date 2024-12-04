@@ -12,7 +12,7 @@ import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.{HS256, RS256}
 import com.peknight.jose.jwk.{JsonWebKey, d, e, n}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx.{JoseHeader, bytesDecodeToString}
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -34,10 +34,10 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO]())
-        controlJws <- JsonWebSignature.parse(controlCompactSerialization).asError.eLiftET[IO]
+        controlJws <- JsonWebSignature.parse(controlCompactSerialization).eLiftET[IO]
         _ <- EitherT(controlJws.check[IO](Some(key)))
         parsedControlPayload <- controlJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(detachedUnencoded, payload).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(detachedUnencoded, payload).eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(key)))
         parsedDetachedContentCompactSerialization <- parsedJws.detachedContentCompact.eLiftET[IO]
         parsedPayload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
@@ -74,7 +74,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           Some(key), StandardCharsets.US_ASCII))
         detachedContentCompactSerialization <- jws.detachedContentCompact.eLiftET[IO]
         decodedPayload <- jws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(detachedUnencoded, payload).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(detachedUnencoded, payload).eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(key)))
         parsedPayload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
         b64 <- parsedJws.isBase64UrlEncodePayload.eLiftET[IO]
@@ -99,15 +99,15 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         key <- EitherT(jwk.toKey[IO]())
         payloadBytes <- ByteVector.encodeString(payload)(StandardCharsets.US_ASCII).asError.eLiftET[IO]
         payloadBase = Base64UrlNoPad.fromByteVector(payloadBytes)
-        parsedJws <- JsonWebSignature.parse(jwscsWithB64).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(jwscsWithB64).eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(key)))
-        parsedPayload <- parsedJws.decodePayloadUtf8.eLiftET[IO]
+        parsedPayload <- parsedJws.decodePayloadString().eLiftET[IO]
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), payload, Some(key)))
         compact <- jws.compact.eLiftET[IO]
-        detachedJws <- JsonWebSignature.parse(jwscsWithoutB64andDetachedPayload, payload).asError.eLiftET[IO]
+        detachedJws <- JsonWebSignature.parse(jwscsWithoutB64andDetachedPayload, payload).eLiftET[IO]
         headerBase <- detachedJws.`protected`.toRight(OptionEmpty).eLiftET[IO]
         headerBytes <- headerBase.decode[Id].eLiftET[IO]
-        headerJson <- headerBytes.decodeUtf8.asError.eLiftET[IO]
+        headerJson <- bytesDecodeToString(headerBytes).eLiftET[IO]
         signingInputString = JsonWebSignature.concat(headerBase, payload)
         signatureBytes <- detachedJws.signature.decode[Id].eLiftET[IO]
         securedInputBytes <- ByteVector.encodeString(signingInputString)(StandardCharsets.US_ASCII).asError.eLiftET[IO]
@@ -132,10 +132,10 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         signerJws1 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload1, Some(privateKey)))
         compact1 <- signerJws1.compact.eLiftET[IO]
-        verifierJws <- JsonWebSignature.parse(compact1).asError.eLiftET[IO]
+        verifierJws <- JsonWebSignature.parse(compact1).eLiftET[IO]
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         _ <- EitherT(verifierJws.check[IO](Some(publicKey)))
-        verifierPayload <- verifierJws.decodePayloadUtf8.eLiftET[IO]
+        verifierPayload <- verifierJws.decodePayloadString().eLiftET[IO]
         signerJws2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload2, Some(privateKey)))
         compact2 <- signerJws2.compact.eLiftET[IO]

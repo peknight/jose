@@ -13,6 +13,7 @@ import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.error.Error
+import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure}
 import io.circe.{Json, JsonObject}
@@ -59,7 +60,7 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
         JsonWebEncryption(p, None, None, encryptedKey, initializationVector, ciphertext, authenticationTag, None)
     }
 
-  def parse(value: String): Either[Parser.Error, JsonWebEncryption] = jsonWebEncryptionParser.parseAll(value)
+  def parse(value: String): Either[Error, JsonWebEncryption] = jsonWebEncryptionParser.parseAll(value).asError
 
   given codecJsonWebEncryption[F[_], S](using
     monad: Monad[F],

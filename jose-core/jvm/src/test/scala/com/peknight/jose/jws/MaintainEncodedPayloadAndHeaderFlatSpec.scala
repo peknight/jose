@@ -22,9 +22,9 @@ class MaintainEncodedPayloadAndHeaderFlatSpec extends AsyncFlatSpec with AsyncIO
     val run =
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        jws <- JsonWebSignature.parse(funkyToken).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(funkyToken).eLiftET[IO]
         _ <- EitherT(jws.check[IO](Some(publicKey)))
-        // payload <- jws.decodePayloadUtf8.eLiftET[IO]
+        // payload <- jws.decodePayloadString().eLiftET[IO]
       yield
         // payload == "!This is no longer a vacation."
         true

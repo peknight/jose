@@ -53,10 +53,10 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
       receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
       receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-      jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](receiverPublicKey, plaintext, JoseHeader(Some(alg), Some(enc))))
+      jwe <- EitherT(JsonWebEncryption.encryptString[IO](receiverPublicKey, plaintext, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
-      receiverJwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
-      res <- EitherT(receiverJwe.decryptUtf8[IO](receiverPrivateKey))
+      receiverJwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
+      res <- EitherT(receiverJwe.decryptString[IO](receiverPrivateKey))
     yield
       res == plaintext
 
@@ -86,8 +86,8 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
         receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-        maliciousJwe <- JsonWebEncryption.parse(maliciousJweCompact).asError.eLiftET[IO]
-        res <- EitherT(maliciousJwe.decryptUtf8[IO](receiverPrivateKey))
+        maliciousJwe <- JsonWebEncryption.parse(maliciousJweCompact).eLiftET[IO]
+        res <- EitherT(maliciousJwe.decryptString[IO](receiverPrivateKey))
       yield
         true
     run.value.map {

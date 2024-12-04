@@ -20,8 +20,8 @@ class GetPayloadFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
-        jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
-        payload <- jws.decodePayloadUtf8.eLiftET[IO]
+        jws <- JsonWebSignature.parse(cs).eLiftET[IO]
+        payload <- jws.decodePayloadString().eLiftET[IO]
         _ <- EitherT(jws.check[IO]().map(_.swap.asError))
         _ <- EitherT(jws.check[IO](Some(Hmac.secretKeySpec(ByteVector.fill(32)(0)))).map(_.swap.asError))
       yield

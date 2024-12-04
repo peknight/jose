@@ -21,18 +21,16 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- EitherT(randomBytes[IO](32).asError)
         key = AES.secretKeySpec(keyBytes)
-        jweWithZip <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(dir),
+        jweWithZip <- EitherT(JsonWebEncryption.encryptString[IO](key, plaintext, JoseHeader(Some(dir),
           Some(`A128CBC-HS256`), Some(Deflate))))
         jweWithZipCompact <- jweWithZip.compact.eLiftET[IO]
-        jweWithZip <- JsonWebEncryption.parse(jweWithZipCompact).asError.eLiftET[IO]
-        decryptedPlaintextWithZipBytes <- EitherT(jweWithZip.decrypt[IO](key))
-        decryptedPlaintextWithZip <- decryptedPlaintextWithZipBytes.decodeUtf8.asError.eLiftET[IO]
-        jweWithoutZip <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(dir),
+        jweWithZip <- JsonWebEncryption.parse(jweWithZipCompact).eLiftET[IO]
+        decryptedPlaintextWithZip <- EitherT(jweWithZip.decryptString[IO](key))
+        jweWithoutZip <- EitherT(JsonWebEncryption.encryptString[IO](key, plaintext, JoseHeader(Some(dir),
           Some(`A128CBC-HS256`))))
         jweWithoutZipCompact <- jweWithoutZip.compact.eLiftET[IO]
-        jweWithoutZip <- JsonWebEncryption.parse(jweWithoutZipCompact).asError.eLiftET[IO]
-        decryptedPlaintextWithoutZipBytes <- EitherT(jweWithoutZip.decrypt[IO](key))
-        decryptedPlaintextWithoutZip <- decryptedPlaintextWithoutZipBytes.decodeUtf8.asError.eLiftET[IO]
+        jweWithoutZip <- JsonWebEncryption.parse(jweWithoutZipCompact).eLiftET[IO]
+        decryptedPlaintextWithoutZip <- EitherT(jweWithoutZip.decryptString[IO](key))
       yield
         jweWithZipCompact.length < jweWithoutZipCompact.length && decryptedPlaintextWithZip == plaintext &&
           decryptedPlaintextWithoutZip == plaintext
@@ -44,7 +42,7 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "BlDAYKzn9oLH1fhZcR60ZKye7UHslg7s0h7s1ecNZ5A1Df1pq2pBWUwdRKjJRxJAEFbDFoXTFYjV-cLCCE2Uxw.zasDvsZ3U4YkTDgIUchjiA"
     val run =
       for
-        jwe <- JsonWebEncryption.parse(cs).asError.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(cs).eLiftET[IO]
         header <- jwe.getUnprotectedHeader.eLiftET[IO]
       yield
         true

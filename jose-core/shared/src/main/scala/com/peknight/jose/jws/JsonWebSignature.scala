@@ -11,7 +11,6 @@ import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.MissingField
 import com.peknight.codec.sum.*
-import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
@@ -20,7 +19,6 @@ import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
 import java.nio.charset.{Charset, StandardCharsets}
-import scala.reflect.ClassTag
 
 /**
  * https://datatracker.ietf.org/doc/html/rfc7515
@@ -32,12 +30,12 @@ case class JsonWebSignature private[jws] (
   signature: Base64UrlNoPad
 ) extends Signature with JsonWebStructure with JsonWebSignaturePlatform:
   def decodePayload(charset: Charset = StandardCharsets.UTF_8): Either[Error, ByteVector] =
-    decodePayload(payload, charset)
+    handleDecodePayload(payload, charset)
   def decodePayloadString(charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
-    decodePayloadString(payload, charset)
+    handleDecodePayloadString(payload, charset)
   def decodePayloadJson[T](charset: Charset = StandardCharsets.UTF_8)(using Decoder[Id, Cursor[Json], T])
   : Either[Error, T] =
-    decodePayloadJson(payload)
+    handleDecodePayloadJson(payload)
   def compact: Either[Error, String] = compact(payload)
 end JsonWebSignature
 
@@ -59,10 +57,10 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
         Base64UrlNoPad.baseParser.parseAll(nel.last).map(signature => JsonWebSignature(headerBase, payload, signature))
     }
 
-  def parse(detachedContentCompact: String, payload: String): Either[Parser.Error, JsonWebSignature] =
-    parse(detachedContentCompact.split("\\.\\.", 2).mkString(s".$payload."))
+  def parse(detachedContentCompact: String, payload: String): Either[Error, JsonWebSignature] =
+    parse(detachedContentCompact.split("\\.\\.", 2).mkString(s".$payload.")).asError
 
-  def parse(value: String): Either[Parser.Error, JsonWebSignature] = jsonWebSignatureParser.parseAll(value)
+  def parse(value: String): Either[Error, JsonWebSignature] = jsonWebSignatureParser.parseAll(value).asError
 
   given codecJsonWebSignature[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],

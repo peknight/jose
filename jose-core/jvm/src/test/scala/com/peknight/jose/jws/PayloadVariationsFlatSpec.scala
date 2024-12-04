@@ -32,7 +32,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
         jws <- EitherT(JsonWebSignature.signBytes[IO](JoseHeader(Some(RS256)), bytesIn, Some(privateKey)))
         compact <- jws.compact.eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         bytesOut <- parsedJws.decodePayload.eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
@@ -53,7 +53,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
         jws <- EitherT(JsonWebSignature.signBytes[IO](JoseHeader(Some(RS256)), bytesIn, Some(privateKey)))
         compact <- jws.compact.eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         wrongKey <- decode[Id, AsymmetricJsonWebKey](wrongKeyJson).eLiftET[IO]
         publicKey <- EitherT(wrongKey.toKey[IO]())
         bytesOut <- parsedJws.decodePayload.eLiftET[IO]
@@ -70,7 +70,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "pronounced as'-key", Some(privateKey),
           StandardCharsets.US_ASCII))
         compact <- jws.compact.eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
         payload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
@@ -86,7 +86,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "€Ÿ", Some(privateKey), charset))
         compact <- jws.compact.eLiftET[IO]
-        parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]
+        parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
         payload <- parsedJws.decodePayloadString(charset).eLiftET[IO]
         _ <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).swap.asError.eLiftET[IO]

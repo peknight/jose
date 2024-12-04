@@ -11,40 +11,40 @@ import cats.syntax.traverse.*
 import cats.{Id, Parallel}
 import com.peknight.error.Error
 import com.peknight.jose.error.MissingVerifyPrimitive
-import com.peknight.jose.jwx.{JoseContext, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
 import com.peknight.security.error.InvalidSignature
 import com.peknight.validation.std.either.isTrue
 
 trait JsonWebSignaturesPlatform { self: JsonWebSignatures =>
-  def parVerify[F[_]: Sync: Parallel](context: JoseContext = JoseContext.default)
-                                     (f: (JsonWebSignature, JoseContext) => F[Either[Error, VerifyPrimitive]])
+  def parVerify[F[_]: Sync: Parallel](configuration: JoseConfiguration = JoseConfiguration.default)
+                                     (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
   : F[Either[Error, Boolean]] =
-    handleVerify(context)(f)(_.parSequence)
+    handleVerify(configuration)(verificationPrimitiveF)(_.parSequence)
 
-  def verify[F[_]: Sync](context: JoseContext = JoseContext.default)
-                        (f: (JsonWebSignature, JoseContext) => F[Either[Error, VerifyPrimitive]])
+  def verify[F[_]: Sync](configuration: JoseConfiguration = JoseConfiguration.default)
+                        (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
   : F[Either[Error, Boolean]] =
-    handleVerify(context)(f)(_.sequence)
+    handleVerify(configuration)(verificationPrimitiveF)(_.sequence)
 
-  def parCheck[F[_]: Sync: Parallel](context: JoseContext = JoseContext.default)
-                                    (f: (JsonWebSignature, JoseContext) => F[Either[Error, VerifyPrimitive]])
+  def parCheck[F[_]: Sync: Parallel](configuration: JoseConfiguration = JoseConfiguration.default)
+                                    (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
   : F[Either[Error, Unit]] =
-    JsonWebSignature.checkVerify(parVerify[F](context)(f))
+    JsonWebSignature.checkVerify(parVerify[F](configuration)(verificationPrimitiveF))
 
-  def check[F[_]: Sync](context: JoseContext = JoseContext.default)
-                       (f: (JsonWebSignature, JoseContext) => F[Either[Error, VerifyPrimitive]])
+  def check[F[_]: Sync](configuration: JoseConfiguration = JoseConfiguration.default)
+                       (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
   : F[Either[Error, Unit]] =
-    JsonWebSignature.checkVerify(verify[F](context)(f))
+    JsonWebSignature.checkVerify(verify[F](configuration)(verificationPrimitiveF))
 
-  private def handleVerify[F[_]: Sync](context: JoseContext = JoseContext.default)
-                                      (f: (JsonWebSignature, JoseContext) => F[Either[Error, VerifyPrimitive]])
+  private def handleVerify[F[_]: Sync](configuration: JoseConfiguration = JoseConfiguration.default)
+                                      (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
                                       (sequence: NonEmptyList[F[Either[Error, Boolean]]] => F[NonEmptyList[Either[Error, Boolean]]])
   : F[Either[Error, Boolean]] =
     sequence(self.toList.map { signature =>
       val eitherT =
         for
-          primitive <- EitherT(f(signature, context))
-          res <- EitherT(signature.verify[F](primitive.key, primitive.context))
+          primitive <- EitherT(verificationPrimitiveF(signature, configuration))
+          res <- EitherT(signature.verify[F](primitive.key, primitive.configuration))
         yield
           res
       eitherT.value

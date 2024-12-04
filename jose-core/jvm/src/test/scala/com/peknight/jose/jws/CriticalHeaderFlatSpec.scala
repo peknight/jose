@@ -24,11 +24,11 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         "NyaXRpY2FsIHJlYWxseT8.xZvf_WCSZY2-oMvpTbHALCGgOchR8ryrV_84Q5toM8KECtm9PCEuORoMKHmCFx-UTOI1QNt28H51GV9MB4c6BQ")
       .traverse { cs =>
         for
-          jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
+          jws <- JsonWebSignature.parse(cs).eLiftET[IO]
           publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
           _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
           _ <- EitherT(jws.check[IO](Some(publicKey), List(headerName)))
-          payload <- jws.decodePayloadUtf8.eLiftET[IO]
+          payload <- jws.decodePayloadString().eLiftET[IO]
         yield
           payload == "how critical really?"
       }
@@ -43,11 +43,11 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "NvbS9VTkRFRklORUQiOnRydWUNCn0.RkFJTA."
     val run =
       for
-        jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(cs).eLiftET[IO]
         _ <- EitherT(jws.verify[IO]().map(_.swap.asError))
         // -> in the actual encoded example even thought the text says http://example.invalid/UNDEFINED
         _ <- EitherT(jws.check[IO](None, List("http://example.com/UNDEFINED")))
-        payload <- jws.decodePayloadUtf8.eLiftET[IO]
+        payload <- jws.decodePayloadString().eLiftET[IO]
       yield
         payload == "FAIL"
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -59,7 +59,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "eyJhbGciOiJub25lIiwKICJjcml0Ijp0cnVlCn0.bWVo.")
       .traverse { cs =>
         for
-          jws <- JsonWebSignature.parse(cs).asError.eLiftET[IO]
+          jws <- JsonWebSignature.parse(cs).eLiftET[IO]
           _ <- EitherT(jws.verify[IO]().map(_.swap.asError))
         yield
           true
@@ -77,11 +77,11 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256), critical = Some(List("nope"))), payload,
           Some(privateKey)))
         jwsCompactSerialization <- jws.compact.eLiftET[IO]
-        jws <- JsonWebSignature.parse(jwsCompactSerialization).asError.eLiftET[IO]
+        jws <- JsonWebSignature.parse(jwsCompactSerialization).eLiftET[IO]
         publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
         _ <- EitherT(jws.check[IO](Some(publicKey), List("nope")))
-        parsedPayload <- jws.decodePayloadUtf8.eLiftET[IO]
+        parsedPayload <- jws.decodePayloadString().eLiftET[IO]
       yield
         parsedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))

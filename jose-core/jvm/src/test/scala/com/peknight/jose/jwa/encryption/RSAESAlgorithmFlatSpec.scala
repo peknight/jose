@@ -78,14 +78,13 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val tests = for alg <- RSAESAlgorithm.values yield
       for
         keyPair <- EitherT(RSA.keySizeGenerateKeyPair[IO](2048).asError)
-        jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](keyPair.getPublic, plaintext, JoseHeader(Some(alg),
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](keyPair.getPublic, plaintext, JoseHeader(Some(alg),
           Some(`A128CBC-HS256`))))
         jweCompact <- jwe.compact.eLiftET[IO]
-        jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
-        decrypted <- EitherT(jwe.decrypt[IO](keyPair.getPrivate))
-        decryptedPlaintext <- decrypted.decodeUtf8.asError.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
+        decrypted <- EitherT(jwe.decryptString[IO](keyPair.getPrivate))
       yield
-        decryptedPlaintext == plaintext
+        decrypted == plaintext
     tests.sequence.value.map(_.map(_.forall(identity)).getOrElse(false)).asserting(assert)
   }
 
@@ -148,13 +147,13 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk1 <- decode[Id, RSAJsonWebKey](jwkJson1).eLiftET[IO]
         privateKey1 <- EitherT(jwk1.toPrivateKey[IO]())
-        firstJwe <- JsonWebEncryption.parse(first).asError.eLiftET[IO]
+        firstJwe <- JsonWebEncryption.parse(first).eLiftET[IO]
         firstFlag <- EitherT(firstJwe.decrypt[IO](privateKey1).map(_.isLeft.asRight))
-        secondJwe <- JsonWebEncryption.parse(second).asError.eLiftET[IO]
+        secondJwe <- JsonWebEncryption.parse(second).eLiftET[IO]
         secondFlag <- EitherT(secondJwe.decrypt[IO](privateKey1).map(_.isLeft.asRight))
         jwk2 <- decode[Id, RSAJsonWebKey](jwkJson2).eLiftET[IO]
         privateKey2 <- EitherT(jwk2.toPrivateKey[IO]())
-        thirdJwe <- JsonWebEncryption.parse(third).asError.eLiftET[IO]
+        thirdJwe <- JsonWebEncryption.parse(third).eLiftET[IO]
         header <- thirdJwe.getUnprotectedHeader.eLiftET[IO]
         thirdFlag <- EitherT(thirdJwe.decrypt[IO](privateKey2).map(_.isRight.asRight))
       yield
@@ -199,15 +198,14 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, RSAJsonWebKey](jwkJson).eLiftET[IO]
         publicKey <- EitherT(jwk.toPublicKey[IO]())
-        jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](publicKey, examplePayload,
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](publicKey, examplePayload,
           JoseHeader(Some(`RSA-OAEP-256`), Some(`A128CBC-HS256`))))
         jweCompact <- jwe.compact.eLiftET[IO]
-        jwe <- JsonWebEncryption.parse(jweCompact).asError.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
         privateKey <- EitherT(jwk.toPrivateKey[IO]())
-        decrypted <- EitherT(jwe.decrypt[IO](privateKey))
-        decryptedPlaintext <- decrypted.decodeUtf8.asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decryptString[IO](privateKey))
       yield
-        decryptedPlaintext == examplePayload
+        decrypted == examplePayload
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
@@ -226,12 +224,11 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, RSAJsonWebKey](jwkJson).eLiftET[IO]
         privateKey <- EitherT(jwk.toPrivateKey[IO]())
-        jwe <- JsonWebEncryption.parse(cs).asError.eLiftET[IO]
+        jwe <- JsonWebEncryption.parse(cs).eLiftET[IO]
         header <- jwe.getUnprotectedHeader.eLiftET[IO]
-        decrypted <- EitherT(jwe.decrypt[IO](privateKey))
-        decryptedPlaintext <- decrypted.decodeUtf8.asError.eLiftET[IO]
+        decrypted <- EitherT(jwe.decryptString[IO](privateKey))
       yield
-        decryptedPlaintext == examplePayload
+        decrypted == examplePayload
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end RSAESAlgorithmFlatSpec

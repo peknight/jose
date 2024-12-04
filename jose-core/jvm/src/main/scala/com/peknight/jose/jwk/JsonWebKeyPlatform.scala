@@ -16,6 +16,7 @@ import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{BareKeyCertMismatch, JoseError}
+import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.jose.syntax.x509Certificate.base64UrlThumbprint
 import com.peknight.security.certificate.factory.X509
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-1`, `SHA-256`}
@@ -34,7 +35,7 @@ trait JsonWebKeyPlatform { self: JsonWebKey =>
                                       provider: Option[Provider | JProvider] = None): F[Either[Error, ByteVector]] =
     val eitherT =
       for
-        input <- ByteVector.encodeUtf8(self.thumbprintHashInput).asError.eLiftET[F]
+        input <- stringEncodeToBytes(self.thumbprintHashInput).eLiftET[F]
         output <- EitherT(hashAlgorithm.digest[F](input, provider).asError)
       yield
         output

@@ -14,7 +14,7 @@ import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{SignaturePlatform, none}
 import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, encodePayloadString, toBytes}
 import com.peknight.jose.jwx
-import com.peknight.jose.jwx.{JoseContext, JoseHeader, encodeToBase}
+import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, encodeToBase}
 import com.peknight.security.error.InvalidSignature
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.isTrue
@@ -26,73 +26,74 @@ import java.security.{Key, SecureRandom, Provider as JProvider}
 
 trait JsonWebSignatureCompanion:
   def signBytes[F[_]: Sync](header: JoseHeader, payload: ByteVector, key: Option[Key] = None,
-                            context: JoseContext = JoseContext.default)
+                            configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebSignature]] =
-    doHandleSign[F](header, key, context)(encodePayload(payload, _, _))
+    doHandleSign[F](header, key, configuration)(encodePayload(payload, _, _))
 
   def signString[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None,
-                             context: JoseContext = JoseContext.default)
+                             configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebSignature]] =
-    doHandleSign[F](header, key, context)(encodePayloadString(payload, _, _))
+    doHandleSign[F](header, key, configuration)(encodePayloadString(payload, _, _))
 
   def signJson[F[_], A](header: JoseHeader, payload: A, key: Option[Key] = None,
-                        context: JoseContext = JoseContext.default)
+                        configuration: JoseConfiguration = JoseConfiguration.default)
                        (using Sync[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignature]] =
-    doHandleSign[F](header, key, context)(encodePayloadJson(payload, _, _))
+    doHandleSign[F](header, key, configuration)(encodePayloadJson(payload, _, _))
 
   private def doHandleSign[F[_] : Sync](header: JoseHeader, key: Option[Key] = None,
-                                        context: JoseContext = JoseContext.default)
+                                        configuration: JoseConfiguration = JoseConfiguration.default)
                                        (encodePayload: (Boolean, Charset) => Either[Error, String])
   : F[Either[Error, JsonWebSignature]] =
-    encodePayload(header.isBase64UrlEncodePayload, context.charset).fold(
+    encodePayload(header.isBase64UrlEncodePayload, configuration.charset).fold(
       _.asLeft.pure[F],
-      payload => sign[F](header, payload, key, context)
+      payload => sign[F](header, payload, key, configuration)
     )
 
   def sign[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None,
-                       context: JoseContext = JoseContext.default): F[Either[Error, JsonWebSignature]] =
-    handleSignSignature[F, JsonWebSignature](header, payload, key, context)(
+                       configuration: JoseConfiguration = JoseConfiguration.default)
+  : F[Either[Error, JsonWebSignature]] =
+    handleSignSignature[F, JsonWebSignature](header, payload, key, configuration)(
       (headerBase, signature) => JsonWebSignature(header, headerBase, payload, signature)
     )
 
   private[jws] def handleSignSignature[F[_]: Sync, S <: Signature](header: JoseHeader, payload: String,
                                                                    key: Option[Key] = None,
-                                                                   context: JoseContext = JoseContext.default)
+                                                                   configuration: JoseConfiguration = JoseConfiguration.default)
                                                                   (f: (Base64UrlNoPad, Base64UrlNoPad) => S)
   : F[Either[Error, S]] =
     val either =
       for
-        headerBase <- encodeToBase(header, Base64UrlNoPad, context.charset)
-        data <- toBytes(headerBase, payload, context.charset)
+        headerBase <- encodeToBase(header, Base64UrlNoPad, configuration.charset)
+        data <- toBytes(headerBase, payload, configuration.charset)
       yield
-        handleSign[F](header.algorithm, key, data, context).map(_.map(
+        handleSign[F](header.algorithm, key, data, configuration).map(_.map(
           signature => f(headerBase, Base64UrlNoPad.fromByteVector(signature))
         ))
     either.fold(_.asLeft.pure, identity)
 
   def handleSign[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
-                             context: JoseContext = JoseContext.default)
+                             configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, ByteVector]] =
     algorithm match
-      case Some(`none`) | None => none.sign(key, data, context.doKeyValidation).pure[F]
+      case Some(`none`) | None => none.sign(key, data, configuration.doKeyValidation).pure[F]
       case Some(algo: SignaturePlatform) =>
         key match
           case Some(k) =>
-            algo.signJws[F](k, data, context.doKeyValidation, context.useLegacyName, context.random,
-              context.signatureProvider)
+            algo.signJws[F](k, data, configuration.doKeyValidation, configuration.useLegacyName, configuration.random,
+              configuration.signatureProvider)
           case None => MissingKey.asLeft.pure[F]
       case Some(algo) => UnsupportedSignatureAlgorithm(algo).asLeft.pure[F]
 
   def handleVerify[F[_]: Sync](algorithm: Option[JsonWebAlgorithm], key: Option[Key], data: ByteVector,
-                               signed: ByteVector, context: JoseContext = JoseContext.default)
+                               signed: ByteVector, configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, Boolean]] =
     algorithm match
-      case Some(`none`) | None => none.verify(key, data, signed, context.doKeyValidation).pure[F]
+      case Some(`none`) | None => none.verify(key, data, signed, configuration.doKeyValidation).pure[F]
       case Some(algo: SignaturePlatform) =>
         key match
           case Some(k) =>
-            algo.verifyJws[F](k, data, signed, context.doKeyValidation, context.useLegacyName,
-              context.signatureProvider)
+            algo.verifyJws[F](k, data, signed, configuration.doKeyValidation, configuration.useLegacyName,
+              configuration.signatureProvider)
           case None => MissingKey.asLeft.pure[F]
       case Some(algo) => UnsupportedSignatureAlgorithm(algo).asLeft.pure[F]
 
