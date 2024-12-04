@@ -12,21 +12,22 @@ import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 
 trait Signature extends HeaderEither:
   def signature: Base64UrlNoPad
   def isBase64UrlEncodePayload: Either[Error, Boolean] =
     getUnprotectedHeader.map(_.isBase64UrlEncodePayload)
 
-  def decodePayload(payload: String): Either[Error, ByteVector] =
-    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayload(payload, b64))
+  def decodePayload(payload: String, charset: Charset = StandardCharsets.UTF_8): Either[Error, ByteVector] =
+    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayload(payload, b64, charset))
 
-  def decodePayloadString(payload: String, charset: Charset): Either[Error, String] =
-    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadString(payload, charset, b64))
+  def decodePayloadString(payload: String, charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
+    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadString(payload, b64, charset))
 
-  def decodePayloadJson[T](payload: String)(using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
-    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadJson(payload, b64))
+  def decodePayloadJson[T](payload: String, charset: Charset = StandardCharsets.UTF_8)
+                          (using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
+    isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadJson(payload, b64, charset))
 
   def compact(payload: String): Either[Error, String] =
     getProtectedHeader.map(h => s"${concat(h, payload)}.${signature.value}")

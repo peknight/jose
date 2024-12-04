@@ -12,7 +12,7 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.encryption.KeyDecipherMode
-import com.peknight.jose.jwx.fromJsonBytes
+import com.peknight.jose.jwx.bytesDecodeToJson
 import com.peknight.jose.jwe.JsonWebEncryption.handleDecrypt
 import com.peknight.security.provider.Provider
 import fs2.compression.Compression
@@ -33,7 +33,7 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
   ): F[Either[Error, A]] =
     decrypt[F](managementKey, knownCriticalHeaders, doKeyValidation, keyDecipherModeOverride, random, cipherProvider,
       keyAgreementProvider, keyFactoryProvider, macProvider, messageDigestProvider)
-      .map(_.flatMap(fromJsonBytes[A]))
+      .map(_.flatMap(bytesDecodeToJson[A]))
 
   def decryptUtf8[F[_]: Async: Compression](managementKey: Key,
                                             knownCriticalHeaders: List[String] = List.empty[String],

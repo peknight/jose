@@ -1,22 +1,56 @@
 package com.peknight.jose.jwt
 
-import cats.Monad
 import cats.data.EitherT
 import cats.effect.Async
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import cats.syntax.either.*
+import cats.{Id, Monad}
+import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
+import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
+import com.peknight.jose.jwa.encryption.KeyDecipherMode
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jws.JsonWebSignature
+import com.peknight.jose.jwx.{JoseContext, JsonWebStructure}
+import com.peknight.security.provider.Provider
 import fs2.compression.Compression
 
+import java.security.{Key, SecureRandom, Provider as JProvider}
+
 trait JsonWebTokenCompanion:
-  def parse[F[_]: Async: Compression](jwt: String): F[Either[Error, JsonWebTokenClaims]] =
-    Monad[[X] =>> EitherT[F, Error, X]].tailRecM[String, JsonWebTokenClaims](jwt) { jwt =>
-      for
-        structure <- JsonWebEncryption.parse(jwt).orElse(JsonWebSignature.parse(jwt)).asError.eLiftET[F]
-      yield
-        ???
-    }
-    ???
+  def parse[F[_]: Async: Compression](jwt: String, context: JoseContext = JoseContext.default)
+                                     (verificationKey: (JsonWebSignature, JoseContext) => F[Either[Error, Option[Key]]])
+                                     (decryptionKey: (JsonWebEncryption, JoseContext) => F[Either[Error, Key]])
+  : F[Either[Error, JsonWebTokenClaims]] =
+    case class State(
+                      hasSignature: Boolean = false,
+                      hasEncryption: Boolean = false,
+                      hasSymmetricEncryption: Boolean = false
+                    )
+    def nextState(structure: JsonWebStructure, state: State): Either[Error, State] =
+      structure.getUnprotectedHeader.map { header =>
+
+        state
+      }
+
+    Monad[[X] =>> EitherT[F, Error, X]].tailRecM[(String, State), (JsonWebTokenClaims, State)]((jwt, State())) {
+      case (jwt, State(hasSignature, hasEncryption, hasSymmetricEncryption)) =>
+        for
+          structure <- JsonWebStructure.parse(jwt).asError.eLiftET[F]
+          payload <- EitherT(structure.getPayloadUtf8[F](skipSignatureVerification, skipVerificationKeyResolutionOnNone,
+            knownCriticalHeaders, doKeyValidation, useLegacyName, keyDecipherModeOverride, random, cipherProvider,
+            keyAgreementProvider, keyFactoryProvider, macProvider, messageDigestProvider, signatureProvider
+          )(verificationKey)(decryptionKey))
+          nestedJwt <- structure.isNestedJsonWebToken.eLiftET[F]
+          res <-
+            if nestedJwt then payload.asLeft.rLiftET
+            else
+              decode[Id, JsonWebTokenClaims](payload) match
+                case Left(error) => if liberalContentTypeHandling then payload.asLeft.rLiftET else error.lLiftET
+                case Right(jwtClaims) => jwtClaims.asRight.rLiftET
+        yield
+          res
+      }
+      .value
+
 end JsonWebTokenCompanion

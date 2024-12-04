@@ -11,7 +11,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
 import com.peknight.jose.jwk.{JsonWebKey, appendixA1, appendixA2}
-import com.peknight.jose.jwx.{JoseHeader, toBytes}
+import com.peknight.jose.jwx.{JoseHeader, stringEncodeToBytes}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:

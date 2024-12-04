@@ -7,7 +7,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx.toBytes
+import com.peknight.jose.jwx.stringEncodeToBytes
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -24,7 +24,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val iv = ByteVector(3, 22, 60, 12, 43, 67, 104, 105, 108, 108, 105, 99, 111, 116, 104, 101)
     val run =
       for
-        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
+        plaintextBytes <- stringEncodeToBytes(plaintext).eLiftET[IO]
         aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value
@@ -57,7 +57,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
-        plaintextBytes <- toBytes(text).eLiftET[IO]
+        plaintextBytes <- stringEncodeToBytes(text).eLiftET[IO]
         rawCek <- EitherT(randomBytes[IO](`A128CBC-HS256`.cekByteLength).asError)
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, None).asError)
         decrypted <- EitherT(`A128CBC-HS256`.decrypt[IO](rawCek, contentEncryptionParts.initializationVector,

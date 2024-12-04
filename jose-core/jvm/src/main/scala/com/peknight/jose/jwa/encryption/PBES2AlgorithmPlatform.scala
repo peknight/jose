@@ -11,7 +11,7 @@ import com.peknight.error.syntax.either.{label, message}
 import com.peknight.jose.error.MissingKey
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.ContentEncryptionKeys
-import com.peknight.jose.jwx.toBytes
+import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.cipher.{AES, BlockCipher}
 import com.peknight.security.mac.MACAlgorithm
 import com.peknight.security.provider.Provider
@@ -118,7 +118,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
                                     saltInput: ByteVector, provider: Option[Provider | JProvider]
                                    ): EitherT[F, Error, Key] =
     for
-      identifierBytes <- toBytes(identifier.identifier).eLiftET
+      identifierBytes <- stringEncodeToBytes(identifier.identifier).eLiftET
       salt = identifierBytes ++ (0 +: saltInput)
       dkLen = cipher.blockSize
       derivedKeyBytes <- PasswordBasedKeyDerivationFunction2.derive[F](prf, ByteVector(managementKey.getEncoded), salt,

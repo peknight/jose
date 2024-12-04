@@ -30,7 +30,7 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- decode[Id, AsymmetricJsonWebKey](jwkJson).eLiftET[IO]
         jkt <- EitherT(jwk.calculateBase64UrlEncodedThumbprint[IO]())
         privateKey <- EitherT(jwk.toPrivateKey[IO]())
-        jwsSigner <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(EdDSA)), expectedPayload, Some(privateKey)))
+        jwsSigner <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(EdDSA)), expectedPayload, Some(privateKey)))
         jws <- jwsSigner.compact.eLiftET[IO]
         jwkPubOnly <- decode[Id, AsymmetricJsonWebKey](jwkJsonPubOnly).eLiftET[IO]
         jktPublicOnly <- EitherT(jwkPubOnly.calculateBase64UrlEncodedThumbprint[IO]())
@@ -61,7 +61,7 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         payload <- jwsObject1.decodePayloadUtf8.eLiftET[IO]
         jwk2 <- decode[Id, AsymmetricJsonWebKey](jwkJson2).eLiftET[IO]
         privateKey <- EitherT(jwk2.toPrivateKey[IO]())
-        jwsObject2 <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(EdDSA)), "meh", Some(privateKey)))
+        jwsObject2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(EdDSA)), "meh", Some(privateKey)))
         compact <- jwsObject2.compact.eLiftET[IO]
       yield
         payload == "meh" && compact == jws

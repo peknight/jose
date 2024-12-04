@@ -7,11 +7,11 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.security.cipher.mode.{CBC, CipherAlgorithmMode}
 import com.peknight.security.cipher.padding.{CipherAlgorithmPadding, PKCS5Padding}
-import com.peknight.security.cipher.{AEAD, AES}
+import com.peknight.security.cipher.{AEAD, AES, Symmetric}
 import com.peknight.security.mac.HmacSHA2
 import com.peknight.security.spec.SecretKeySpecAlgorithm
 
-trait AESCBCHmacSHA2Algorithm extends EncryptionAlgorithm with AEAD with AESCBCHmacSHA2AlgorithmPlatform:
+trait AESCBCHmacSHA2Algorithm extends EncryptionAlgorithm with AEAD with Symmetric with AESCBCHmacSHA2AlgorithmPlatform:
   type This = AEAD
   def encryption: AES
   def mac: HmacSHA2

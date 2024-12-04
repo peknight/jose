@@ -7,7 +7,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.jose.jwx.toBytes
+import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.digest.`SHA-256`
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -78,7 +78,7 @@ class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec
       for
         zBase <- Base64UrlNoPad.fromString(z).eLiftET[IO]
         zBytes <- zBase.decode[Id].eLiftET[IO]
-        algorithmId <- toBytes(algorithm).eLiftET[IO]
+        algorithmId <- stringEncodeToBytes(algorithm).eLiftET[IO]
         kdfed <- EitherT(ConcatKeyDerivationFunction.kdf[IO](`SHA-256`, zBytes,
           ConcatKeyDerivationFunction.otherInfo(cekLength, Some(algorithmId), partyU, partyV), cekLength, None).asError)
         kdfBase = Base64UrlNoPad.fromByteVector(kdfed).value

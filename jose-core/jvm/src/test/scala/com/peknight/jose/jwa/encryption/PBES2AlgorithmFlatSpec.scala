@@ -13,7 +13,7 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.{ContentEncryptionKeys, ContentEncryptionParts, JsonWebEncryption}
 import com.peknight.jose.jwk.{JsonWebKey, KeyId, KeyType, PublicKeyUseType}
-import com.peknight.jose.jwx.{JoseHeader, decodeOption, fromBase, toBytes}
+import com.peknight.jose.jwx.{JoseHeader, decodeOption, bytesDecodeToJson, stringEncodeToBytes}
 import com.peknight.security.cipher.AES
 import com.peknight.security.key.secret.PBKDF2
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -120,7 +120,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "PBES2" should "succeed with decrypt" in {
     val run =
       for
-        keyBytes <- toBytes(password).eLiftET[IO]
+        keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         jwe <- JsonWebEncryption.parse(cs).asError.eLiftET[IO]
         header <- jwe.getUnprotectedHeader.eLiftET[IO]
@@ -145,8 +145,8 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         headerBase <- Base64UrlNoPad.fromString(encodedHeader).eLiftET[IO]
-        header <- fromBase[JoseHeader](headerBase).eLiftET[IO]
-        keyBytes <- toBytes(password).eLiftET[IO]
+        header <- decodeToJson[JoseHeader](headerBase).eLiftET[IO]
+        keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[IO]
         (derivedKey, saltInput, iterationCount) <- `PBES2-HS256+A128KW`.deriveForEncrypt[IO](key, pbes2SaltInput,
@@ -181,7 +181,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val password = "password"
     val plaintext = "<insert some witty quote or remark here>"
     for
-      keyBytes <- toBytes(password).eLiftET[IO]
+      keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
       key = PBKDF2.secretKeySpec(keyBytes)
       jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(alg), Some(enc))))
       jweCompact <- jwe.compact.eLiftET[IO]
@@ -194,7 +194,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "PBES2" should "succeed with defaults meet minimum required or suggested" in {
     val run =
       for
-        keyBytes <- toBytes("passtheword").eLiftET[IO]
+        keyBytes <- stringEncodeToBytes("passtheword").eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, "meh", JoseHeader(Some(`PBES2-HS256+A128KW`),
           Some(`A128CBC-HS256`))))
@@ -216,7 +216,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val iterationCount = 1024L
     val run =
       for
-        keyBytes <- toBytes(password).eLiftET[IO]
+        keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         pbes2SaltInput <- EitherT(randomBytes[IO](saltByteLength).asError)
         jwe <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(`PBES2-HS384+A192KW`),
@@ -240,7 +240,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val iterationCount = 918L
     val run =
       for
-        keyBytes <- toBytes(password).eLiftET[IO]
+        keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         _ <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(`PBES2-HS256+A128KW`),
           Some(`A128CBC-HS256`), pbes2Count = Some(iterationCount))).map(_.swap.asError))
@@ -254,7 +254,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val plaintext = "some text"
     val run =
       for
-        keyBytes <- toBytes(password).eLiftET[IO]
+        keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         pbes2SaltInput <- Base64UrlNoPad.fromString("bWVo").eLiftET[IO]
         _ <- EitherT(JsonWebEncryption.encryptUtf8[IO](key, plaintext, JoseHeader(Some(`PBES2-HS256+A128KW`),

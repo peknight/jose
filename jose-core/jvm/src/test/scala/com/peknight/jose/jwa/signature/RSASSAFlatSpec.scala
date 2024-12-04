@@ -51,7 +51,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
-        jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(RS256)),
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)),
           "{\"iss\":\"joe\",\r\n \"exp\":1300819380,\r\n \"http://example.com/is_root\":true}", Some(privateKey)))
         compact <- jws.compact.eLiftET[IO]
       yield
@@ -110,7 +110,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     for
       privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
       publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-      jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(alg)), payload, Some(privateKey),
+      jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(alg)), payload, Some(privateKey),
         useLegacyName = useLegacyName, provider = provider))
       compact <- jws.compact.eLiftET[IO]
       parsedJws <- JsonWebSignature.parse(compact).asError.eLiftET[IO]

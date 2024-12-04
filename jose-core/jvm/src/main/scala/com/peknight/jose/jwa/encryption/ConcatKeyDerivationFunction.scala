@@ -12,7 +12,7 @@ import com.peknight.cats.instances.scodec.bits.byteVector.given
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwa.AlgorithmIdentifier
-import com.peknight.jose.jwx.toBytes
+import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.digest.MessageDigestAlgorithm
 import com.peknight.security.provider.Provider
 import com.peknight.security.syntax.messageDigest.{digestF, getDigestLengthF, updateF}
@@ -29,7 +29,7 @@ object ConcatKeyDerivationFunction:
 
     val eitherT =
       for
-        algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(enc => toBytes(enc.identifier).map(_.some))
+        algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(enc => stringEncodeToBytes(enc.identifier).map(_.some))
           .eLiftET[F]
         derivedKey <- EitherT(kdf[F](messageDigestAlgorithm, sharedSecret,
           otherInfo(cekLength, algorithmId, agreementPartyUInfo, agreementPartyVInfo), cekLength, provider).asError)

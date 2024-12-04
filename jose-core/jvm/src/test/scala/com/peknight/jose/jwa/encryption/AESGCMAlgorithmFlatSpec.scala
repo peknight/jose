@@ -7,7 +7,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx.toBytes
+import com.peknight.jose.jwx.stringEncodeToBytes
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -23,7 +23,7 @@ class AESGCMAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val iv = ByteVector(227, 197, 117, 252, 2, 219, 233, 68, 180, 225, 77, 219)
     val run =
       for
-        plaintextBytes <- toBytes(plaintext).eLiftET[IO]
+        plaintextBytes <- stringEncodeToBytes(plaintext).eLiftET[IO]
         aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
         contentEncryptionParts <- EitherT(A256GCM.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value

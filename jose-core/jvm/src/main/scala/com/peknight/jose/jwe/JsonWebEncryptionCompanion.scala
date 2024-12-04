@@ -17,7 +17,7 @@ import com.peknight.jose.error.InvalidKeyLength
 import com.peknight.jose.jwa.encryption.{EncryptionAlgorithm, KeyDecipherMode, KeyManagementAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwx.{JoseHeader, decodeOption, toBase, toJsonBytes}
+import com.peknight.jose.jwx.{JoseHeader, decodeOption, encodeToBase, encodeToJsonBytes}
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.{isTrue, typed}
 import fs2.compression.Compression
@@ -37,7 +37,7 @@ trait JsonWebEncryptionCompanion:
                            macProvider: Option[Provider | JProvider] = None,
                            messageDigestProvider: Option[Provider | JProvider] = None
                           )(using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
-    toJsonBytes(plaintextValue) match
+    encodeToJsonBytes(plaintextValue) match
       case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
       case Right(plaintext) => encrypt[F](managementKey, plaintext, header, cekOverride, ivOverride, doKeyValidation,
         random, cipherProvider, keyAgreementProvider, keyPairGeneratorProvider, macProvider, messageDigestProvider)
@@ -104,7 +104,7 @@ trait JsonWebEncryptionCompanion:
           keyAgreementProvider, keyPairGeneratorProvider, macProvider, messageDigestProvider))
         contentEncryptionKey = contentEncryptionKeys.contentEncryptionKey
         nextHeader = update(header, contentEncryptionKeys)
-        protectedHeader <- toBase(nextHeader, Base64UrlNoPad).eLiftET
+        protectedHeader <- encodeToBase(nextHeader, Base64UrlNoPad).eLiftET
         additionalAuthenticatedData <- ByteVector.encodeAscii(protectedHeader.value).asError.eLiftET
         _ <- checkCek(encryptionAlgorithm, contentEncryptionKey)
         plaintextBytes <- compress[F](nextHeader, plaintext)

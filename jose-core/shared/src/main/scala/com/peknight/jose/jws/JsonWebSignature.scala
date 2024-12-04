@@ -15,8 +15,7 @@ import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx
-import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure, fromBase, toBase}
+import com.peknight.jose.jwx.*
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
@@ -32,11 +31,13 @@ case class JsonWebSignature private[jws] (
   payload: String,
   signature: Base64UrlNoPad
 ) extends Signature with JsonWebStructure with JsonWebSignaturePlatform:
-  def decodePayload: Either[Error, ByteVector] = decodePayload(payload)
-  def decodePayloadUtf8: Either[Error, String] = decodePayloadString()
+  def decodePayload(charset: Charset = StandardCharsets.UTF_8): Either[Error, ByteVector] =
+    decodePayload(payload, charset)
   def decodePayloadString(charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
     decodePayloadString(payload, charset)
-  def decodePayloadJson[T](using Decoder[Id, Cursor[Json], T]): Either[Error, T] = decodePayloadJson(payload)
+  def decodePayloadJson[T](charset: Charset = StandardCharsets.UTF_8)(using Decoder[Id, Cursor[Json], T])
+  : Either[Error, T] =
+    decodePayloadJson(payload)
   def compact: Either[Error, String] = compact(payload)
 end JsonWebSignature
 
@@ -82,36 +83,38 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   def concat(header: Base64UrlNoPad, payload: String): String = s"${header.value}.$payload"
 
-  def toBytes(header: Base64UrlNoPad, payload: String): Either[Error, ByteVector] = jwx.toBytes(concat(header, payload))
+  def toBytes(header: Base64UrlNoPad, payload: String, charset: Charset = StandardCharsets.UTF_8)
+  : Either[Error, ByteVector] =
+    stringEncodeToBytes(concat(header, payload), charset)
 
-  def encodePayload(payload: ByteVector, base64UrlEncodePayload: Boolean): Either[Error, String] =
+  def encodePayload(payload: ByteVector, base64UrlEncodePayload: Boolean = true,
+                    charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
     if base64UrlEncodePayload then Base64UrlNoPad.fromByteVector(payload).value.asRight
-    else payload.decodeUtf8.asError
+    else bytesDecodeToString(payload, charset)
 
-  def encodePayloadJson[T](payload: T, base64UrlEncodePayload: Boolean)(using Encoder[Id, Json, T])
-  : Either[Error, String] =
-    if base64UrlEncodePayload then toBase(payload, Base64UrlNoPad).map(_.value)
-    else payload.asS[Id, Json].deepDropNullValues.noSpaces.asRight
-
-  def decodePayload(payload: String, base64UrlEncodePayload: Boolean): Either[Error, ByteVector] =
-    if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id]) else jwx.toBytes(payload)
-
-  def decodePayloadString(payload: String, charset: Charset, base64UrlEncodePayload: Boolean): Either[Error, String] =
-    if base64UrlEncodePayload then
-      for
-        base <- Base64UrlNoPad.fromString(payload)
-        bytes <- base.decode[Id]
-        res <- bytes.decodeString(charset).asError
-      yield
-        res
+  def encodePayloadString(payload: String, base64UrlEncodePayload: Boolean = true,
+                          charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
+    if base64UrlEncodePayload then stringEncodeToBase(payload, Base64UrlNoPad, charset).map(_.value)
     else payload.asRight
 
-  def decodePayloadJson[T](payload: String, base64UrlEncodePayload: Boolean)(using Decoder[Id, Cursor[Json], T])
-  : Either[Error, T] =
-    if base64UrlEncodePayload then
-      for
-        base64 <- Base64UrlNoPad.fromString(payload)
-        res <- fromBase[T](base64)
-      yield res
-    else decode[Id, T](payload)
+  def encodePayloadJson[A](payload: A, base64UrlEncodePayload: Boolean = true,
+                           charset: Charset = StandardCharsets.UTF_8)
+                          (using Encoder[Id, Json, A]): Either[Error, String] =
+    encodePayloadString(encodeToJson(payload), base64UrlEncodePayload, charset)
+
+  def decodePayload(payload: String, base64UrlEncodePayload: Boolean = true, charset: Charset = StandardCharsets.UTF_8)
+  : Either[Error, ByteVector] =
+    if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(_.decode[Id])
+    else stringEncodeToBytes(payload, charset)
+
+  def decodePayloadString(payload: String, base64UrlEncodePayload: Boolean = true,
+                          charset: Charset = StandardCharsets.UTF_8)
+  : Either[Error, String] =
+    if base64UrlEncodePayload then Base64UrlNoPad.fromString(payload).flatMap(base => baseDecodeToString(base, charset))
+    else payload.asRight
+
+  def decodePayloadJson[A](payload: String, base64UrlEncodePayload: Boolean = true,
+                           charset: Charset = StandardCharsets.UTF_8)
+                          (using Decoder[Id, Cursor[Json], A]): Either[Error, A] =
+    decodePayloadString(payload, base64UrlEncodePayload, charset).flatMap(decode[Id, A])
 end JsonWebSignature

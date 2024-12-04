@@ -102,7 +102,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         parsedJws <- JsonWebSignature.parse(jwscsWithB64).asError.eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(key)))
         parsedPayload <- parsedJws.decodePayloadUtf8.eLiftET[IO]
-        jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(HS256)), payload, Some(key)))
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), payload, Some(key)))
         compact <- jws.compact.eLiftET[IO]
         detachedJws <- JsonWebSignature.parse(jwscsWithoutB64andDetachedPayload, payload).asError.eLiftET[IO]
         headerBase <- detachedJws.`protected`.toRight(OptionEmpty).eLiftET[IO]
@@ -129,14 +129,14 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
-        signerJws1 <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
+        signerJws1 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload1, Some(privateKey)))
         compact1 <- signerJws1.compact.eLiftET[IO]
         verifierJws <- JsonWebSignature.parse(compact1).asError.eLiftET[IO]
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         _ <- EitherT(verifierJws.check[IO](Some(publicKey)))
         verifierPayload <- verifierJws.decodePayloadUtf8.eLiftET[IO]
-        signerJws2 <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
+        signerJws2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload2, Some(privateKey)))
         compact2 <- signerJws2.compact.eLiftET[IO]
       yield

@@ -104,9 +104,9 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val key = Hmac.secretKeySpec(ByteVector(1, 2, 5, -9, 99, -99, 0, 40, 21))
     val run =
       for
-        jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(HS256)), "whatever", Some(key), false))
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key), false))
         cs <- jws.compact.eLiftET[IO]
-        _ <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(HS256)), "whatever", Some(key)).map(_.swap.asError))
+        _ <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key)).map(_.swap.asError))
       yield
         cs.nonEmpty
     run.value.asserting(value => assert(value.getOrElse(false)))

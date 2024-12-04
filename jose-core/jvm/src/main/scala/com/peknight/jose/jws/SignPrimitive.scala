@@ -2,35 +2,30 @@ package com.peknight.jose.jws
 
 import cats.Id
 import cats.effect.Sync
-import cats.syntax.applicative.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
-import com.peknight.jose.jwx.JoseHeader
-import com.peknight.security.provider.Provider
+import com.peknight.jose.jwx.{JoseContext, JoseHeader}
 import io.circe.Json
 import scodec.bits.ByteVector
 
-import java.security.{Key, SecureRandom, Provider as JProvider}
+import java.security.Key
 
-case class SignPrimitive(header: JoseHeader, key: Option[Key] = None, doKeyValidation: Boolean = true,
-                         useLegacyName: Boolean = false, random: Option[SecureRandom] = None,
-                         provider: Option[Provider | JProvider] = None):
-  def signJson[F[_], A](payload: A)(using Sync[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignature]] =
-    JsonWebSignature.signJson[F, A](header, payload, key, doKeyValidation, useLegacyName, random, provider)
-
+case class SignPrimitive(header: JoseHeader, key: Option[Key] = None, context: JoseContext = JoseContext.default):
   def signBytes[F[_]: Sync](payload: ByteVector): F[Either[Error, JsonWebSignature]] =
-    JsonWebSignature.signBytes[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+    JsonWebSignature.signBytes[F](header, payload, key, context)
 
-  def signUtf8[F[_]: Sync](payload: String): F[Either[Error, JsonWebSignature]] =
-    JsonWebSignature.signUtf8[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+  def signString[F[_]: Sync](payload: String): F[Either[Error, JsonWebSignature]] =
+    JsonWebSignature.signString[F](header, payload, key, context)
+
+  def signJson[F[_], A](payload: A)(using Sync[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignature]] =
+    JsonWebSignature.signJson[F, A](header, payload, key, context)
 
   def sign[F[_]: Sync](payload: String): F[Either[Error, JsonWebSignature]] =
-    JsonWebSignature.sign[F](header, payload, key, doKeyValidation, useLegacyName, random, provider)
+    JsonWebSignature.sign[F](header, payload, key, context)
 
   private[jws] def handleSignSignature[F[_]: Sync, S <: Signature](payload: String)
                                                                   (f: (Base64UrlNoPad, Base64UrlNoPad) => S)
   : F[Either[Error, S]] =
-    JsonWebSignature.handleSignSignature[F, S](header, payload, key, doKeyValidation, useLegacyName, random, provider)(f)
-
+    JsonWebSignature.handleSignSignature[F, S](header, payload, key, context)(f)
 end SignPrimitive

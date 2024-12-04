@@ -3,9 +3,10 @@ package com.peknight.jose.jwa.encryption
 import com.peknight.jose.jwa.encryption.HeaderParam.{p2c, p2s}
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
+import com.peknight.security.cipher.Symmetric
 import com.peknight.security.mac.HmacSHA2
 
-trait PBES2Algorithm extends KeyEncryptionAlgorithm with PBES2AlgorithmPlatform:
+trait PBES2Algorithm extends KeyEncryptionAlgorithm with Symmetric with PBES2AlgorithmPlatform:
   def prf: HmacSHA2
   def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(p2s, p2c)

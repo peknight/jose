@@ -18,7 +18,7 @@ class DetachedContentFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         privateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
-        jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(ES256)), payload, Some(privateKey)))
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), payload, Some(privateKey)))
         detachedContentCompact <- jws.detachedContentCompact.eLiftET[IO]
         encodedPayload = jws.payload
         compact <- jws.compact.eLiftET[IO]

@@ -74,7 +74,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         privateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
-        jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(ES256), critical = Some(List("nope"))), payload,
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256), critical = Some(List("nope"))), payload,
           Some(privateKey)))
         jwsCompactSerialization <- jws.compact.eLiftET[IO]
         jws <- JsonWebSignature.parse(jwsCompactSerialization).asError.eLiftET[IO]

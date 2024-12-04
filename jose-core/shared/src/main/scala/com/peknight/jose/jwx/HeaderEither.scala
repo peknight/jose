@@ -7,7 +7,7 @@ import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.error.Error
-import com.peknight.jose.jwx.{fromBase, toBase}
+import com.peknight.jose.jwx.{bytesDecodeToJson, encodeToBase}
 
 private[jose] trait HeaderEither:
   def headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)]
@@ -41,14 +41,14 @@ private[jose] object HeaderEither:
     headerEither match
       case Left(Left(h)) => Right(h)
       case Right((h, _)) => Right(h)
-      case Left(Right(p)) => fromBase[JoseHeader](p)
+      case Left(Right(p)) => baseDecodeToJson[JoseHeader](p)
 
   def getProtectedHeader(headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)])
   : Either[Error, Base64UrlNoPad] =
     headerEither match
       case Left(Right(p)) => Right(p)
       case Right((_, p)) => Right(p)
-      case Left(Left(h)) => toBase(h, Base64UrlNoPad)
+      case Left(Left(h)) => encodeToBase(h, Base64UrlNoPad)
 
   private def unsafeGetProtectedHeader(headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)])
   : Base64UrlNoPad =

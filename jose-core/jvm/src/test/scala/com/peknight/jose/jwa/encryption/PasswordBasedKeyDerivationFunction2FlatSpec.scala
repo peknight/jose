@@ -10,7 +10,7 @@ import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx.toBytes
+import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.key.secret.PBKDF2
 import com.peknight.security.mac.*
 import com.peknight.security.spec.PBEKeySpec
@@ -135,7 +135,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
                                          iterationCount: Int, dkLen: Int, expectedKey: String): IO[Assertion] =
     val run =
       for
-        passwordBytes <- toBytes(password).eLiftET[IO]
+        passwordBytes <- stringEncodeToBytes(password).eLiftET[IO]
         saltBase <- Base64UrlNoPad.fromString(saltBaseString).eLiftET[IO]
         saltBytes <- saltBase.decode[Id].eLiftET[IO]
         derived <- PasswordBasedKeyDerivationFunction2.derive[IO](prf, passwordBytes, saltBytes, iterationCount,
@@ -208,8 +208,8 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
   : IO[Assertion] =
     val run =
       for
-        passwordBytes <- toBytes(password).eLiftET[IO]
-        saltBytes <- toBytes(salt).eLiftET[IO]
+        passwordBytes <- stringEncodeToBytes(password).eLiftET[IO]
+        saltBytes <- stringEncodeToBytes(salt).eLiftET[IO]
         derived <- PasswordBasedKeyDerivationFunction2.derive[IO](HmacSHA1, passwordBytes, saltBytes, iterationCount,
           dkLen, None)
       yield

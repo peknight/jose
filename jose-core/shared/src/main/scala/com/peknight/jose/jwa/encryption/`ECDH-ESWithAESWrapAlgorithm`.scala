@@ -6,8 +6,10 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.HeaderParam.{apu, apv, epk}
+import com.peknight.security.cipher.Asymmetric
 
-trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm with `ECDH-ESWithAESWrapAlgorithmPlatform`:
+trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm with Asymmetric
+  with `ECDH-ESWithAESWrapAlgorithmPlatform`:
   def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)
   def algorithm: String = s"ECDH-ES+A${encryption.blockSize * 8}KW"

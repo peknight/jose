@@ -33,7 +33,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "Plaintext" should "succeed with example encode" in {
     val run =
       for
-        jws <- EitherT(JsonWebSignature.signUtf8[IO](JoseHeader(Some(none)), payload))
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(none)), payload))
         compact <- jws.compact.eLiftET[IO]
       yield
         compact == jwsCompact
@@ -41,7 +41,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "Plaintext" should "failed with sign with key no good" in {
-    JsonWebSignature.signUtf8[IO](JoseHeader(Some(none)), payload, Some(key)).asserting(either => assert(either.isLeft))
+    JsonWebSignature.signString[IO](JoseHeader(Some(none)), payload, Some(key)).asserting(either => assert(either.isLeft))
   }
 
   "Plaintext" should "failed with verify with key no good" in {
