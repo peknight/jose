@@ -11,9 +11,9 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwk.JsonWebKey.*
 import com.peknight.jose.jwk.KeyOperationType.*
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.RSA
 import com.peknight.validation.std.either.typed
-import io.circe.syntax.*
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.security.interfaces.*
@@ -114,7 +114,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         _ <- isEllipticCurve(jwk)
-        jsonOut = jwk.asJson.deepDropNullValues.noSpaces
+        jsonOut = encodeToJson(jwk)
         jwk2 <- decode[Id, JsonWebKey](jsonOut).eLiftET[IO]
         _ <- isEllipticCurve(jwk2)
       yield
@@ -140,7 +140,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         _ <- isRSA(jwk)
-        jsonOut = jwk.asJson.deepDropNullValues.noSpaces
+        jsonOut = encodeToJson(jwk)
         jwk2 <- decode[Id, JsonWebKey](jsonOut).eLiftET[IO]
         _ <- isRSA(jwk2)
       yield
@@ -155,7 +155,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk1 <- decode[Id, OctetSequenceJsonWebKey](json1).eLiftET[IO]
         keyOps = List(decrypt, deriveBits, deriveKey, encrypt, sign, verify, unwrapKey, wrapKey)
-        json1 = jwk1.copy(keyOperations = Some(keyOps)).asJson.deepDropNullValues.noSpaces
+        json1 = encodeToJson(jwk1.copy(keyOperations = Some(keyOps)))
         parsedJwk1 <- decode[Id, OctetSequenceJsonWebKey](json1).eLiftET[IO]
         jwk2 <- decode[Id, OctetSequenceJsonWebKey](json2).eLiftET[IO]
       yield

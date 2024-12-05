@@ -33,8 +33,8 @@ case class JsonWebSignature private[jws] (
     handleDecodePayload(payload, charset)
   def decodePayloadString(charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
     handleDecodePayloadString(payload, charset)
-  def decodePayloadJson[T](charset: Charset = StandardCharsets.UTF_8)(using Decoder[Id, Cursor[Json], T])
-  : Either[Error, T] =
+  def decodePayloadJson[A](charset: Charset = StandardCharsets.UTF_8)(using Decoder[Id, Cursor[Json], A])
+  : Either[Error, A] =
     handleDecodePayloadJson(payload)
   def compact: Either[Error, String] = compact(payload)
 end JsonWebSignature

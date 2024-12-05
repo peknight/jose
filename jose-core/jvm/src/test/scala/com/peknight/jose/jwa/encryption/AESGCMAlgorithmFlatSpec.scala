@@ -11,6 +11,8 @@ import com.peknight.jose.jwx.stringEncodeToBytes
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
+import java.nio.charset.StandardCharsets
+
 class AESGCMAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   "A256GCM" should "succeed" in {
@@ -24,7 +26,7 @@ class AESGCMAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         plaintextBytes <- stringEncodeToBytes(plaintext).eLiftET[IO]
-        aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
+        aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
         contentEncryptionParts <- EitherT(A256GCM.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value
         authenticationTag = Base64UrlNoPad.fromByteVector(contentEncryptionParts.authenticationTag).value
@@ -32,7 +34,6 @@ class AESGCMAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           contentEncryptionParts.ciphertext, contentEncryptionParts.authenticationTag, aad))
       yield
         ciphertext == encodedCiphertext && authenticationTag == encodedAuthenticationTag && decrypted === plaintextBytes
-
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 

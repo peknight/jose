@@ -14,7 +14,7 @@ import scodec.bits.ByteVector
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait RSA1_5Companion extends RSAESAlgorithmPlatform { self: RSAESAlgorithm =>
-  override def decryptKey[F[_] : Sync](managementKey: Key,
+  override def decryptKey[F[_] : Sync](key: Key,
                                        encryptedKey: ByteVector,
                                        cekLength: Int,
                                        cekAlgorithm: SecretKeySpecAlgorithm,
@@ -33,7 +33,7 @@ trait RSA1_5Companion extends RSAESAlgorithmPlatform { self: RSAESAlgorithm =>
                                        macProvider: Option[Provider | JProvider] = None,
                                        messageDigestProvider: Option[Provider | JProvider] = None
                                       ): F[Either[Error, Key]] =
-    super.decryptKey[F](managementKey, encryptedKey, cekLength, cekAlgorithm, keyDecipherModeOverride,
+    super.decryptKey[F](key, encryptedKey, cekLength, cekAlgorithm, keyDecipherModeOverride,
       encryptionAlgorithm, ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo, initializationVector,
       authenticationTag, pbes2SaltInput, pbes2Count, random, cipherProvider, keyAgreementProvider, macProvider,
       messageDigestProvider)

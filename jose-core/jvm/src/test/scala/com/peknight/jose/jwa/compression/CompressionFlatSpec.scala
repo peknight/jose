@@ -21,13 +21,13 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- EitherT(randomBytes[IO](32).asError)
         key = AES.secretKeySpec(keyBytes)
-        jweWithZip <- EitherT(JsonWebEncryption.encryptString[IO](key, plaintext, JoseHeader(Some(dir),
-          Some(`A128CBC-HS256`), Some(Deflate))))
+        jweWithZip <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(dir), Some(`A128CBC-HS256`),
+          Some(Deflate)), plaintext, key))
         jweWithZipCompact <- jweWithZip.compact.eLiftET[IO]
         jweWithZip <- JsonWebEncryption.parse(jweWithZipCompact).eLiftET[IO]
         decryptedPlaintextWithZip <- EitherT(jweWithZip.decryptString[IO](key))
-        jweWithoutZip <- EitherT(JsonWebEncryption.encryptString[IO](key, plaintext, JoseHeader(Some(dir),
-          Some(`A128CBC-HS256`))))
+        jweWithoutZip <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(dir), Some(`A128CBC-HS256`)),
+          plaintext, key))
         jweWithoutZipCompact <- jweWithoutZip.compact.eLiftET[IO]
         jweWithoutZip <- JsonWebEncryption.parse(jweWithoutZipCompact).eLiftET[IO]
         decryptedPlaintextWithoutZip <- EitherT(jweWithoutZip.decryptString[IO](key))

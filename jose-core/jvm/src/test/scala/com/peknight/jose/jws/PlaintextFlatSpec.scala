@@ -23,8 +23,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
-        _ <- EitherT(jws.check[IO]())
-        parsedPayload <- jws.decodePayloadString().eLiftET[IO]
+        parsedPayload <- EitherT(jws.verifiedPayloadString[IO]())
       yield
         parsedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -61,8 +60,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jws <- JsonWebSignature.parse(cs).eLiftET[IO]
-        _ <- EitherT(jws.check[IO]())
-        _ <- jws.decodePayloadString().eLiftET[IO]
+        _ <- EitherT(jws.verifiedPayloadString[IO]())
       yield
         ()
     run.value.asserting(value => assert(value.isRight))

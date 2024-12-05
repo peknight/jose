@@ -10,7 +10,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.signature.ES256
 import com.peknight.jose.jwk.{d256, x256, y256}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
@@ -27,7 +27,8 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           jws <- JsonWebSignature.parse(cs).eLiftET[IO]
           publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
           _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
-          _ <- EitherT(jws.check[IO](Some(publicKey), List(headerName)))
+          payload <- EitherT(jws.verifiedPayloadString[IO](Some(publicKey),
+            JoseConfiguration(knownCriticalHeaders = List(headerName))))
           payload <- jws.decodePayloadString().eLiftET[IO]
         yield
           payload == "how critical really?"
@@ -46,8 +47,8 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jws <- JsonWebSignature.parse(cs).eLiftET[IO]
         _ <- EitherT(jws.verify[IO]().map(_.swap.asError))
         // -> in the actual encoded example even thought the text says http://example.invalid/UNDEFINED
-        _ <- EitherT(jws.check[IO](None, List("http://example.com/UNDEFINED")))
-        payload <- jws.decodePayloadString().eLiftET[IO]
+        payload <- EitherT(jws.verifiedPayloadString[IO](None,
+          JoseConfiguration(knownCriticalHeaders = List("http://example.com/UNDEFINED"))))
       yield
         payload == "FAIL"
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -80,8 +81,8 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jws <- JsonWebSignature.parse(jwsCompactSerialization).eLiftET[IO]
         publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
-        _ <- EitherT(jws.check[IO](Some(publicKey), List("nope")))
-        parsedPayload <- jws.decodePayloadString().eLiftET[IO]
+        parsedPayload <- EitherT(jws.verifiedPayloadString[IO](Some(publicKey),
+          JoseConfiguration(knownCriticalHeaders = List("nope"))))
       yield
         parsedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))

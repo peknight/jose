@@ -8,7 +8,6 @@ import cats.{Functor, Id}
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
-import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{MissingKey, UnsupportedSignatureAlgorithm}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.signature.{SignaturePlatform, none}
@@ -16,13 +15,12 @@ import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson,
 import com.peknight.jose.jwx
 import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, encodeToBase}
 import com.peknight.security.error.InvalidSignature
-import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.isTrue
 import io.circe.Json
 import scodec.bits.ByteVector
 
-import java.nio.charset.{Charset, StandardCharsets}
-import java.security.{Key, SecureRandom, Provider as JProvider}
+import java.nio.charset.Charset
+import java.security.Key
 
 trait JsonWebSignatureCompanion:
   def signBytes[F[_]: Sync](header: JoseHeader, payload: ByteVector, key: Option[Key] = None,

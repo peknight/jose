@@ -10,7 +10,7 @@ import scodec.bits.ByteVector
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait KeyManagementAlgorithmPlatform:
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -28,7 +28,7 @@ trait KeyManagementAlgorithmPlatform:
                              messageDigestProvider: Option[Provider | JProvider] = None
                             ): F[Either[Error, ContentEncryptionKeys]]
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -48,7 +48,7 @@ trait KeyManagementAlgorithmPlatform:
                              messageDigestProvider: Option[Provider | JProvider] = None
                             ): F[Either[Error, Key]]
 
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit]
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[Error, Unit]
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit]
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[Error, Unit]
 end KeyManagementAlgorithmPlatform

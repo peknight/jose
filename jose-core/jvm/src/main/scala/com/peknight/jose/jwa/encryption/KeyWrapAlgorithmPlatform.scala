@@ -20,7 +20,7 @@ trait KeyWrapAlgorithmPlatform { self: CipherAlgorithm =>
 
   def algorithmParameterSpec: Option[AlgorithmParameterSpec] = None
 
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -40,12 +40,12 @@ trait KeyWrapAlgorithmPlatform { self: CipherAlgorithm =>
     val run =
       for
         contentEncryptionKey <- getBytesOrRandom[F](cekOverride.toRight(cekLength), random)
-        encryptedKey <- self.keyWrap[F](managementKey, cekAlgorithm.secretKeySpec(contentEncryptionKey),
+        encryptedKey <- self.keyWrap[F](key, cekAlgorithm.secretKeySpec(contentEncryptionKey),
           algorithmParameterSpec, provider = cipherProvider)
       yield ContentEncryptionKeys(contentEncryptionKey, encryptedKey)
     run.asError
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -67,10 +67,10 @@ trait KeyWrapAlgorithmPlatform { self: CipherAlgorithm =>
     val run =
       keyDecipherModeOverride match
         case Some(Decrypt) =>
-          self.keyDecrypt[F](managementKey, encryptedKey, algorithmParameterSpec, provider = cipherProvider)
+          self.keyDecrypt[F](key, encryptedKey, algorithmParameterSpec, provider = cipherProvider)
             .map(cekAlgorithm.secretKeySpec)
         case _ =>
-          self.keyUnwrap[F](managementKey, encryptedKey, cekAlgorithm, SecretKey, algorithmParameterSpec,
+          self.keyUnwrap[F](key, encryptedKey, cekAlgorithm, SecretKey, algorithmParameterSpec,
             provider = cipherProvider)
     run.asError
 }

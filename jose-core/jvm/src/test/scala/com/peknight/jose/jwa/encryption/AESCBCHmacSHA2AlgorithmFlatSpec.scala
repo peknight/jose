@@ -11,6 +11,8 @@ import com.peknight.jose.jwx.{bytesDecodeToString, stringEncodeToBytes}
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
+import java.nio.charset.StandardCharsets
+
 class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   private val rawCek = ByteVector(4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106, 206, 107, 124,
@@ -25,7 +27,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         plaintextBytes <- stringEncodeToBytes(plaintext).eLiftET[IO]
-        aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
+        aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value
         authenticationTag = Base64UrlNoPad.fromByteVector(contentEncryptionParts.authenticationTag).value
@@ -40,7 +42,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         ivBase <- Base64UrlNoPad.fromString(encodedIv).eLiftET[IO]
         iv <- EitherT(ivBase.decode[IO])
-        aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
+        aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
         ciphertextBase <- Base64UrlNoPad.fromString(encodedCiphertext).eLiftET[IO]
         ciphertext <- EitherT(ciphertextBase.decode[IO])
         authenticationTagBase <- Base64UrlNoPad.fromString(encodedAuthenticationTag).eLiftET[IO]
@@ -56,7 +58,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val text = "I'm writing this test on a flight to Zurich"
     val run =
       for
-        aad <- ByteVector.encodeAscii(encodedHeader).asError.eLiftET[IO]
+        aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
         plaintextBytes <- stringEncodeToBytes(text).eLiftET[IO]
         rawCek <- EitherT(randomBytes[IO](`A128CBC-HS256`.cekByteLength).asError)
         contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, None).asError)

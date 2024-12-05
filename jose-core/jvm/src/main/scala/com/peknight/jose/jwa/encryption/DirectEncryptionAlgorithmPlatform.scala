@@ -14,7 +14,7 @@ import scodec.bits.ByteVector
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -32,10 +32,10 @@ trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
                              messageDigestProvider: Option[Provider | JProvider] = None
                             ): F[Either[Error, ContentEncryptionKeys]] =
     canNotHaveKey(cekOverride, self)
-      .as(ContentEncryptionKeys(ByteVector(managementKey.getEncoded), ByteVector.empty))
+      .as(ContentEncryptionKeys(ByteVector(key.getEncoded), ByteVector.empty))
       .pure[F]
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -54,18 +54,18 @@ trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
                              macProvider: Option[Provider | JProvider] = None,
                              messageDigestProvider: Option[Provider | JProvider] = None
                             ): F[Either[Error, Key]] =
-    isTrue(encryptedKey.isEmpty, CanNotHaveKey(self)).as(managementKey).pure[F]
+    isTrue(encryptedKey.isEmpty, CanNotHaveKey(self)).as(key).pure[F]
 
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
-    validateKey(managementKey, cekLength)
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[Error, Unit] =
+    validateKey(key, cekLength)
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
-    validateKey(managementKey, cekLength)
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[Error, Unit] =
+    validateKey(key, cekLength)
 
-  def validateKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
+  def validateKey(key: Key, cekLength: Int): Either[Error, Unit] =
     for
-      key <- nonEmptyManagementKey(managementKey)
-      _ <- validateManagementKeyLength(key, self, cekLength)
+      key <- nonEmptyKey(key)
+      _ <- validateKeyLength(key, self, cekLength)
     yield
       ()
 

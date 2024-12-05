@@ -20,14 +20,14 @@ class AESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwk <- decode[Id, OctetSequenceJsonWebKey](jwkJson).eLiftET[IO]
-        managementKey <- jwk.toKey.eLiftET[IO]
-        contentEncryptionKeys <- EitherT(A128KW.encryptKey[IO](managementKey, `A128CBC-HS256`.cekByteLength,
+        key <- jwk.toKey.eLiftET[IO]
+        contentEncryptionKeys <- EitherT(A128KW.encryptKey[IO](key, `A128CBC-HS256`.cekByteLength,
           `A128CBC-HS256`.cekAlgorithm, Some(rawCek)))
         encryptedKey = Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey).value
-        key <- EitherT(A128KW.decryptKey[IO](managementKey, contentEncryptionKeys.encryptedKey,
+        cek <- EitherT(A128KW.decryptKey[IO](key, contentEncryptionKeys.encryptedKey,
           `A128CBC-HS256`.cekByteLength, `A128CBC-HS256`.cekAlgorithm))
       yield
-        encryptedKey == encodedEncryptedKey && ByteVector(key.getEncoded) === rawCek
+        encryptedKey == encodedEncryptedKey && ByteVector(cek.getEncoded) === rawCek
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end AESWrapAlgorithmFlatSpec

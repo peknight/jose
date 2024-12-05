@@ -78,8 +78,8 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val tests = for alg <- RSAESAlgorithm.values yield
       for
         keyPair <- EitherT(RSA.keySizeGenerateKeyPair[IO](2048).asError)
-        jwe <- EitherT(JsonWebEncryption.encryptString[IO](keyPair.getPublic, plaintext, JoseHeader(Some(alg),
-          Some(`A128CBC-HS256`))))
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(alg), Some(`A128CBC-HS256`)), plaintext,
+          keyPair.getPublic))
         jweCompact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](keyPair.getPrivate))
@@ -198,8 +198,8 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, RSAJsonWebKey](jwkJson).eLiftET[IO]
         publicKey <- EitherT(jwk.toPublicKey[IO]())
-        jwe <- EitherT(JsonWebEncryption.encryptString[IO](publicKey, examplePayload,
-          JoseHeader(Some(`RSA-OAEP-256`), Some(`A128CBC-HS256`))))
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(`RSA-OAEP-256`), Some(`A128CBC-HS256`)),
+          examplePayload, publicKey))
         jweCompact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
         privateKey <- EitherT(jwk.toPrivateKey[IO]())

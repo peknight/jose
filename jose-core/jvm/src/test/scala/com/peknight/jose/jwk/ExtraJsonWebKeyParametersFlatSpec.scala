@@ -8,8 +8,8 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey.{OctetSequenceJsonWebKey, RSAJsonWebKey}
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.RSA
-import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
 
@@ -20,7 +20,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val json = "{\"kty\":\"EC\",\"x\":\"14PCFt8uuLb6mbfn1XTOHzcSfZk0nU_AGe2hq91Gvl4\",\"y\":\"U0rLlwB8be5YM2ajGyactl" +
       "plFol7FKJrN83mNAOpuss\",\"crv\":\"P-256\",\"meh\":\"just some value\",\"number\":860}"
     val flag = decode[Id, JsonWebKey](json).map{ jwk =>
-      val json = jwk.asJson.deepDropNullValues.noSpaces
+      val json = encodeToJson(jwk)
       jwk.ext.flatMap(_("meh")).flatMap(_.asString).contains("just some value") &&
         jwk.ext.flatMap(_("number")).flatMap(_.asNumber).flatMap(_.toInt).contains(860) &&
         json.contains("\"meh\"") &&
@@ -39,7 +39,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         jwk = JsonWebKey.fromRSAKey(publicKey, ext = Some(JsonObject(name -> Json.fromString(value))))
-        json = jwk.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(jwk)
         decodedJwk <- decode[Id, RSAJsonWebKey](json).eLiftET[IO]
         decodedPublicKey <- EitherT(decodedJwk.toPublicKey[IO]())
       yield
@@ -58,7 +58,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk<- decode[Id, OctetSequenceJsonWebKey](json).eLiftET[IO]
         key <- jwk.toKey.eLiftET[IO]
-        encodedJson = jwk.asJson.deepDropNullValues.noSpaces
+        encodedJson = encodeToJson(jwk)
         decodedJwk <- decode[Id, OctetSequenceJsonWebKey](encodedJson).eLiftET[IO]
         decodedKey <- decodedJwk.toKey.eLiftET[IO]
       yield

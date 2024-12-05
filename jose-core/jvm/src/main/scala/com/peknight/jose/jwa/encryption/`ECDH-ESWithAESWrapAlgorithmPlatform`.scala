@@ -18,7 +18,7 @@ import scodec.bits.ByteVector
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm` =>
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -38,7 +38,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
     val eitherT =
       for
         ContentEncryptionKeys(agreedKey, _, ephemeralPublicKey, _, _, _, _) <- EitherT(`ECDH-ES`.encryptKey[F](
-          managementKey, self.encryption.blockSize, AES, None, encryptionAlgorithm, agreementPartyUInfo,
+          key, self.encryption.blockSize, AES, None, encryptionAlgorithm, agreementPartyUInfo,
           agreementPartyVInfo, initializationVector, pbes2SaltInput, pbes2Count, random, cipherProvider,
           keyAgreementProvider, keyPairGeneratorProvider, macProvider, messageDigestProvider))
         ContentEncryptionKeys(contentEncryptionKey, encryptedKey, _, _, _, _, _) <- EitherT(self.encryption.encryptKey[F](
@@ -49,7 +49,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
         ContentEncryptionKeys(contentEncryptionKey, encryptedKey, ephemeralPublicKey)
     eitherT.value
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -70,23 +70,23 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
                             ): F[Either[Error, Key]] =
     val eitherT =
       for
-        agreedKey <- EitherT(`ECDH-ES`.decryptKey[F](managementKey, ByteVector.empty, self.encryption.blockSize, AES,
+        agreedKey <- EitherT(`ECDH-ES`.decryptKey[F](key, ByteVector.empty, self.encryption.blockSize, AES,
           keyDecipherModeOverride, encryptionAlgorithm, ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo,
           initializationVector, authenticationTag, pbes2SaltInput, pbes2Count, random, cipherProvider,
           keyAgreementProvider, macProvider, messageDigestProvider))
-        key <- EitherT(self.encryption.decryptKey[F](agreedKey, encryptedKey, cekLength, cekAlgorithm,
+        cek <- EitherT(self.encryption.decryptKey[F](agreedKey, encryptedKey, cekLength, cekAlgorithm,
           keyDecipherModeOverride, encryptionAlgorithm, ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo,
           initializationVector, authenticationTag, pbes2SaltInput, pbes2Count, random, cipherProvider,
           keyAgreementProvider, macProvider, messageDigestProvider))
-      yield key
+      yield cek
     eitherT.value
 
 
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[JoseError, Unit] =
-    `ECDH-ES`.validateEncryptionKey(managementKey, cekLength)
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[JoseError, Unit] =
+    `ECDH-ES`.validateEncryptionKey(key, cekLength)
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[JoseError, Unit] =
-    `ECDH-ES`.validateDecryptionKey(managementKey, cekLength)
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[JoseError, Unit] =
+    `ECDH-ES`.validateDecryptionKey(key, cekLength)
 
   def isAvailable[F[_]: Sync]: F[Boolean] =
     `ECDH-ES`.isAvailable[F].flatMap {

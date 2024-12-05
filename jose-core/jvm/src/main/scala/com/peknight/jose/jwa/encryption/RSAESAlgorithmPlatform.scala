@@ -12,17 +12,17 @@ import java.security.interfaces.RSAKey
 import java.security.{Key, PrivateKey, PublicKey}
 
 trait RSAESAlgorithmPlatform extends KeyWrapAlgorithmPlatform { self: RSAESAlgorithm =>
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[Error, Unit] =
     for
-      publicKey <- typed[PublicKey](managementKey)
+      publicKey <- typed[PublicKey](key)
       _ <- publicKey match
         case rsaKey: RSAKey => checkRSAKeySize(rsaKey)
         case _ => ().asRight
     yield ()
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[Error, Unit] =
     for
-      privateKey <- typed[PrivateKey](managementKey)
+      privateKey <- typed[PrivateKey](key)
       _ <- privateKey match
         case rsaKey: RSAKey => checkRSAKeySize(rsaKey)
         case _ => ().asRight

@@ -9,10 +9,10 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.AES
 import com.peknight.security.mac.Hmac
 import com.peknight.validation.std.either.typed
-import io.circe.syntax.*
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -26,10 +26,10 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         parsedKey <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
-        json = parsedKey.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(parsedKey)
         key <- EitherT(parsedKey.toKey[IO]())
         jwk <- JsonWebKey.fromKey(Hmac.secretKeySpec(keyBytes)).eLiftET[IO]
-        json2 = jwk.asJson.deepDropNullValues.noSpaces
+        json2 = encodeToJson(jwk)
       yield
         json.contains(base64UrlKey) && json.contains("\"k\"") && keyBytes === ByteVector(key.getEncoded) &&
           jwk.keyType == KeyType.OctetSequence && json2.contains(base64UrlKey) && json.contains("\"k\"")
@@ -41,7 +41,7 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwk <- JsonWebKey.fromKey(AES.secretKeySpec(rawInputBytes)).eLiftET[IO]
-        json = jwk.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(jwk)
         jwkFromJson <- decode[Id, JsonWebKey](json).eLiftET[IO]
         key <- EitherT(jwkFromJson.toKey[IO]())
         encoded = ByteVector(key.getEncoded)

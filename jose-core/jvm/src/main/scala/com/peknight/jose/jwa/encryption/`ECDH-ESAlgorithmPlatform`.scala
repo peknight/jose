@@ -29,7 +29,7 @@ import java.security.spec.NamedParameterSpec
 import java.security.{Key, KeyPair, PrivateKey, PublicKey, SecureRandom, Provider as JProvider}
 
 trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -49,14 +49,14 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
     val eitherT =
       for
         _ <- canNotHaveKey(cekOverride, self).eLiftET
-        keyPair <- generateKeyPair[F](managementKey, random, keyPairGeneratorProvider)
-        res <- EitherT(handleEncryptKey[F](managementKey, cekLength, keyPair.getPublic, keyPair.getPrivate,
+        keyPair <- generateKeyPair[F](key, random, keyPairGeneratorProvider)
+        res <- EitherT(handleEncryptKey[F](key, cekLength, keyPair.getPublic, keyPair.getPrivate,
           encryptionAlgorithm, agreementPartyUInfo, agreementPartyVInfo, keyAgreementProvider, messageDigestProvider))
       yield
         res
     eitherT.value
 
-  def handleEncryptKey[F[_]: Sync](managementKey: Key,
+  def handleEncryptKey[F[_]: Sync](key: Key,
                                    cekLength: Int,
                                    ephemeralPublicKey: PublicKey,
                                    ephemeralPrivateKey: PrivateKey,
@@ -68,7 +68,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                                   ): F[Either[Error, ContentEncryptionKeys]] =
     val eitherT =
       for
-        partyVPublicKey <- typed[PublicKey](managementKey).eLiftET
+        partyVPublicKey <- typed[PublicKey](key).eLiftET
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(ephemeralPrivateKey)
         z <- EitherT(keyAgreementAlgorithm.generateSecret[F](ephemeralPrivateKey, partyVPublicKey,
           provider = keyAgreementProvider).asError)
@@ -79,7 +79,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         ContentEncryptionKeys(derivedKey, ByteVector.empty, Some(ephemeralPublicKey))
     eitherT.value
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -100,7 +100,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                             ): F[Either[Error, Key]] =
     val eitherT =
       for
-        privateKey <- typed[PrivateKey](managementKey).eLiftET
+        privateKey <- typed[PrivateKey](key).eLiftET
         ephemeralPublicKey <- ephemeralPublicKey match
           case Some(ecPublicKey: ECPublicKey) => checkECKeyForDecrypt(privateKey, ecPublicKey).as(ecPublicKey).eLiftET
           case Some(publicKey) => publicKey.rLiftET
@@ -114,13 +114,13 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
         cekAlgorithm.secretKeySpec(derivedKey).asInstanceOf[Key]
     eitherT.value
 
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[JoseError, Unit] =
-    if managementKey.isInstanceOf[ECPublicKey] || managementKey.isInstanceOf[XECPublicKey] then ().asRight
-    else UnsupportedKey(managementKey.getAlgorithm, managementKey).asLeft
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[JoseError, Unit] =
+    if key.isInstanceOf[ECPublicKey] || key.isInstanceOf[XECPublicKey] then ().asRight
+    else UnsupportedKey(key.getAlgorithm, key).asLeft
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[JoseError, Unit] =
-    if managementKey.isInstanceOf[ECPrivateKey] || managementKey.isInstanceOf[XECPrivateKey] then ().asRight
-    else UnsupportedKey(managementKey.getAlgorithm, managementKey).asLeft
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[JoseError, Unit] =
+    if key.isInstanceOf[ECPrivateKey] || key.isInstanceOf[XECPrivateKey] then ().asRight
+    else UnsupportedKey(key.getAlgorithm, key).asLeft
 
   def isAvailable[F[_]: Sync]: F[Boolean] =
     isKeyPairAlgorithmAvailable[F](EC).flatMap {
@@ -128,15 +128,15 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
       case false => false.pure[F]
     }
 
-  private def generateKeyPair[F[_]: Sync](managementKey: Key, random: Option[SecureRandom] = None,
+  private def generateKeyPair[F[_]: Sync](key: Key, random: Option[SecureRandom] = None,
                                           provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
-    managementKey match
+    key match
       case receiverKey: ECPublicKey =>
         generateECKeyPair[F](receiverKey, random, provider)
       case receiverKey: XECPublicKey =>
         generateXECKeyPair[F](receiverKey, random, provider)
       case _ =>
-        UnsupportedKey(managementKey.getAlgorithm, managementKey).lLiftET
+        UnsupportedKey(key.getAlgorithm, key).lLiftET
 
   private def generateECKeyPair[F[_]: Sync](receiverKey: ECPublicKey, random: Option[SecureRandom] = None,
                                             provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =

@@ -2,17 +2,17 @@ package com.peknight.jose.jws
 
 import cats.Id
 import cats.data.EitherT
-import com.peknight.error.syntax.applicativeError.asError
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
+import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.{HS256, RS256}
 import com.peknight.jose.jwk.{JsonWebKey, d, e, n}
-import com.peknight.jose.jwx.{JoseHeader, bytesDecodeToString}
+import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, bytesDecodeToString, stringEncodeToBytes}
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -43,7 +43,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         parsedPayload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
         // reconstruct the example with unencoded and detached payload from https://tools.ietf.org/html/rfc7797#section-4.2
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)).base64UrlEncodePayload(false), payload,
-          Some(key), StandardCharsets.US_ASCII))
+          Some(key), JoseConfiguration(charset = StandardCharsets.US_ASCII)))
         detachedContentCompactSerialization <- jws.detachedContentCompact.eLiftET[IO]
         decodedPayload <- jws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
       yield
@@ -71,12 +71,12 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO]())
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)).base64UrlEncodePayload(false), payload,
-          Some(key), StandardCharsets.US_ASCII))
+          Some(key), JoseConfiguration(charset = StandardCharsets.US_ASCII)))
         detachedContentCompactSerialization <- jws.detachedContentCompact.eLiftET[IO]
         decodedPayload <- jws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(detachedUnencoded, payload).eLiftET[IO]
-        _ <- EitherT(parsedJws.check[IO](Some(key)))
-        parsedPayload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
+        parsedPayload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(key),
+          JoseConfiguration(charset = StandardCharsets.US_ASCII)))
         b64 <- parsedJws.isBase64UrlEncodePayload.eLiftET[IO]
       yield
         decodedPayload == payload && parsedPayload == payload && !b64
@@ -97,11 +97,10 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO]())
-        payloadBytes <- ByteVector.encodeString(payload)(StandardCharsets.US_ASCII).asError.eLiftET[IO]
+        payloadBytes <- stringEncodeToBytes(payload, StandardCharsets.US_ASCII).eLiftET[IO]
         payloadBase = Base64UrlNoPad.fromByteVector(payloadBytes)
         parsedJws <- JsonWebSignature.parse(jwscsWithB64).eLiftET[IO]
-        _ <- EitherT(parsedJws.check[IO](Some(key)))
-        parsedPayload <- parsedJws.decodePayloadString().eLiftET[IO]
+        parsedPayload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(key)))
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), payload, Some(key)))
         compact <- jws.compact.eLiftET[IO]
         detachedJws <- JsonWebSignature.parse(jwscsWithoutB64andDetachedPayload, payload).eLiftET[IO]
@@ -110,7 +109,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         headerJson <- bytesDecodeToString(headerBytes).eLiftET[IO]
         signingInputString = JsonWebSignature.concat(headerBase, payload)
         signatureBytes <- detachedJws.signature.decode[Id].eLiftET[IO]
-        securedInputBytes <- ByteVector.encodeString(signingInputString)(StandardCharsets.US_ASCII).asError.eLiftET[IO]
+        securedInputBytes <- stringEncodeToBytes(signingInputString, StandardCharsets.US_ASCII).eLiftET[IO]
         flag <- EitherT(HS256.verifyJws[IO](key, securedInputBytes, signatureBytes))
         signed <- EitherT(HS256.signJws[IO](key, securedInputBytes))
         signedBase = Base64UrlNoPad.fromByteVector(signed)
@@ -134,8 +133,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         compact1 <- signerJws1.compact.eLiftET[IO]
         verifierJws <- JsonWebSignature.parse(compact1).eLiftET[IO]
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        _ <- EitherT(verifierJws.check[IO](Some(publicKey)))
-        verifierPayload <- verifierJws.decodePayloadString().eLiftET[IO]
+        verifierPayload <- EitherT(verifierJws.verifiedPayloadString[IO](Some(publicKey)))
         signerJws2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload2, Some(privateKey)))
         compact2 <- signerJws2.compact.eLiftET[IO]

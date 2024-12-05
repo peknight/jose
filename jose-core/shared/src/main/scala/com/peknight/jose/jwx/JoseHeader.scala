@@ -20,9 +20,11 @@ import com.peknight.jose.error.UnrecognizedCriticalHeader
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.EncryptionAlgorithm
+import com.peknight.jose.jwa.signature.none
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
 import com.peknight.jose.jwt.JsonWebToken
-import com.peknight.jose.{memberNameMap, base64UrlEncodePayloadLabel}
+import com.peknight.jose.{base64UrlEncodePayloadLabel, memberNameMap}
+import com.peknight.security.cipher.{Asymmetric, Symmetric}
 import com.peknight.validation.std.either.isTrue
 import io.circe.{Json, JsonObject}
 import org.http4s.Uri
@@ -80,6 +82,12 @@ case class JoseHeader(
 
   private def removeCritical(label: String): Option[List[String]] =
     critical.map(_.filterNot(_ == label)).filterNot(_.isEmpty)
+
+  def isNoneAlgorithm: Boolean = algorithm.forall(_ == none)
+  def isSymmetric: Boolean = algorithm.exists(_.isInstanceOf[Symmetric])
+  def isAsymmetric: Boolean = algorithm.exists(_.isInstanceOf[Asymmetric])
+  def isNestedJsonWebToken: Boolean =
+    contentType.exists(cty => "jwt".equalsIgnoreCase(cty) || "application/jwt".equalsIgnoreCase(cty))
 end JoseHeader
 object JoseHeader:
   def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader =

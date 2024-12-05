@@ -74,8 +74,8 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        jwe <- EitherT(JsonWebEncryption.encryptString[IO](publicKey, plaintext, JoseHeader(Some(RSA1_5),
-          Some(`A128CBC-HS256`))))
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(RSA1_5), Some(`A128CBC-HS256`)), plaintext,
+          publicKey))
         compact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(compact).eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](privateKey))
@@ -90,8 +90,8 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(appendixA2.toPublicKey[IO]())
         privateKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        jwe <- EitherT(JsonWebEncryption.encryptString[IO](publicKey, plaintext, JoseHeader(Some(`RSA-OAEP`),
-          Some(`A128CBC-HS256`))))
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(`RSA-OAEP`), Some(`A128CBC-HS256`)),
+          plaintext, publicKey))
         compact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(compact).eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](privateKey))
@@ -105,8 +105,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         key <- EitherT(`A128CBC-HS256`.cekAlgorithm.keySizeGenerateKey[IO](`A128CBC-HS256`.cekByteLength * 8).asError)
-        jwe <- EitherT(JsonWebEncryption.encryptString[IO](key, plaintext, JoseHeader(Some(dir),
-          Some(`A128CBC-HS256`))))
+        jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(dir), Some(`A128CBC-HS256`)), plaintext, key))
         compact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(compact).eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](key))

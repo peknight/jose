@@ -8,9 +8,9 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, RSAJsonWebKey}
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.RSA
 import com.peknight.validation.std.either.typed
-import io.circe.syntax.*
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 
@@ -50,11 +50,11 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         jwk <- JsonWebKey.fromPublicKey(publicKey).eLiftET[IO]
-        jsonNoPrivateKey = jwk.asJson.deepDropNullValues.noSpaces
+        jsonNoPrivateKey = encodeToJson(jwk)
         privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
         jwk <- JsonWebKey.fromPublicKey(publicKey, Some(privateKey)).eLiftET[IO]
-        jsonExcludePrivateKey = jwk.excludePrivate.asJson.deepDropNullValues.noSpaces
-        json = jwk.asJson.deepDropNullValues.noSpaces
+        jsonExcludePrivateKey = encodeToJson(jwk.excludePrivate)
+        json = encodeToJson(jwk)
       yield
         !jsonExcludePrivateKey.contains("\"d\"") && jsonNoPrivateKey == jsonExcludePrivateKey && json.contains("\"d\"")
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -106,8 +106,8 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- decode[Id, AsymmetricJsonWebKey](json).eLiftET[IO]
         privateKey <- EitherT(jwk.toPrivateKey[IO]())
         privateKey <- typed[RSAPrivateCrtKey](privateKey).eLiftET[IO]
-        jsonExcludePrivate = jwk.excludePrivate.asJson.deepDropNullValues.noSpaces
-        json = jwk.asJson.deepDropNullValues.noSpaces
+        jsonExcludePrivate = encodeToJson(jwk.excludePrivate)
+        json = encodeToJson(jwk)
         jwkAgain <- decode[Id, AsymmetricJsonWebKey](json).eLiftET[IO]
         privateKeyAgain <- EitherT(jwkAgain.toPrivateKey[IO]())
         privateKeyAgain <- typed[RSAPrivateCrtKey](privateKeyAgain).eLiftET[IO]
@@ -123,9 +123,9 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         jwk <- JsonWebKey.fromPublicKey(publicKey).eLiftET[IO]
-        jsonExcludePrivate = jwk.excludePrivate.asJson.deepDropNullValues.noSpaces
+        jsonExcludePrivate = encodeToJson(jwk.excludePrivate)
         jwk <- decode[Id, AsymmetricJsonWebKey](jsonExcludePrivate).eLiftET[IO]
-        json = jwk.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(jwk)
       yield
         jsonExcludePrivate == json
     run.value.asserting(value => assert(value.getOrElse(false)))

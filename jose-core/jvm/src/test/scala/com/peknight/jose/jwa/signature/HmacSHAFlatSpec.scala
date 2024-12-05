@@ -10,7 +10,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnSign, testBadKeyOnVerify}
 import com.peknight.jose.jws.{JsonWebSignature, JsonWebSignatureTestOps}
-import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
 import com.peknight.security.mac.Hmac
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -104,7 +104,8 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val key = Hmac.secretKeySpec(ByteVector(1, 2, 5, -9, 99, -99, 0, 40, 21))
     val run =
       for
-        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key), false))
+        jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key),
+          JoseConfiguration(doKeyValidation = false)))
         cs <- jws.compact.eLiftET[IO]
         _ <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key)).map(_.swap.asError))
       yield
@@ -118,8 +119,7 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
         jsonWebKey <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jsonWebKey.toKey[IO]())
-        _ <- EitherT(jws.check[IO](Some(key)))
-        decodedPayload <- jws.decodePayloadString().eLiftET[IO]
+        decodedPayload <- EitherT(jws.verifiedPayloadString[IO](Some(key)))
       yield
         decodedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))

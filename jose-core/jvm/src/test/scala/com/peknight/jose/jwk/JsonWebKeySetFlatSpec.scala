@@ -15,9 +15,9 @@ import com.peknight.jose.jwa.encryption.A128KW
 import com.peknight.jose.jwa.signature.RS256
 import com.peknight.jose.jwk.JsonWebKey.{EllipticCurveJsonWebKey, OctetSequenceJsonWebKey, RSAJsonWebKey}
 import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.{AES, RSA}
 import com.peknight.validation.std.either.typed
-import io.circe.syntax.*
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.security.interfaces.{ECPublicKey, RSAPublicKey}
@@ -150,7 +150,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           .exists(jwk => jwk.privateExponent.isEmpty && jwk.algorithm.contains(RS256))
       val flag4 = !jwkSet.keys.exists(_.keyID.contains(KeyId("nope")))
       val flag5 =
-        jwkSet.asJson.deepDropNullValues.noSpaces.contains("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx")
+        encodeToJson(jwkSet).contains("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx")
       flag1 && flag2 && flag3 && flag4 && flag5
     }.getOrElse(false)))
   }
@@ -194,7 +194,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           .exists(jwk => jwk.privateExponent.isDefined && jwk.algorithm.contains(RS256))
       val flag4 = !jwkSet.keys.exists(_.keyID.contains(KeyId("nope")))
       val flag5 =
-        jwkSet.asJson.deepDropNullValues.noSpaces.contains("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx")
+        encodeToJson(jwkSet).contains("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx")
       flag1 && flag2 && flag3 && flag4 && flag5
     }.getOrElse(false)))
   }
@@ -244,7 +244,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         keyID = KeyId(kid)
         webKey = JsonWebKey.fromRSAKey(publicKey, keyID = Some(keyID), publicKeyUse = Some(Signature))
         jwkSet = JsonWebKeySet(webKey)
-        json = jwkSet.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(jwkSet)
         parsedJwkSet <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
         jwk <- parsedJwkSet.keys.find(_.keyID.contains(keyID)).toRight(OptionEmpty).eLiftET[IO]
         jwk <- typed[RSAJsonWebKey](jwk).eLiftET[IO]
@@ -267,7 +267,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           webKey <- JsonWebKey.fromEllipticCurveKey(publicKey, keyID = Some(keyID), publicKeyUse = Some(Encryption))
             .eLiftET[IO]
           jwkSet = JsonWebKeySet(webKey)
-          json = jwkSet.asJson.deepDropNullValues.noSpaces
+          json = encodeToJson(jwkSet)
           parsedJwkSet <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
           jwk <- parsedJwkSet.keys.find(_.keyID.contains(keyID)).toRight(OptionEmpty).eLiftET[IO]
           ecJsonWebKey <- typed[EllipticCurveJsonWebKey](jwk).eLiftET
@@ -298,7 +298,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk1 <- JsonWebKey.fromKey(key1).eLiftET[IO]
         jwk2 <- JsonWebKey.fromKey(key2).eLiftET[IO]
         jwks = JsonWebKeySet(jwk1, jwk2)
-        json = jwks.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(jwks)
         newJwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
       yield
         json.contains("\"k\"") && jwks.keys.length == newJwks.keys.length
@@ -531,7 +531,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jsonWebKeySet <- decode[Id, JsonWebKeySet](jwks)
-        json = jsonWebKeySet.asJson.deepDropNullValues.noSpaces
+        json = encodeToJson(jsonWebKeySet)
       yield
         jsonWebKeySet.keys.length == 2 && !json.contains("=")
     IO.unit.asserting(_ => assert(run.getOrElse(false)))

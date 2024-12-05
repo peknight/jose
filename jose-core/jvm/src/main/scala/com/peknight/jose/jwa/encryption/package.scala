@@ -30,25 +30,25 @@ package object encryption:
                                                        random: Option[JSecureRandom] = None): F[ByteVector] =
     lengthOrBytes.fold(length => randomBytes[F](length, random), _.pure[F])
 
-  private[encryption] def validateAESWrappingKey(managementKey: Key, identifier: AlgorithmIdentifier, keyByteLength: Int)
+  private[encryption] def validateAESWrappingKey(key: Key, identifier: AlgorithmIdentifier, keyByteLength: Int)
   : Either[Error, Unit] =
     for
-      key <- nonEmptyManagementKey(managementKey)
+      key <- nonEmptyKey(key)
       _ <- isTrue(AES.algorithm == key.getAlgorithm, InvalidKeyAlgorithm(key.getAlgorithm))
-      _ <- validateManagementKeyLength(key, identifier, keyByteLength)
+      _ <- validateKeyLength(key, identifier, keyByteLength)
     yield
       ()
 
-  private[encryption] def nonEmptyManagementKey(managementKey: Key): Either[Error, Key] =
-    nonEmpty(Option(managementKey)).label("managementKey")
+  private[encryption] def nonEmptyKey(key: Key): Either[Error, Key] =
+    nonEmpty(Option(key)).label("key")
 
-  private[encryption] def validateManagementKeyLength(managementKey: Key, identifier: AlgorithmIdentifier,
-                                                      keyByteLength: Int): Either[Error, Unit] =
-    Option(managementKey.getEncoded).map(_.length) match
-      case Some(managementKeyByteLength) =>
+  private[encryption] def validateKeyLength(key: Key, identifier: AlgorithmIdentifier, keyByteLength: Int)
+  : Either[Error, Unit] =
+    Option(key.getEncoded).map(_.length) match
+      case Some(keyByteLength) =>
         isTrue(
-          managementKeyByteLength == keyByteLength,
-          InvalidKeyLength(identifier.identifier, keyByteLength * 8, managementKeyByteLength * 8)
+          keyByteLength == keyByteLength,
+          InvalidKeyLength(identifier.identifier, keyByteLength * 8, keyByteLength * 8)
         )
       case None => ().asRight
 

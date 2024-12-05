@@ -13,7 +13,7 @@ import scodec.bits.ByteVector
 import java.security.{Key, PublicKey, SecureRandom, Provider as JProvider}
 
 trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -34,7 +34,7 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
       for
         contentEncryptionKey <- getBytesOrRandom[F](cekOverride.toRight(cekLength), random)
         iv <- getBytesOrRandom[F](initializationVector.toRight(self.ivByteLength), random)
-        encrypted <- self.keyEncrypt[F](managementKey, contentEncryptionKey,
+        encrypted <- self.keyEncrypt[F](key, contentEncryptionKey,
           Some(GCMParameterSpec(self.tagByteLength * 8, iv)), provider = cipherProvider)
       yield
         val (encryptedKey, authenticationTag) = encrypted.splitAt(encrypted.length - self.tagByteLength)
@@ -42,7 +42,7 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
           authenticationTag = Some(authenticationTag))
     run.asError
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -61,19 +61,19 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
                              macProvider: Option[Provider | JProvider] = None,
                              messageDigestProvider: Option[Provider | JProvider] = None
                             ): F[Either[Error, Key]] =
-    self.keyDecrypt[F](managementKey, encryptedKey ++ authenticationTag.getOrElse(ByteVector.empty),
+    self.keyDecrypt[F](key, encryptedKey ++ authenticationTag.getOrElse(ByteVector.empty),
         Some(GCMParameterSpec(self.tagByteLength * 8, initializationVector.getOrElse(ByteVector.empty))),
         provider = cipherProvider)
       .map(cekAlgorithm.secretKeySpec)
       .asError
 
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
-    validateKey(managementKey)
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[Error, Unit] =
+    validateKey(key)
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] =
-    validateKey(managementKey)
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[Error, Unit] =
+    validateKey(key)
 
-  def validateKey(managementKey: Key): Either[Error, Unit] = validateAESWrappingKey(managementKey, self, self.blockSize)
+  def validateKey(key: Key): Either[Error, Unit] = validateAESWrappingKey(key, self, self.blockSize)
 
   def isAvailable[F[_]: Sync]: F[Boolean] =
     isAESGCMKeyAvailable[F](self, self.blockSize, self.ivByteLength, self.tagByteLength)

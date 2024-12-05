@@ -24,11 +24,9 @@ class DetachedContentFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         compact <- jws.compact.eLiftET[IO]
         publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         parsedDetachedJws <- JsonWebSignature.parse(detachedContentCompact, encodedPayload).eLiftET[IO]
-        _ <- EitherT(parsedDetachedJws.check[IO](Some(publicKey)))
-        parsedDetachedPayload <- parsedDetachedJws.decodePayloadString().eLiftET[IO]
+        parsedDetachedPayload <- EitherT(parsedDetachedJws.verifiedPayloadString[IO](Some(publicKey)))
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
-        _ <- EitherT(parsedJws.check[IO](Some(publicKey)))
-        parsedPayload <- parsedJws.decodePayloadString().eLiftET[IO]
+        parsedPayload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(publicKey)))
         parsedPartJws <- JsonWebSignature.parse(detachedContentCompact).eLiftET[IO]
         partVerify <- EitherT(parsedPartJws.verify[IO](Some(publicKey)))
       yield

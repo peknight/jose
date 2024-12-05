@@ -25,8 +25,8 @@ trait Signature extends HeaderEither:
   def handleDecodePayloadString(payload: String, charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
     isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadString(payload, b64, charset))
 
-  def handleDecodePayloadJson[T](payload: String, charset: Charset = StandardCharsets.UTF_8)
-                                (using Decoder[Id, Cursor[Json], T]): Either[Error, T] =
+  def handleDecodePayloadJson[A](payload: String, charset: Charset = StandardCharsets.UTF_8)
+                                (using Decoder[Id, Cursor[Json], A]): Either[Error, A] =
     isBase64UrlEncodePayload.flatMap(b64 => JsonWebSignature.decodePayloadJson(payload, b64, charset))
 
   def compact(payload: String): Either[Error, String] =

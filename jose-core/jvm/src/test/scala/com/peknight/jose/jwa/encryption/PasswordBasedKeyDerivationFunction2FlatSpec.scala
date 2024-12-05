@@ -19,6 +19,8 @@ import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
+import java.nio.charset.StandardCharsets
+
 class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   "PasswordBasedKeyDerivationFunction2" should "succeed with iteration count" in {
@@ -43,8 +45,8 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
 
   def deriveAndCompare(password: String, salt: String, iterationCount: Int, dkLen: Int): EitherT[IO, Error, Unit] =
     for
-      passwordBytes <- ByteVector.encodeAscii(password).asError.eLiftET[IO]
-      saltBytes <- ByteVector.encodeAscii(salt).asError.eLiftET[IO]
+      passwordBytes <- stringEncodeToBytes(password, StandardCharsets.US_ASCII).eLiftET[IO]
+      saltBytes <- stringEncodeToBytes(salt, StandardCharsets.US_ASCII).eLiftET[IO]
       derived <- PasswordBasedKeyDerivationFunction2.derive[IO](HmacSHA1, passwordBytes, saltBytes, iterationCount,
         dkLen, None)
       secretKey <- EitherT(PBKDF2.withPRF(HmacSHA1).generateSecret[IO](PBEKeySpec(password, saltBytes, iterationCount,
@@ -62,7 +64,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     val expectedDerived = ByteVector(110, 171, 169, 92, 129, 92, 109, 117, 233, 242, 116, 233, 170, 14, 24, 75)
     val run =
       for
-        passwordBytes <- ByteVector.encodeAscii(pass).asError.eLiftET[IO]
+        passwordBytes <- stringEncodeToBytes(pass, StandardCharsets.US_ASCII).eLiftET[IO]
         derived <- PasswordBasedKeyDerivationFunction2.derive[IO](HmacSHA256, passwordBytes, salt, iterationCount,
           16, None)
       yield

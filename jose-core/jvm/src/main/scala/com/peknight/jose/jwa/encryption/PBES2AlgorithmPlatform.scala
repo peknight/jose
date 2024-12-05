@@ -25,7 +25,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
   private val defaultIterationCount: Long = 8192L * 8
   private val defaultSaltByteLength: Int = 12
   private val maxIterationCount: Long = 2499999L
-  def encryptKey[F[_]: Sync](managementKey: Key,
+  def encryptKey[F[_]: Sync](key: Key,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
@@ -44,7 +44,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
                             ): F[Either[Error, ContentEncryptionKeys]] =
     val eitherT =
       for
-        (derivedKey, saltInput, iterationCount) <- deriveForEncrypt[F](managementKey, pbes2SaltInput, pbes2Count,
+        (derivedKey, saltInput, iterationCount) <- deriveForEncrypt[F](key, pbes2SaltInput, pbes2Count,
           random, macProvider)
         ContentEncryptionKeys(contentEncryptionKey, encryptedKey, _, _, _, _, _) <- EitherT(self.encryption.encryptKey[F](
           derivedKey, cekLength, cekAlgorithm, cekOverride, encryptionAlgorithm, agreementPartyUInfo,
@@ -55,7 +55,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
           pbes2Count = Some(iterationCount))
     eitherT.value
 
-  def decryptKey[F[_]: Sync](managementKey: Key,
+  def decryptKey[F[_]: Sync](key: Key,
                              encryptedKey: ByteVector,
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
@@ -82,25 +82,24 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
           .message(s"PBES2 iteration count (p2c=$pbes2Count) cannot be more than $maxIterationCount to avoid " +
             s"excessive resource utilization.")
           .eLiftET
-        derivedKey <- deriveKey(self, self.encryption, self.prf, AES, managementKey, iterationCount.toInt, pbes2SaltInput,
+        derivedKey <- deriveKey(self, self.encryption, self.prf, AES, key, iterationCount.toInt, pbes2SaltInput,
           macProvider)
-        key <- EitherT(self.encryption.decryptKey[F](derivedKey, encryptedKey, cekLength, cekAlgorithm,
+        cek <- EitherT(self.encryption.decryptKey[F](derivedKey, encryptedKey, cekLength, cekAlgorithm,
           keyDecipherModeOverride, encryptionAlgorithm, ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo,
           initializationVector, authenticationTag, Some(pbes2SaltInput), Some(pbes2Count), random, cipherProvider,
           keyAgreementProvider, macProvider, messageDigestProvider))
       yield
-        key
+        cek
     eitherT.value
 
-  private[encryption] def deriveForEncrypt[F[_]: Sync](managementKey: Key, pbes2SaltInput: Option[ByteVector],
+  private[encryption] def deriveForEncrypt[F[_]: Sync](key: Key, pbes2SaltInput: Option[ByteVector],
                                                        pbes2Count: Option[Long], random: Option[SecureRandom],
                                                        macProvider: Option[Provider | JProvider]
                                                       ): EitherT[F, Error, (Key, ByteVector, Long)] =
-    deriveForEncrypt[F](self, self.encryption, self.prf, AES, managementKey, pbes2SaltInput, pbes2Count,
-      random, macProvider)
+    deriveForEncrypt[F](self, self.encryption, self.prf, AES, key, pbes2SaltInput, pbes2Count, random, macProvider)
 
   private def deriveForEncrypt[F[_]: Sync](identifier: AlgorithmIdentifier, cipher: BlockCipher, prf: MACAlgorithm,
-                                           cekAlgorithm: SecretKeySpecAlgorithm, managementKey: Key,
+                                           cekAlgorithm: SecretKeySpecAlgorithm, key: Key,
                                            pbes2SaltInput: Option[ByteVector], pbes2Count: Option[Long],
                                            random: Option[SecureRandom], macProvider: Option[Provider | JProvider]
                                           ): EitherT[F, Error, (Key, ByteVector, Long)] =
@@ -108,30 +107,30 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
       iterationCount <- atOrAbove(pbes2Count.getOrElse(defaultIterationCount), 1000L).label("iterationCount").eLiftET
       saltInput <- EitherT(getBytesOrRandom[F](pbes2SaltInput.toRight(defaultSaltByteLength), random).asError)
       _ <- atOrAbove(saltInput.length, 8L).label("saltInput").eLiftET
-      derivedKey <- deriveKey[F](identifier, cipher, prf, cekAlgorithm, managementKey, iterationCount.toInt, saltInput,
+      derivedKey <- deriveKey[F](identifier, cipher, prf, cekAlgorithm, key, iterationCount.toInt, saltInput,
         macProvider)
     yield
       (derivedKey, saltInput, iterationCount)
 
   private def deriveKey[F[_]: Sync](identifier: AlgorithmIdentifier, cipher: BlockCipher, prf: MACAlgorithm,
-                                    cekAlgorithm: SecretKeySpecAlgorithm, managementKey: Key, iterationCount: Int,
+                                    cekAlgorithm: SecretKeySpecAlgorithm, key: Key, iterationCount: Int,
                                     saltInput: ByteVector, provider: Option[Provider | JProvider]
                                    ): EitherT[F, Error, Key] =
     for
       identifierBytes <- stringEncodeToBytes(identifier.identifier).eLiftET
       salt = identifierBytes ++ (0 +: saltInput)
       dkLen = cipher.blockSize
-      derivedKeyBytes <- PasswordBasedKeyDerivationFunction2.derive[F](prf, ByteVector(managementKey.getEncoded), salt,
+      derivedKeyBytes <- PasswordBasedKeyDerivationFunction2.derive[F](prf, ByteVector(key.getEncoded), salt,
         iterationCount, dkLen, provider)
     yield
       SecretKeySpec(derivedKeyBytes, cekAlgorithm)
 
-  def validateEncryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] = validateKey(managementKey)
+  def validateEncryptionKey(key: Key, cekLength: Int): Either[Error, Unit] = validateKey(key)
 
-  def validateDecryptionKey(managementKey: Key, cekLength: Int): Either[Error, Unit] = validateKey(managementKey)
+  def validateDecryptionKey(key: Key, cekLength: Int): Either[Error, Unit] = validateKey(key)
 
-  def validateKey(managementKey: Key): Either[Error, Unit] =
-    Option(managementKey).toRight(MissingKey.label("managementKey")).as(())
+  def validateKey(key: Key): Either[Error, Unit] =
+    Option(key).toRight(MissingKey.label("key")).as(())
 
   def isAvailable[F[_]: Sync]: F[Boolean] = self.encryption.isAvailable[F]
 }

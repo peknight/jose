@@ -53,7 +53,7 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       receiverJwk <- decode[Id, EllipticCurveJsonWebKey](receiverJwkJson).eLiftET[IO]
       receiverPublicKey <- EitherT(receiverJwk.toPublicKey[IO]())
       receiverPrivateKey <- EitherT(receiverJwk.toPrivateKey[IO]())
-      jwe <- EitherT(JsonWebEncryption.encryptString[IO](receiverPublicKey, plaintext, JoseHeader(Some(alg), Some(enc))))
+      jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(alg), Some(enc)), plaintext, receiverPublicKey))
       jweCompact <- jwe.compact.eLiftET[IO]
       receiverJwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
       res <- EitherT(receiverJwe.decryptString[IO](receiverPrivateKey))

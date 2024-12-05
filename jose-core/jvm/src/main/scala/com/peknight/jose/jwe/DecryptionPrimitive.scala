@@ -4,4 +4,4 @@ import com.peknight.jose.jwx.JoseConfiguration
 
 import java.security.Key
 
-case class DecryptionPrimitive(managementKey: Key, configuration: JoseConfiguration = JoseConfiguration.default)
+case class DecryptionPrimitive(key: Key, configuration: JoseConfiguration = JoseConfiguration.default)
