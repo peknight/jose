@@ -17,7 +17,7 @@ import com.peknight.jose.error.InvalidKeyLength
 import com.peknight.jose.jwa.encryption.{EncryptionAlgorithm, KeyManagementAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwx.*
+import com.peknight.jose.jwx.{JoseConfiguration, *}
 import com.peknight.jose.{algorithmLabel, encryptionAlgorithmLabel}
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.{isTrue, typed}
@@ -79,9 +79,9 @@ trait JsonWebEncryptionCompanion:
                            configuration: JoseConfiguration = JoseConfiguration.default)
                           (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
     doHandleEncrypt[F](managementKey, encodeToJsonBytes(plaintextValue), header, configuration)
-      
+
   private def doHandleEncrypt[F[_]: Async: Compression](managementKey: Key, plaintextEither: Either[Error, ByteVector],
-                                                        header: JoseHeader, 
+                                                        header: JoseHeader,
                                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     plaintextEither match
