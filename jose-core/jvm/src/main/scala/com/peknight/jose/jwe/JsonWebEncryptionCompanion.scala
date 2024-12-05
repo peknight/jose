@@ -29,28 +29,31 @@ import java.security.{Key, PublicKey, Provider as JProvider}
 
 trait JsonWebEncryptionCompanion:
   def encrypt[F[_]: Async: Compression](header: JoseHeader, plaintext: ByteVector, key: Key,
+                                        sharedHeader: Option[JoseHeader] = None,
+                                        recipientHeader: Option[JoseHeader] = None,
                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
+    val h = mergedHeader(header, sharedHeader, recipientHeader)
     val eitherT =
       for
-        algorithm <- header.algorithm.toRight(OptionEmpty.label(algorithmLabel)).eLiftET[F]
+        algorithm <- h.algorithm.toRight(OptionEmpty.label(algorithmLabel)).eLiftET[F]
         algorithm <- typed[KeyManagementAlgorithm](algorithm).eLiftET
-        encryptionAlgorithm <- header.encryptionAlgorithm.toRight(OptionEmpty.label(encryptionAlgorithmLabel)).eLiftET
+        encryptionAlgorithm <- h.encryptionAlgorithm.toRight(OptionEmpty.label(encryptionAlgorithmLabel)).eLiftET
         _ <-
           if configuration.doKeyValidation then
             algorithm.validateEncryptionKey(key, encryptionAlgorithm.cekByteLength).eLiftET
           else ().rLiftET
-        agreementPartyUInfo <- decodeOption(header.agreementPartyUInfo).eLiftET[F]
-        agreementPartyVInfo <- decodeOption(header.agreementPartyVInfo).eLiftET[F]
-        initializationVector <- decodeOption(header.initializationVector).eLiftET[F]
-        pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[F]
+        agreementPartyUInfo <- decodeOption(h.agreementPartyUInfo).eLiftET[F]
+        agreementPartyVInfo <- decodeOption(h.agreementPartyVInfo).eLiftET[F]
+        initializationVector <- decodeOption(h.initializationVector).eLiftET[F]
+        pbes2SaltInput <- decodeOption(h.pbes2SaltInput).eLiftET[F]
         contentEncryptionKeys <- EitherT(algorithm.encryptKey[F](key, encryptionAlgorithm.cekByteLength,
           encryptionAlgorithm.cekAlgorithm, configuration.cekOverride, Some(encryptionAlgorithm), agreementPartyUInfo,
-          agreementPartyVInfo, initializationVector, pbes2SaltInput, header.pbes2Count, configuration.random,
+          agreementPartyVInfo, initializationVector, pbes2SaltInput, h.pbes2Count, configuration.random,
           configuration.cipherProvider, configuration.keyAgreementProvider, configuration.keyPairGeneratorProvider,
           configuration.macProvider, configuration.messageDigestProvider))
         contentEncryptionKey = contentEncryptionKeys.contentEncryptionKey
-        nextHeader = update(header, contentEncryptionKeys)
+        nextHeader = update(h, contentEncryptionKeys)
         protectedHeader <- encodeToBase(nextHeader, Base64UrlNoPad).eLiftET
         additionalAuthenticatedData <- stringEncodeToBytes(protectedHeader.value, StandardCharsets.US_ASCII).eLiftET
         _ <- checkCek(encryptionAlgorithm, contentEncryptionKey)
@@ -60,7 +63,7 @@ trait JsonWebEncryptionCompanion:
           configuration.macProvider
         ).asError)
       yield
-        JsonWebEncryption(nextHeader, None, None,
+        JsonWebEncryption(update(header, contentEncryptionKeys), sharedHeader, recipientHeader,
           Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.initializationVector),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext),
@@ -70,22 +73,29 @@ trait JsonWebEncryptionCompanion:
     eitherT.value
 
   def encryptString[F[_]: Async: Compression](header: JoseHeader, plaintextString: String, key: Key,
+                                              sharedHeader: Option[JoseHeader] = None,
+                                              recipientHeader: Option[JoseHeader] = None,
                                               configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
-    handleEncrypt[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, configuration)
+    handleEncrypt[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, sharedHeader,
+      recipientHeader, configuration)
 
   def encryptJson[F[_], A](header: JoseHeader, plaintextValue: A, key: Key,
+                           sharedHeader: Option[JoseHeader] = None,
+                           recipientHeader: Option[JoseHeader] = None,
                            configuration: JoseConfiguration = JoseConfiguration.default)
                           (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
-    handleEncrypt[F](header, encodeToJsonBytes(plaintextValue), key, configuration)
+    handleEncrypt[F](header, encodeToJsonBytes(plaintextValue), key, sharedHeader, recipientHeader, configuration)
 
   private def handleEncrypt[F[_]: Async: Compression](header: JoseHeader, plaintextEither: Either[Error, ByteVector],
                                                       key: Key,
+                                                      sharedHeader: Option[JoseHeader] = None,
+                                                      recipientHeader: Option[JoseHeader] = None,
                                                       configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     plaintextEither match
       case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
-      case Right(plaintext) => encrypt[F](header, plaintext, key, configuration)
+      case Right(plaintext) => encrypt[F](header, plaintext, key, sharedHeader, recipientHeader, configuration)
 
   def handleDecrypt[F[_]: Async: Compression](header: JoseHeader, key: Key, encryptedKey: ByteVector,
                                               initializationVector: ByteVector, ciphertext: ByteVector,

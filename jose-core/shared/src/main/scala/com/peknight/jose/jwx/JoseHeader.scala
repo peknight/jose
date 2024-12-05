@@ -88,6 +88,32 @@ case class JoseHeader(
   def isAsymmetric: Boolean = algorithm.exists(_.isInstanceOf[Asymmetric])
   def isNestedJsonWebToken: Boolean =
     contentType.exists(cty => "jwt".equalsIgnoreCase(cty) || "application/jwt".equalsIgnoreCase(cty))
+
+  def deepMerge(that: JoseHeader): JoseHeader =
+    JoseHeader(
+      that.algorithm.orElse(this.algorithm),
+      that.encryptionAlgorithm.orElse(this.encryptionAlgorithm),
+      that.compressionAlgorithm.orElse(this.compressionAlgorithm),
+      that.jwkSetURL.orElse(this.jwkSetURL),
+      that.jwk.orElse(this.jwk),
+      that.keyID.orElse(this.keyID),
+      that.x509URL.orElse(this.x509URL),
+      that.x509CertificateChain.orElse(this.x509CertificateChain),
+      that.x509CertificateSHA1Thumbprint.orElse(this.x509CertificateSHA1Thumbprint),
+      that.x509CertificateSHA256Thumbprint.orElse(this.x509CertificateSHA256Thumbprint),
+      that.`type`.orElse(this.`type`),
+      that.contentType.orElse(this.contentType),
+      Option((this.critical.getOrElse(Nil) ::: that.critical.getOrElse(Nil)).distinct).filter(_.nonEmpty),
+      that.ephemeralPublicKey.orElse(this.ephemeralPublicKey),
+      that.agreementPartyUInfo.orElse(this.agreementPartyUInfo),
+      that.agreementPartyVInfo.orElse(this.agreementPartyVInfo),
+      that.initializationVector.orElse(this.initializationVector),
+      that.authenticationTag.orElse(this.authenticationTag),
+      that.pbes2SaltInput.orElse(this.pbes2SaltInput),
+      that.pbes2Count.orElse(this.pbes2Count),
+      that.base64UrlEncodePayload.orElse(this.base64UrlEncodePayload),
+      Option(this.ext.getOrElse(JsonObject.empty).deepMerge(that.ext.getOrElse(JsonObject.empty))).filter(_.nonEmpty),
+    )
 end JoseHeader
 object JoseHeader:
   def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader =

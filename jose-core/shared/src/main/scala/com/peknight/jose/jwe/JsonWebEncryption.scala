@@ -32,6 +32,8 @@ case class JsonWebEncryption private[jwe] (
     getProtectedHeader.map(h =>
       s"${h.value}.${encryptedKey.value}.${initializationVector.value}.${ciphertext.value}.${authenticationTag.value}"
     )
+  def getMergedHeader: Either[Error, JoseHeader] =
+    getUnprotectedHeader.map(header => mergedHeader(header, sharedHeader, recipientHeader))
 end JsonWebEncryption
 
 object JsonWebEncryption extends JsonWebEncryptionCompanion:

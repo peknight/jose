@@ -29,7 +29,7 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
         ciphertext <- EitherT(self.ciphertext.decode[F])
         authenticationTag <- EitherT(self.authenticationTag.decode[F])
         additionalAuthenticatedData <- getAdditionalAuthenticatedData.eLiftET
-        header <- self.getUnprotectedHeader.eLiftET
+        header <- self.getMergedHeader.eLiftET
         _ <- header.checkCritical(configuration.knownCriticalHeaders).eLiftET
         res <- EitherT(JsonWebEncryption.handleDecrypt[F](header, key, encryptedKey, initializationVector, ciphertext,
           authenticationTag, additionalAuthenticatedData, configuration))
