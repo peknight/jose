@@ -13,6 +13,7 @@ import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.error.InvalidKeyLength
+import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.{EncryptionAlgorithm, KeyManagementAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
@@ -53,17 +54,17 @@ trait JsonWebEncryptionCompanion:
           configuration.cipherProvider, configuration.keyAgreementProvider, configuration.keyPairGeneratorProvider,
           configuration.macProvider, configuration.messageDigestProvider))
         contentEncryptionKey = contentEncryptionKeys.contentEncryptionKey
-        nextHeader = update(h, contentEncryptionKeys)
+        nextHeader = update(header, contentEncryptionKeys)
         protectedHeader <- encodeToBase(nextHeader, Base64UrlNoPad).eLiftET
         additionalAuthenticatedData <- stringEncodeToBytes(protectedHeader.value, StandardCharsets.US_ASCII).eLiftET
         _ <- checkCek(encryptionAlgorithm, contentEncryptionKey)
-        plaintextBytes <- compress[F](nextHeader, plaintext)
+        plaintextBytes <- compress[F](h.compressionAlgorithm, plaintext)
         contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes,
           additionalAuthenticatedData, configuration.ivOverride, configuration.random, configuration.cipherProvider,
           configuration.macProvider
         ).asError)
       yield
-        JsonWebEncryption(update(header, contentEncryptionKeys), sharedHeader, recipientHeader,
+        JsonWebEncryption(nextHeader, sharedHeader, recipientHeader,
           Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.initializationVector),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext),
@@ -126,7 +127,7 @@ trait JsonWebEncryptionCompanion:
         _ <- checkCek[F](encryptionAlgorithm, rawCek)
         decrypted <- EitherT(encryptionAlgorithm.decrypt[F](rawCek, initializationVector, ciphertext, authenticationTag,
           additionalAuthenticatedData, configuration.cipherProvider, configuration.macProvider))
-        res <- decompress[F](header, decrypted)
+        res <- decompress[F](header.compressionAlgorithm, decrypted)
       yield
         res
     eitherT.value
@@ -138,15 +139,15 @@ trait JsonWebEncryptionCompanion:
     isTrue(actualLength == expectedLength, InvalidKeyLength(encryptionAlgorithm.identifier, expectedLength * 8,
       actualLength.intValue * 8)).eLiftET
 
-  private def compress[F[_] : Concurrent : Compression](header: JoseHeader, plaintextBytes: ByteVector)
-  : EitherT[F, Error, ByteVector] =
-    header.compressionAlgorithm match
+  private def compress[F[_] : Concurrent : Compression](compressionAlgorithm: Option[CompressionAlgorithm],
+                                                        plaintextBytes: ByteVector): EitherT[F, Error, ByteVector] =
+    compressionAlgorithm match
       case Some(compressionAlgorithm) => EitherT(compressionAlgorithm.compress[F](plaintextBytes).asError)
       case None => plaintextBytes.rLiftET
 
-  private def decompress[F[_] : Concurrent : Compression](header: JoseHeader, data: ByteVector)
-  : EitherT[F, Error, ByteVector] =
-    header.compressionAlgorithm match
+  private def decompress[F[_] : Concurrent : Compression](compressionAlgorithm: Option[CompressionAlgorithm],
+                                                          data: ByteVector): EitherT[F, Error, ByteVector] =
+    compressionAlgorithm match
       case Some(compressionAlgorithm) => EitherT(compressionAlgorithm.decompress[F](data))
       case None => data.rLiftET
 
