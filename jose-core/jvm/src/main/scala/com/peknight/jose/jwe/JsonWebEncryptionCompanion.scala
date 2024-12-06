@@ -32,6 +32,7 @@ trait JsonWebEncryptionCompanion:
   def encrypt[F[_]: Async: Compression](header: JoseHeader, plaintext: ByteVector, key: Key,
                                         sharedHeader: Option[JoseHeader] = None,
                                         recipientHeader: Option[JoseHeader] = None,
+                                        additionalAuthenticatedData: Option[ByteVector] = None,
                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     val h = mergedHeader(header, sharedHeader, recipientHeader)
@@ -54,49 +55,65 @@ trait JsonWebEncryptionCompanion:
           configuration.cipherProvider, configuration.keyAgreementProvider, configuration.keyPairGeneratorProvider,
           configuration.macProvider, configuration.messageDigestProvider))
         contentEncryptionKey = contentEncryptionKeys.contentEncryptionKey
-        nextHeader = update(header, contentEncryptionKeys)
-        protectedHeader <- encodeToBase(nextHeader, Base64UrlNoPad).eLiftET
-        additionalAuthenticatedData <- stringEncodeToBytes(protectedHeader.value, StandardCharsets.US_ASCII).eLiftET
         _ <- checkCek(encryptionAlgorithm, contentEncryptionKey)
+        (nextHeader, nextRecipientHeader) =
+          if configuration.writeCekHeadersToRecipientHeader then
+            (
+              header,
+              Some(recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => contentEncryptionKeys.updateHeader(rh)))
+            )
+          else
+            (contentEncryptionKeys.updateHeader(header), recipientHeader)
+        aad <- additionalAuthenticatedData match
+          case Some(bytes) => bytes.rLiftET
+          case None =>
+            encodeToBase(nextHeader, Base64UrlNoPad)
+              .flatMap(protectedHeader => stringEncodeToBytes(protectedHeader.value, StandardCharsets.US_ASCII))
+              .eLiftET
         plaintextBytes <- compress[F](h.compressionAlgorithm, plaintext)
         contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes,
-          additionalAuthenticatedData, configuration.ivOverride, configuration.random, configuration.cipherProvider,
+          aad, configuration.ivOverride, configuration.random, configuration.cipherProvider,
           configuration.macProvider
         ).asError)
       yield
-        JsonWebEncryption(nextHeader, sharedHeader, recipientHeader,
+        JsonWebEncryption(nextHeader, sharedHeader, nextRecipientHeader,
           Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.initializationVector),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext),
           Base64UrlNoPad.fromByteVector(contentEncryptionParts.authenticationTag),
-          Some(Base64UrlNoPad.fromByteVector(additionalAuthenticatedData))
+          Some(Base64UrlNoPad.fromByteVector(aad))
         )
     eitherT.value
 
   def encryptString[F[_]: Async: Compression](header: JoseHeader, plaintextString: String, key: Key,
                                               sharedHeader: Option[JoseHeader] = None,
                                               recipientHeader: Option[JoseHeader] = None,
+                                              additionalAuthenticatedData: Option[ByteVector] = None,
                                               configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     handleEncrypt[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, sharedHeader,
-      recipientHeader, configuration)
+      recipientHeader, additionalAuthenticatedData, configuration)
 
   def encryptJson[F[_], A](header: JoseHeader, plaintextValue: A, key: Key,
                            sharedHeader: Option[JoseHeader] = None,
                            recipientHeader: Option[JoseHeader] = None,
+                           additionalAuthenticatedData: Option[ByteVector] = None,
                            configuration: JoseConfiguration = JoseConfiguration.default)
                           (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
-    handleEncrypt[F](header, encodeToJsonBytes(plaintextValue), key, sharedHeader, recipientHeader, configuration)
+    handleEncrypt[F](header, encodeToJsonBytes(plaintextValue), key, sharedHeader, recipientHeader,
+      additionalAuthenticatedData, configuration)
 
   private def handleEncrypt[F[_]: Async: Compression](header: JoseHeader, plaintextEither: Either[Error, ByteVector],
                                                       key: Key,
                                                       sharedHeader: Option[JoseHeader] = None,
                                                       recipientHeader: Option[JoseHeader] = None,
+                                                      additionalAuthenticatedData: Option[ByteVector] = None,
                                                       configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     plaintextEither match
       case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
-      case Right(plaintext) => encrypt[F](header, plaintext, key, sharedHeader, recipientHeader, configuration)
+      case Right(plaintext) => encrypt[F](header, plaintext, key, sharedHeader, recipientHeader,
+        additionalAuthenticatedData, configuration)
 
   def handleDecrypt[F[_]: Async: Compression](header: JoseHeader, key: Key, encryptedKey: ByteVector,
                                               initializationVector: ByteVector, ciphertext: ByteVector,
@@ -150,18 +167,6 @@ trait JsonWebEncryptionCompanion:
     compressionAlgorithm match
       case Some(compressionAlgorithm) => EitherT(compressionAlgorithm.decompress[F](data))
       case None => data.rLiftET
-
-  private def update(header: JoseHeader, contentEncryptionKeys: ContentEncryptionKeys): JoseHeader =
-    header.copy(
-      ephemeralPublicKey = contentEncryptionKeys.ephemeralPublicKey.orElse(header.ephemeralPublicKey),
-      initializationVector = contentEncryptionKeys.initializationVector.map(Base64UrlNoPad.fromByteVector)
-        .orElse(header.initializationVector),
-      authenticationTag = contentEncryptionKeys.authenticationTag.map(Base64UrlNoPad.fromByteVector)
-        .orElse(header.authenticationTag),
-      pbes2SaltInput = contentEncryptionKeys.pbes2SaltInput.map(Base64UrlNoPad.fromByteVector)
-        .orElse(header.pbes2SaltInput),
-      pbes2Count = contentEncryptionKeys.pbes2Count.orElse(header.pbes2Count)
-    )
 
   private def publicKey[F[_]: Sync](ephemeralPublicKey: Option[JsonWebKey],
                                     keyFactoryProvider: Option[Provider | JProvider] = None

@@ -10,6 +10,7 @@ import java.security.{SecureRandom, Provider as JProvider}
 case class JoseConfiguration(
                               doKeyValidation: Boolean = true,
                               useLegacyName: Boolean = false,
+                              writeCekHeadersToRecipientHeader: Boolean = false,
                               skipSignatureVerification: Boolean = false,
                               skipVerificationKeyResolutionOnNone: Boolean = false,
                               liberalContentTypeHandling: Boolean = false,
