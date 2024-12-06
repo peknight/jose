@@ -31,40 +31,48 @@ import java.security.{Key, PublicKey, Provider as JProvider}
 trait JsonWebEncryptionCompanion:
 
   def encryptString[F[_] : Async : Compression](header: JoseHeader, plaintextString: String, key: Key,
+                                                cekOverride: Option[ByteVector] = None,
+                                                ivOverride: Option[ByteVector] = None,
+                                                aadOverride: Option[ByteVector] = None,
                                                 sharedHeader: Option[JoseHeader] = None,
                                                 recipientHeader: Option[JoseHeader] = None,
-                                                additionalAuthenticatedData: Option[ByteVector] = None,
                                                 configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
-    handleEncryptPlaintext[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, sharedHeader,
-      recipientHeader, additionalAuthenticatedData, configuration)
+    handleEncryptPlaintext[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, cekOverride,
+      ivOverride, aadOverride, sharedHeader, recipientHeader, configuration)
 
   def encryptJson[F[_], A](header: JoseHeader, plaintextValue: A, key: Key,
+                           cekOverride: Option[ByteVector] = None,
+                           ivOverride: Option[ByteVector] = None,
+                           aadOverride: Option[ByteVector] = None,
                            sharedHeader: Option[JoseHeader] = None,
                            recipientHeader: Option[JoseHeader] = None,
-                           additionalAuthenticatedData: Option[ByteVector] = None,
                            configuration: JoseConfiguration = JoseConfiguration.default)
                           (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
-    handleEncryptPlaintext[F](header, encodeToJsonBytes(plaintextValue), key, sharedHeader, recipientHeader,
-      additionalAuthenticatedData, configuration)
+    handleEncryptPlaintext[F](header, encodeToJsonBytes(plaintextValue), key, cekOverride, ivOverride, aadOverride,
+      sharedHeader, recipientHeader, configuration)
 
   private def handleEncryptPlaintext[F[_] : Async : Compression](header: JoseHeader,
                                                                  plaintextEither: Either[Error, ByteVector],
                                                                  key: Key,
+                                                                 cekOverride: Option[ByteVector] = None,
+                                                                 ivOverride: Option[ByteVector] = None,
+                                                                 aadOverride: Option[ByteVector] = None,
                                                                  sharedHeader: Option[JoseHeader] = None,
                                                                  recipientHeader: Option[JoseHeader] = None,
-                                                                 additionalAuthenticatedData: Option[ByteVector] = None,
                                                                  configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     plaintextEither match
       case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
-      case Right(plaintext) => encrypt[F](header, plaintext, key, sharedHeader, recipientHeader,
-        additionalAuthenticatedData, configuration)
+      case Right(plaintext) => encrypt[F](header, plaintext, key, cekOverride, ivOverride, aadOverride, sharedHeader,
+        recipientHeader, configuration)
 
   def encrypt[F[_]: Async: Compression](header: JoseHeader, plaintext: ByteVector, key: Key,
+                                        cekOverride: Option[ByteVector] = None,
+                                        ivOverride: Option[ByteVector] = None,
+                                        aadOverride: Option[ByteVector] = None,
                                         sharedHeader: Option[JoseHeader] = None,
                                         recipientHeader: Option[JoseHeader] = None,
-                                        additionalAuthenticatedData: Option[ByteVector] = None,
                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryption]] =
     val h = mergedHeader(header, sharedHeader, recipientHeader)
@@ -82,21 +90,21 @@ trait JsonWebEncryptionCompanion:
         initializationVector <- decodeOption(h.initializationVector).eLiftET[F]
         pbes2SaltInput <- decodeOption(h.pbes2SaltInput).eLiftET[F]
         contentEncryptionKeys <- EitherT(algorithm.encryptKey[F](key, encryptionAlgorithm.cekByteLength,
-          encryptionAlgorithm.cekAlgorithm, configuration.cekOverride, Some(encryptionAlgorithm), agreementPartyUInfo,
+          encryptionAlgorithm.cekAlgorithm, cekOverride, Some(encryptionAlgorithm), agreementPartyUInfo,
           agreementPartyVInfo, initializationVector, pbes2SaltInput, h.pbes2Count, configuration.random,
           configuration.cipherProvider, configuration.keyAgreementProvider, configuration.keyPairGeneratorProvider,
           configuration.macProvider, configuration.messageDigestProvider))
         contentEncryptionKey = contentEncryptionKeys.contentEncryptionKey
         _ <- checkCek(encryptionAlgorithm, contentEncryptionKey)
         (nextHeader, nextRecipientHeader) =
-          if configuration.writeCekHeadersToRecipientHeader then
+          if configuration.writeCekHeadersToRecipientHeaderOnFlattenedJWE then
             (
               header,
               recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => Some(contentEncryptionKeys.updateHeader(rh)))
             )
           else
             (contentEncryptionKeys.updateHeader(header), recipientHeader)
-        aad <- additionalAuthenticatedData match
+        aad <- aadOverride match
           case Some(bytes) => bytes.rLiftET
           case None =>
             encodeToBase(nextHeader, Base64UrlNoPad)
@@ -104,8 +112,7 @@ trait JsonWebEncryptionCompanion:
               .eLiftET
         plaintextBytes <- compress[F](h.compressionAlgorithm, plaintext)
         contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes,
-          aad, configuration.ivOverride, configuration.random, configuration.cipherProvider, configuration.macProvider
-        ).asError)
+          aad, ivOverride, configuration.random, configuration.cipherProvider, configuration.macProvider).asError)
       yield
         JsonWebEncryption(nextHeader, sharedHeader, nextRecipientHeader,
           Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey),
