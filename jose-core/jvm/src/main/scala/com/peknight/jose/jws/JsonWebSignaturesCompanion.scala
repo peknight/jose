@@ -7,13 +7,14 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.parallel.*
 import cats.syntax.traverse.*
-import cats.{Id, Parallel}
+import cats.{Eq, Id, Parallel}
 import com.peknight.codec.Encoder
 import com.peknight.error.Error
-import com.peknight.jose.error.UncheckedBase64UrlEncodePayload
+import com.peknight.error.syntax.either.label
+import com.peknight.jose.base64UrlEncodePayloadLabel
 import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, encodePayloadString}
 import com.peknight.jose.jws.Signature.Signature
-import com.peknight.jose.jwx.JosePrimitive
+import com.peknight.validation.collection.nonEmptyList.either.elementConsistent
 import io.circe.Json
 import scodec.bits.ByteVector
 
@@ -57,8 +58,9 @@ trait JsonWebSignaturesCompanion:
   : F[Either[Error, JsonWebSignatures]] =
     val either =
       for
-        base64UrlEncodePayload <- isBase64UrlEncodePayload(primitives)
-        charset <- JosePrimitive.charset(primitives)
+        base64UrlEncodePayload <- elementConsistent(primitives)(_.header.isBase64UrlEncodePayload)
+          .label(base64UrlEncodePayloadLabel)
+        charset <- elementConsistent(primitives)(_.configuration.charset)(using Eq.fromUniversalEquals).label("charset")
         payload <- encodePayload(base64UrlEncodePayload, charset)
       yield
         payload
@@ -72,11 +74,4 @@ trait JsonWebSignaturesCompanion:
         .handleSignSignature(payload)((headerBase, signature) => Signature(primitive.header, headerBase, signature))
       )
     ).map(_.sequence.map(signatures => JsonWebSignatures(payload, signatures)))
-
-  private def isBase64UrlEncodePayload(primitives: NonEmptyList[SigningPrimitive]): Either[Error, Boolean] =
-    val base64UrlEncodePayload = primitives.head.header.isBase64UrlEncodePayload
-    if primitives.tail.forall(_.header.isBase64UrlEncodePayload == base64UrlEncodePayload) then
-      base64UrlEncodePayload.asRight
-    else
-      UncheckedBase64UrlEncodePayload.asLeft
 end JsonWebSignaturesCompanion

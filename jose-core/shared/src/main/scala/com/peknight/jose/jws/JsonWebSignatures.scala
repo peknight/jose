@@ -13,7 +13,7 @@ import com.peknight.jose.jws.Signature.Signature
 import com.peknight.jose.jws.Signature.Signature.codecSignature
 import io.circe.{Json, JsonObject}
 
-case class JsonWebSignatures(payload: String, signatures: NonEmptyList[Signature]) extends JsonWebSignaturesPlatform:
+case class JsonWebSignatures(payload: String, signatures: NonEmptyList[Signature]):
   def toList: NonEmptyList[JsonWebSignature] =
     signatures.map(signature => JsonWebSignature(signature.headerEither, payload, signature.signature))
 end JsonWebSignatures

@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa
 
-import cats.Applicative
+import cats.{Applicative, Eq}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -19,6 +19,7 @@ trait JsonWebAlgorithm extends AlgorithmIdentifier:
 end JsonWebAlgorithm
 object JsonWebAlgorithm:
   val values: List[JsonWebAlgorithm] = JWSAlgorithm.values ::: JWEAlgorithm.values
+  given Eq[JsonWebAlgorithm] = Eq.fromUniversalEquals
   given stringCodecJsonWebAlgorithm[F[_]: Applicative]: Codec[F, String, String, JsonWebAlgorithm] =
     stringCodecAlgorithmIdentifier[F, JsonWebAlgorithm](values)
   given codecJsonWebAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], JsonWebAlgorithm] =

@@ -12,7 +12,9 @@ import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.either.label
 import com.peknight.jose.error.InvalidKeyLength
+import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.{EncryptionAlgorithm, KeyManagementAlgorithm}
 import com.peknight.jose.jwk.JsonWebKey
@@ -78,8 +80,7 @@ trait JsonWebEncryptionCompanion:
     val h = mergedHeader(header, sharedHeader, recipientHeader)
     val eitherT =
       for
-        algorithm <- h.algorithm.toRight(OptionEmpty.label(algorithmLabel)).eLiftET[F]
-        algorithm <- typed[KeyManagementAlgorithm](algorithm).eLiftET
+        algorithm <- checkAlgorithm(h.algorithm).eLiftET[F]
         encryptionAlgorithm <- h.encryptionAlgorithm.toRight(OptionEmpty.label(encryptionAlgorithmLabel)).eLiftET
         _ <-
           if configuration.doKeyValidation then
@@ -156,6 +157,9 @@ trait JsonWebEncryptionCompanion:
       yield
         res
     eitherT.value
+
+  private[jwe] def checkAlgorithm(algorithm: Option[JsonWebAlgorithm]): Either[Error, KeyManagementAlgorithm] =
+    algorithm.toRight(OptionEmpty).flatMap(typed[KeyManagementAlgorithm]).label(algorithmLabel)
 
   private def checkCek[F[_] : Applicative](encryptionAlgorithm: EncryptionAlgorithm, contentEncryptionKey: ByteVector)
   : EitherT[F, Error, Unit] =
