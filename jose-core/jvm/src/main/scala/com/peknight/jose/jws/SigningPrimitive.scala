@@ -5,14 +5,14 @@ import cats.effect.Sync
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, JosePrimitive}
 import io.circe.Json
 import scodec.bits.ByteVector
 
 import java.security.Key
 
 case class SigningPrimitive(header: JoseHeader, key: Option[Key] = None,
-                            configuration: JoseConfiguration = JoseConfiguration.default):
+                            configuration: JoseConfiguration = JoseConfiguration.default) extends JosePrimitive:
   def signBytes[F[_]: Sync](payload: ByteVector): F[Either[Error, JsonWebSignature]] =
     JsonWebSignature.signBytes[F](header, payload, key, configuration)
 
@@ -28,5 +28,5 @@ case class SigningPrimitive(header: JoseHeader, key: Option[Key] = None,
   private[jws] def handleSignSignature[F[_]: Sync, S <: Signature](payload: String)
                                                                   (f: (Base64UrlNoPad, Base64UrlNoPad) => S)
   : F[Either[Error, S]] =
-    JsonWebSignature.handleSignSignature[F, S](header, payload, key, configuration)(f)
+    JsonWebSignature.handleSignSignatureFunc[F, S](header, payload, key, configuration)(f)
 end SigningPrimitive

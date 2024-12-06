@@ -29,6 +29,38 @@ import java.nio.charset.StandardCharsets
 import java.security.{Key, PublicKey, Provider as JProvider}
 
 trait JsonWebEncryptionCompanion:
+
+  def encryptString[F[_] : Async : Compression](header: JoseHeader, plaintextString: String, key: Key,
+                                                sharedHeader: Option[JoseHeader] = None,
+                                                recipientHeader: Option[JoseHeader] = None,
+                                                additionalAuthenticatedData: Option[ByteVector] = None,
+                                                configuration: JoseConfiguration = JoseConfiguration.default)
+  : F[Either[Error, JsonWebEncryption]] =
+    handleEncryptPlaintext[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, sharedHeader,
+      recipientHeader, additionalAuthenticatedData, configuration)
+
+  def encryptJson[F[_], A](header: JoseHeader, plaintextValue: A, key: Key,
+                           sharedHeader: Option[JoseHeader] = None,
+                           recipientHeader: Option[JoseHeader] = None,
+                           additionalAuthenticatedData: Option[ByteVector] = None,
+                           configuration: JoseConfiguration = JoseConfiguration.default)
+                          (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
+    handleEncryptPlaintext[F](header, encodeToJsonBytes(plaintextValue), key, sharedHeader, recipientHeader,
+      additionalAuthenticatedData, configuration)
+
+  private def handleEncryptPlaintext[F[_] : Async : Compression](header: JoseHeader,
+                                                                 plaintextEither: Either[Error, ByteVector],
+                                                                 key: Key,
+                                                                 sharedHeader: Option[JoseHeader] = None,
+                                                                 recipientHeader: Option[JoseHeader] = None,
+                                                                 additionalAuthenticatedData: Option[ByteVector] = None,
+                                                                 configuration: JoseConfiguration = JoseConfiguration.default)
+  : F[Either[Error, JsonWebEncryption]] =
+    plaintextEither match
+      case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
+      case Right(plaintext) => encrypt[F](header, plaintext, key, sharedHeader, recipientHeader,
+        additionalAuthenticatedData, configuration)
+
   def encrypt[F[_]: Async: Compression](header: JoseHeader, plaintext: ByteVector, key: Key,
                                         sharedHeader: Option[JoseHeader] = None,
                                         recipientHeader: Option[JoseHeader] = None,
@@ -60,7 +92,7 @@ trait JsonWebEncryptionCompanion:
           if configuration.writeCekHeadersToRecipientHeader then
             (
               header,
-              Some(recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => contentEncryptionKeys.updateHeader(rh)))
+              recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => Some(contentEncryptionKeys.updateHeader(rh)))
             )
           else
             (contentEncryptionKeys.updateHeader(header), recipientHeader)
@@ -72,8 +104,7 @@ trait JsonWebEncryptionCompanion:
               .eLiftET
         plaintextBytes <- compress[F](h.compressionAlgorithm, plaintext)
         contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes,
-          aad, configuration.ivOverride, configuration.random, configuration.cipherProvider,
-          configuration.macProvider
+          aad, configuration.ivOverride, configuration.random, configuration.cipherProvider, configuration.macProvider
         ).asError)
       yield
         JsonWebEncryption(nextHeader, sharedHeader, nextRecipientHeader,
@@ -84,36 +115,6 @@ trait JsonWebEncryptionCompanion:
           Some(Base64UrlNoPad.fromByteVector(aad))
         )
     eitherT.value
-
-  def encryptString[F[_]: Async: Compression](header: JoseHeader, plaintextString: String, key: Key,
-                                              sharedHeader: Option[JoseHeader] = None,
-                                              recipientHeader: Option[JoseHeader] = None,
-                                              additionalAuthenticatedData: Option[ByteVector] = None,
-                                              configuration: JoseConfiguration = JoseConfiguration.default)
-  : F[Either[Error, JsonWebEncryption]] =
-    handleEncrypt[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, sharedHeader,
-      recipientHeader, additionalAuthenticatedData, configuration)
-
-  def encryptJson[F[_], A](header: JoseHeader, plaintextValue: A, key: Key,
-                           sharedHeader: Option[JoseHeader] = None,
-                           recipientHeader: Option[JoseHeader] = None,
-                           additionalAuthenticatedData: Option[ByteVector] = None,
-                           configuration: JoseConfiguration = JoseConfiguration.default)
-                          (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
-    handleEncrypt[F](header, encodeToJsonBytes(plaintextValue), key, sharedHeader, recipientHeader,
-      additionalAuthenticatedData, configuration)
-
-  private def handleEncrypt[F[_]: Async: Compression](header: JoseHeader, plaintextEither: Either[Error, ByteVector],
-                                                      key: Key,
-                                                      sharedHeader: Option[JoseHeader] = None,
-                                                      recipientHeader: Option[JoseHeader] = None,
-                                                      additionalAuthenticatedData: Option[ByteVector] = None,
-                                                      configuration: JoseConfiguration = JoseConfiguration.default)
-  : F[Either[Error, JsonWebEncryption]] =
-    plaintextEither match
-      case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
-      case Right(plaintext) => encrypt[F](header, plaintext, key, sharedHeader, recipientHeader,
-        additionalAuthenticatedData, configuration)
 
   def handleDecrypt[F[_]: Async: Compression](header: JoseHeader, key: Key, encryptedKey: ByteVector,
                                               initializationVector: ByteVector, ciphertext: ByteVector,

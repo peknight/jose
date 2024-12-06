@@ -10,88 +10,62 @@ import cats.syntax.traverse.*
 import cats.{Id, Parallel}
 import com.peknight.codec.Encoder
 import com.peknight.error.Error
-import com.peknight.jose.error.{UncheckedBase64UrlEncodePayload, UncheckedCharset}
+import com.peknight.jose.error.UncheckedBase64UrlEncodePayload
 import com.peknight.jose.jws.JsonWebSignature.{encodePayload, encodePayloadJson, encodePayloadString}
 import com.peknight.jose.jws.Signature.Signature
+import com.peknight.jose.jwx.JosePrimitive
 import io.circe.Json
 import scodec.bits.ByteVector
 
 import java.nio.charset.Charset
 
 trait JsonWebSignaturesCompanion:
-  def isBase64UrlEncodePayload(primitives: NonEmptyList[SigningPrimitive]): Either[Error, Boolean] =
-    val base64UrlEncodePayload = primitives.head.header.isBase64UrlEncodePayload
-    if primitives.tail.forall(_.header.isBase64UrlEncodePayload == base64UrlEncodePayload) then
-      base64UrlEncodePayload.asRight
-    else
-      UncheckedBase64UrlEncodePayload.asLeft
-
-  def charset(primitives: NonEmptyList[SigningPrimitive]): Either[Error, Charset] =
-    val charset = primitives.head.configuration.charset
-    if primitives.tail.forall(_.configuration.charset.equals(charset)) then charset.asRight
-    else UncheckedCharset.asLeft
-
   def signBytes[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: ByteVector)
   : F[Either[Error, JsonWebSignatures]] =
-    handleSignBytes[F](primitives, payload)(sign)
+    handleSignPayloadFunc[F](primitives)(encodePayload(payload, _, _))(_.sequence)
 
   def signString[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String)
   : F[Either[Error, JsonWebSignatures]] =
-    handleSignString[F](primitives, payload)(sign)
+    handleSignPayloadFunc[F](primitives)(encodePayloadString(payload, _, _))(_.sequence)
 
   def signJson[F[_], A](primitives: NonEmptyList[SigningPrimitive], payload: A)(using Sync[F], Encoder[Id, Json, A])
   : F[Either[Error, JsonWebSignatures]] =
-    handleSignJson[F, A](primitives, payload)(sign)
+    handleSignPayloadFunc[F](primitives)(encodePayloadJson(payload, _, _))(_.sequence)
 
   def sign[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String): F[Either[Error, JsonWebSignatures]] =
-    handleSign[F](primitives, payload)(_.sequence)
+    handleSignSequenceFunc[F](primitives, payload)(_.sequence)
 
   def parSignBytes[F[_]: Sync: Parallel](primitives: NonEmptyList[SigningPrimitive], payload: ByteVector)
   : F[Either[Error, JsonWebSignatures]] =
-    handleSignBytes[F](primitives, payload)(parSign)
+    handleSignPayloadFunc[F](primitives)(encodePayload(payload, _, _))(_.parSequence)
 
   def parSignString[F[_]: Sync: Parallel](primitives: NonEmptyList[SigningPrimitive], payload: String)
   : F[Either[Error, JsonWebSignatures]] =
-    handleSignString[F](primitives, payload)(parSign)
+    handleSignPayloadFunc[F](primitives)(encodePayloadString(payload, _, _))(_.parSequence)
 
   def parSignJson[F[_], A](primitives: NonEmptyList[SigningPrimitive], payload: A)
                           (using Sync[F], Parallel[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignatures]] =
-    handleSignJson[F, A](primitives, payload)(parSign)
+    handleSignPayloadFunc[F](primitives)(encodePayloadJson(payload, _, _))(_.parSequence)
 
   def parSign[F[_]: Sync: Parallel](primitives: NonEmptyList[SigningPrimitive], payload: String)
   : F[Either[Error, JsonWebSignatures]] =
-    handleSign[F](primitives, payload)(_.parSequence)
+    handleSignSequenceFunc[F](primitives, payload)(_.parSequence)
 
-  private def handleSignBytes[F[_] : Sync](primitives: NonEmptyList[SigningPrimitive], payload: ByteVector)
-                                          (f: (NonEmptyList[SigningPrimitive], String) => F[Either[Error, JsonWebSignatures]])
-  : F[Either[Error, JsonWebSignatures]] =
-    doHandleSign[F](primitives)(encodePayload(payload, _, _))(f)
-
-  private def handleSignString[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String)
-                                          (f: (NonEmptyList[SigningPrimitive], String) => F[Either[Error, JsonWebSignatures]])
-  : F[Either[Error, JsonWebSignatures]] =
-    doHandleSign[F](primitives)(encodePayloadString(payload, _, _))(f)
-
-  private def handleSignJson[F[_], A](primitives: NonEmptyList[SigningPrimitive], payload: A)
-                                     (f: (NonEmptyList[SigningPrimitive], String) => F[Either[Error, JsonWebSignatures]])
-                                     (using Sync[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignatures]] =
-    doHandleSign[F](primitives)(encodePayloadJson(payload, _, _))(f)
-
-  private def doHandleSign[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive])
-                                      (encodePayload: (Boolean, Charset) => Either[Error, String])
-                                      (f: (NonEmptyList[SigningPrimitive], String) => F[Either[Error, JsonWebSignatures]])
+  private def handleSignPayloadFunc[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive])
+                                               (encodePayload: (Boolean, Charset) => Either[Error, String])
+                                               (sequence: NonEmptyList[F[Either[Error, Signature]]] => F[NonEmptyList[Either[Error, Signature]]])
   : F[Either[Error, JsonWebSignatures]] =
     val either =
       for
         base64UrlEncodePayload <- isBase64UrlEncodePayload(primitives)
-        charset <- charset(primitives)
-        p <- encodePayload(base64UrlEncodePayload, charset)
+        charset <- JosePrimitive.charset(primitives)
+        payload <- encodePayload(base64UrlEncodePayload, charset)
       yield
-        f(primitives, p)
-    either.fold(_.asLeft.pure, identity)
+        payload
+    either.fold(_.asLeft.pure, payload => handleSignSequenceFunc[F](primitives, payload)(sequence))
 
-  private def handleSign[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String)
-                                    (sequence: NonEmptyList[F[Either[Error, Signature]]] => F[NonEmptyList[Either[Error, Signature]]])
+  private def handleSignSequenceFunc[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String)
+                                                (sequence: NonEmptyList[F[Either[Error, Signature]]] => F[NonEmptyList[Either[Error, Signature]]])
   : F[Either[Error, JsonWebSignatures]] =
     sequence(primitives
       .map(primitive => primitive
@@ -99,4 +73,10 @@ trait JsonWebSignaturesCompanion:
       )
     ).map(_.sequence.map(signatures => JsonWebSignatures(payload, signatures)))
 
+  private def isBase64UrlEncodePayload(primitives: NonEmptyList[SigningPrimitive]): Either[Error, Boolean] =
+    val base64UrlEncodePayload = primitives.head.header.isBase64UrlEncodePayload
+    if primitives.tail.forall(_.header.isBase64UrlEncodePayload == base64UrlEncodePayload) then
+      base64UrlEncodePayload.asRight
+    else
+      UncheckedBase64UrlEncodePayload.asLeft
 end JsonWebSignaturesCompanion

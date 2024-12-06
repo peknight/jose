@@ -7,15 +7,13 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
 import com.peknight.jose.jwk.{JsonWebKey, appendixA1, appendixA2}
-import com.peknight.jose.jwx.{JoseHeader, stringEncodeToBytes}
+import com.peknight.jose.jwx.JoseHeader
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-
 
   "JsonWebEncryption" should "succeed with jwe example A3" in {
     val jweCsFromAppendixA3Compact = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLvtgWQ8mKwb" +

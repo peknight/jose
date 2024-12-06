@@ -26,38 +26,37 @@ trait JsonWebSignatureCompanion:
   def signBytes[F[_]: Sync](header: JoseHeader, payload: ByteVector, key: Option[Key] = None,
                             configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebSignature]] =
-    doHandleSign[F](header, key, configuration)(encodePayload(payload, _, _))
+    handleSignPayloadFunc[F](header, key, configuration)(encodePayload(payload, _, _))
 
   def signString[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None,
                              configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebSignature]] =
-    doHandleSign[F](header, key, configuration)(encodePayloadString(payload, _, _))
+    handleSignPayloadFunc[F](header, key, configuration)(encodePayloadString(payload, _, _))
 
   def signJson[F[_], A](header: JoseHeader, payload: A, key: Option[Key] = None,
                         configuration: JoseConfiguration = JoseConfiguration.default)
                        (using Sync[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignature]] =
-    doHandleSign[F](header, key, configuration)(encodePayloadJson(payload, _, _))
+    handleSignPayloadFunc[F](header, key, configuration)(encodePayloadJson(payload, _, _))
 
-  private def doHandleSign[F[_] : Sync](header: JoseHeader, key: Option[Key] = None,
-                                        configuration: JoseConfiguration = JoseConfiguration.default)
-                                       (encodePayload: (Boolean, Charset) => Either[Error, String])
+  private def handleSignPayloadFunc[F[_] : Sync](header: JoseHeader, key: Option[Key] = None,
+                                                 configuration: JoseConfiguration = JoseConfiguration.default)
+                                                (encodePayload: (Boolean, Charset) => Either[Error, String])
   : F[Either[Error, JsonWebSignature]] =
-    encodePayload(header.isBase64UrlEncodePayload, configuration.charset).fold(
-      _.asLeft.pure[F],
-      payload => sign[F](header, payload, key, configuration)
-    )
+    encodePayload(header.isBase64UrlEncodePayload, configuration.charset) match
+      case Left(error) => error.asLeft.pure[F]
+      case Right(payload) => sign[F](header, payload, key, configuration)
 
   def sign[F[_]: Sync](header: JoseHeader, payload: String, key: Option[Key] = None,
                        configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebSignature]] =
-    handleSignSignature[F, JsonWebSignature](header, payload, key, configuration)(
+    handleSignSignatureFunc[F, JsonWebSignature](header, payload, key, configuration)(
       (headerBase, signature) => JsonWebSignature(header, headerBase, payload, signature)
     )
 
-  private[jws] def handleSignSignature[F[_]: Sync, S <: Signature](header: JoseHeader, payload: String,
-                                                                   key: Option[Key] = None,
-                                                                   configuration: JoseConfiguration = JoseConfiguration.default)
-                                                                  (f: (Base64UrlNoPad, Base64UrlNoPad) => S)
+  private[jws] def handleSignSignatureFunc[F[_]: Sync, S <: Signature](header: JoseHeader, payload: String,
+                                                                       key: Option[Key] = None,
+                                                                       configuration: JoseConfiguration = JoseConfiguration.default)
+                                                                      (f: (Base64UrlNoPad, Base64UrlNoPad) => S)
   : F[Either[Error, S]] =
     val either =
       for

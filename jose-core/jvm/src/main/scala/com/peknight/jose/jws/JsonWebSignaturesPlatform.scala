@@ -1,19 +1,13 @@
 package com.peknight.jose.jws
 
+import cats.Parallel
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Sync
-import cats.syntax.applicative.*
-import cats.syntax.either.*
-import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.parallel.*
 import cats.syntax.traverse.*
-import cats.{Id, Parallel}
 import com.peknight.error.Error
-import com.peknight.jose.error.MissingVerifyPrimitive
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
-import com.peknight.security.error.InvalidSignature
-import com.peknight.validation.std.either.isTrue
+import com.peknight.jose.jwx.JoseConfiguration
 
 trait JsonWebSignaturesPlatform { self: JsonWebSignatures =>
   def parVerify[F[_]: Sync: Parallel](configuration: JoseConfiguration = JoseConfiguration.default)

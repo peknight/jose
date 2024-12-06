@@ -7,7 +7,6 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import com.peknight.security.cipher.AES

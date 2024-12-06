@@ -13,7 +13,9 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
-import com.peknight.jose.jwe.Recipient.codecRecipient
+import com.peknight.jose.jwe.Recipient.Recipient
+import com.peknight.jose.jwe.Recipient.Recipient.codecRecipient
+import com.peknight.jose.jwx.HeaderEither.codecProtectedHeaderEither
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
 import io.circe.{Json, JsonObject}

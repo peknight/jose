@@ -14,13 +14,16 @@ case class ContentEncryptionKeys(
                                   pbes2SaltInput: Option[ByteVector] = None,
                                   pbes2Count: Option[Long] = None
                                 ):
-  def toHeader: JoseHeader = JoseHeader(
-    ephemeralPublicKey = ephemeralPublicKey,
-    initializationVector = initializationVector.map(Base64UrlNoPad.fromByteVector),
-    authenticationTag = authenticationTag.map(Base64UrlNoPad.fromByteVector),
-    pbes2SaltInput = pbes2SaltInput.map(Base64UrlNoPad.fromByteVector),
-    pbes2Count = pbes2Count
-  )
+  def toHeader: Option[JoseHeader] =
+    (ephemeralPublicKey, initializationVector, authenticationTag, pbes2SaltInput, pbes2Count) match
+      case (None, None, None, None, None) => None
+      case _ => Some(JoseHeader(
+        ephemeralPublicKey = ephemeralPublicKey,
+        initializationVector = initializationVector.map(Base64UrlNoPad.fromByteVector),
+        authenticationTag = authenticationTag.map(Base64UrlNoPad.fromByteVector),
+        pbes2SaltInput = pbes2SaltInput.map(Base64UrlNoPad.fromByteVector),
+        pbes2Count = pbes2Count
+      ))
 
   def updateHeader(header: JoseHeader): JoseHeader = header.copy(
     ephemeralPublicKey = ephemeralPublicKey.orElse(header.ephemeralPublicKey),

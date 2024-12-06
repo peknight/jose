@@ -2,6 +2,8 @@ package com.peknight.jose.jws
 
 import cats.{Id, Monad}
 import com.peknight.codec.base.Base64UrlNoPad
+import com.peknight.codec.circe.iso.codec
+import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.MissingField
 import com.peknight.codec.sum.*
@@ -59,5 +61,7 @@ object Signature:
           case ((None, Some(p), signature)) => Right(apply(p, signature))
           case ((None, None, signature)) => Left(MissingField.label("header"))
         }
+    given jsonCodecSignature[F[_]: Monad]: Codec[F, Json, Cursor[Json], Signature] = codecSignature[F, Json]
+    given circeCodecSignature: io.circe.Codec[Signature] = codec[Signature]
   end Signature
 end Signature
