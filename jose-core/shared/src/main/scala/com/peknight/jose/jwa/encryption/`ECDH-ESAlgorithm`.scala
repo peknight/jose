@@ -16,6 +16,7 @@ trait `ECDH-ESAlgorithm` extends KeyAgreementAlgorithm with ECDH with `ECDH-ESAl
   override def identifier: String = "ECDH-ES"
   val requirement: Requirement = `Recommended+`
   def headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)
+  private[jose] def canOverrideCek: Boolean = false
   def supportedCurves: List[Curve] = List(`P-256`, `P-384`, `P-521`)
   override def oid: Option[ObjectIdentifier] = Some(ObjectIdentifier.unsafeFromString("1.3.132.1.12"))
 end `ECDH-ESAlgorithm`

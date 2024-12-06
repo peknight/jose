@@ -12,6 +12,7 @@ trait RSAESAlgorithm extends KeyEncryptionAlgorithm with RSAES with RSA with RSA
   override def algorithm: String = RSA.algorithm
   override def mode: CipherAlgorithmMode = ECB
   def headerParams: Seq[HeaderParam] = Seq.empty
+  private[jose] def canOverrideCek: Boolean = true
 end RSAESAlgorithm
 object RSAESAlgorithm:
   val values: List[RSAESAlgorithm] = RSA1_5 :: `RSA-OAEPAlgorithm`.values

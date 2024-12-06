@@ -1,6 +1,8 @@
 package com.peknight.jose.jwa.encryption
 
-trait KeyManagementAlgorithm extends JWEAlgorithm with KeyManagementAlgorithmPlatform
+trait KeyManagementAlgorithm extends JWEAlgorithm with KeyManagementAlgorithmPlatform:
+  private[jose] def canOverrideCek: Boolean
+end KeyManagementAlgorithm
 object KeyManagementAlgorithm:
   val values: List[KeyManagementAlgorithm] =
     KeyEncryptionAlgorithm.values :::

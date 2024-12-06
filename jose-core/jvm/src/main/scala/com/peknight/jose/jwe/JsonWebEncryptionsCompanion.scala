@@ -14,5 +14,6 @@ trait JsonWebEncryptionsCompanion:
                                         sharedHeader: Option[JoseHeader] = None,
                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryptions]] =
+
     ???
 end JsonWebEncryptionsCompanion

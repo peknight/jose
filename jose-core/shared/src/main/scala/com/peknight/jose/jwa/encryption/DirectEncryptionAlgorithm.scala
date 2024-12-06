@@ -13,6 +13,7 @@ trait DirectEncryptionAlgorithm extends KeyManagementAlgorithm with Symmetric wi
   def algorithm: String = "dir"
   def headerParams: Seq[HeaderParam] = Seq.empty
   def requirement: Requirement = Recommended
+  private[jose] def canOverrideCek: Boolean = false
 end DirectEncryptionAlgorithm
 object DirectEncryptionAlgorithm:
   val values: List[DirectEncryptionAlgorithm] = List(dir)

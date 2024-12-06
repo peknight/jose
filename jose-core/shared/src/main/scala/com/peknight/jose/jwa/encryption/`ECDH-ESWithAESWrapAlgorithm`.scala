@@ -12,6 +12,7 @@ trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm with Asymmetri
   with `ECDH-ESWithAESWrapAlgorithmPlatform`:
   def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)
+  private[jose] def canOverrideCek: Boolean = encryption.canOverrideCek
   def algorithm: String = s"ECDH-ES+A${encryption.blockSize * 8}KW"
 end `ECDH-ESWithAESWrapAlgorithm`
 object `ECDH-ESWithAESWrapAlgorithm`:
