@@ -27,7 +27,7 @@ trait JsonWebEncryptionsCompanion:
                                                       sharedHeader: Option[JoseHeader] = None,
                                                       configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryptions]] =
-    val commonHeader = sharedHeader.fold(header)(_.deepMerge(header))
+    val commonHeader = mergedCommonHeader(header, sharedHeader)
     for
       encryptionAlgorithm <- elementConsistent(primitives)(_.recipientHeader.flatMap(_.encryptionAlgorithm))
         .label(encryptionAlgorithmLabel).eLiftET[F]
@@ -82,7 +82,7 @@ trait JsonWebEncryptionsCompanion:
             .map(contentEncryptionKeys => (
               contentEncryptionKeys.contentEncryptionKey,
               Some((Recipient(
-                JsonWebEncryption.updateRecipientHeader(primitive.recipientHeader, contentEncryptionKeys),
+                updateRecipientHeader(primitive.recipientHeader, contentEncryptionKeys),
                 Base64UrlNoPad.fromByteVector(contentEncryptionKeys.contentEncryptionKey)
               ), index)),
               list

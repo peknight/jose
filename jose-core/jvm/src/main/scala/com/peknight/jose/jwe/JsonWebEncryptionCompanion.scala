@@ -162,17 +162,6 @@ trait JsonWebEncryptionCompanion:
     isTrue(actualLength == expectedLength, InvalidKeyLength(encryptionAlgorithm.identifier, expectedLength * 8,
       actualLength.intValue * 8)).eLiftET
 
-  private def updateHeader(header: JoseHeader, recipientHeader: Option[JoseHeader],
-                           contentEncryptionKeys: ContentEncryptionKeys, writeCekHeadersToRecipientHeader: Boolean
-                          ): (JoseHeader, Option[JoseHeader]) =
-    if writeCekHeadersToRecipientHeader then
-      (header, updateRecipientHeader(recipientHeader, contentEncryptionKeys))
-    else (contentEncryptionKeys.updateHeader(header), recipientHeader)
-
-  private[jwe] def updateRecipientHeader(recipientHeader: Option[JoseHeader], 
-                                         contentEncryptionKeys: ContentEncryptionKeys): Option[JoseHeader] =
-    recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => Some(contentEncryptionKeys.updateHeader(rh)))
-  
   private def getAdditionalAuthenticatedData(aadOverride: Option[ByteVector], header: JoseHeader)
   : Either[Error, ByteVector] =
     aadOverride match
