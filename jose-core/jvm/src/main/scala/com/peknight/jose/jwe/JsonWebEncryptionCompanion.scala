@@ -82,7 +82,7 @@ trait JsonWebEncryptionCompanion:
         encryptionAlgorithm <- h.encryptionAlgorithm.toRight(OptionEmpty.label(encryptionAlgorithmLabel)).eLiftET[F]
         contentEncryptionKeys <- handleEncryptKey[F](h, encryptionAlgorithm, key, cekOverride, configuration)
         (nextHeader, nextRecipientHeader) = updateHeader(header, recipientHeader, contentEncryptionKeys,
-          configuration.writeCekHeadersToRecipientHeaderOnFlattenedJWE)
+          configuration.writeCekHeadersToRecipientHeader)
         aad <- getAdditionalAuthenticatedData(aadOverride, nextHeader).eLiftET
         plaintextBytes <- compress[F](h.compressionAlgorithm, plaintext)
         contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKeys.contentEncryptionKey,
@@ -166,9 +166,13 @@ trait JsonWebEncryptionCompanion:
                            contentEncryptionKeys: ContentEncryptionKeys, writeCekHeadersToRecipientHeader: Boolean
                           ): (JoseHeader, Option[JoseHeader]) =
     if writeCekHeadersToRecipientHeader then
-      (header, recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => Some(contentEncryptionKeys.updateHeader(rh))))
+      (header, updateRecipientHeader(recipientHeader, contentEncryptionKeys))
     else (contentEncryptionKeys.updateHeader(header), recipientHeader)
 
+  private[jwe] def updateRecipientHeader(recipientHeader: Option[JoseHeader], 
+                                         contentEncryptionKeys: ContentEncryptionKeys): Option[JoseHeader] =
+    recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => Some(contentEncryptionKeys.updateHeader(rh)))
+  
   private def getAdditionalAuthenticatedData(aadOverride: Option[ByteVector], header: JoseHeader)
   : Either[Error, ByteVector] =
     aadOverride match
