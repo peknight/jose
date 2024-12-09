@@ -154,7 +154,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk2 <- decode[Id, RSAJsonWebKey](jwkJson2).eLiftET[IO]
         privateKey2 <- EitherT(jwk2.toPrivateKey[IO]())
         thirdJwe <- JsonWebEncryption.parse(third).eLiftET[IO]
-        header <- thirdJwe.getUnprotectedHeader.eLiftET[IO]
+        header <- thirdJwe.getMergedHeader.eLiftET[IO]
         thirdFlag <- EitherT(thirdJwe.decrypt[IO](privateKey2).map(_.isRight.asRight))
       yield
         firstFlag && secondFlag && thirdFlag
@@ -225,7 +225,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- decode[Id, RSAJsonWebKey](jwkJson).eLiftET[IO]
         privateKey <- EitherT(jwk.toPrivateKey[IO]())
         jwe <- JsonWebEncryption.parse(cs).eLiftET[IO]
-        header <- jwe.getUnprotectedHeader.eLiftET[IO]
+        header <- jwe.getMergedHeader.eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](privateKey))
       yield
         decrypted == examplePayload

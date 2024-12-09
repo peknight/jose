@@ -125,7 +125,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
         jwe <- JsonWebEncryption.parse(cs).eLiftET[IO]
-        header <- jwe.getUnprotectedHeader.eLiftET[IO]
+        header <- jwe.getMergedHeader.eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](key))
         jwk <- decode[Id, JsonWebKey](decrypted).eLiftET[IO]
       yield
@@ -201,7 +201,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jweCompact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](key))
-        header <- jwe.getUnprotectedHeader.eLiftET[IO]
+        header <- jwe.getMergedHeader.eLiftET[IO]
         pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[IO]
       yield
         header.pbes2Count.exists(_ >= minimumIterationCount) && pbes2SaltInput.exists(_.length >= minimumSaltByteLength)
@@ -224,7 +224,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jweCompact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(jweCompact).eLiftET[IO]
         decrypted <- EitherT(jwe.decryptString[IO](key))
-        header <- jwe.getUnprotectedHeader.eLiftET[IO]
+        header <- jwe.getMergedHeader.eLiftET[IO]
         decodedPbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[IO]
       yield
         decrypted == plaintext && header.pbes2Count.contains(iterationCount) &&

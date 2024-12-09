@@ -43,7 +43,7 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwe <- JsonWebEncryption.parse(cs).eLiftET[IO]
-        header <- jwe.getUnprotectedHeader.eLiftET[IO]
+        header <- jwe.getMergedHeader.eLiftET[IO]
       yield
         true
     run.value.asserting(value => assert(value.isLeft))

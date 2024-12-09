@@ -9,7 +9,7 @@ import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import io.circe.{Json, JsonObject}
 
-case class JsonWebKeySet(keys: List[JsonWebKey])
+case class JsonWebKeySet(keys: List[JsonWebKey]) extends JsonWebKeySetPlatform
 object JsonWebKeySet:
   def apply(keys: JsonWebKey*): JsonWebKeySet = JsonWebKeySet(keys.toList)
   given codecJsonWebKeySet[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
