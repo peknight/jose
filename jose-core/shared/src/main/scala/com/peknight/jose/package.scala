@@ -4,6 +4,7 @@ package object jose:
   private[jose] val base64UrlEncodePayloadLabel: String = "b64"
   private[jose] val algorithmLabel: String = "alg"
   private[jose] val encryptionAlgorithmLabel: String = "enc"
+  private[jose] val compressionAlgorithmLabel: String = "zip"
   private[jose] val memberNameMap: Map[String, String] =
     Map(
       "algorithm" -> algorithmLabel,
@@ -19,7 +20,7 @@ package object jose:
       "contentType" -> "cty",
       "critical" -> "crit",
       "encryptionAlgorithm" -> encryptionAlgorithmLabel,
-      "compressionAlgorithm" -> "zip",
+      "compressionAlgorithm" -> compressionAlgorithmLabel,
 
       "ephemeralPublicKey" -> "epk",
       "agreementPartyUInfo" -> "apu",

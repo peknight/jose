@@ -17,12 +17,6 @@ package object jwe:
   def updateHeader(header: JoseHeader, recipientHeader: Option[JoseHeader],
                    contentEncryptionKeys: ContentEncryptionKeys, writeCekHeadersToRecipientHeader: Boolean)
   : (JoseHeader, Option[JoseHeader]) =
-    if writeCekHeadersToRecipientHeader then
-      (header, updateRecipientHeader(recipientHeader, contentEncryptionKeys))
+    if writeCekHeadersToRecipientHeader then (header, contentEncryptionKeys.updateHeader(recipientHeader))
     else (contentEncryptionKeys.updateHeader(header), recipientHeader)
-
-  def updateRecipientHeader(recipientHeader: Option[JoseHeader], contentEncryptionKeys: ContentEncryptionKeys)
-  : Option[JoseHeader] =
-    recipientHeader.fold(contentEncryptionKeys.toHeader)(rh => Some(contentEncryptionKeys.updateHeader(rh)))
-
 end jwe

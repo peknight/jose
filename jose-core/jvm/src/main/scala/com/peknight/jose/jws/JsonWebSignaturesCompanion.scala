@@ -69,9 +69,8 @@ trait JsonWebSignaturesCompanion:
   private def handleSignSequenceFunc[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String)
                                                 (sequence: NonEmptyList[F[Either[Error, Signature]]] => F[NonEmptyList[Either[Error, Signature]]])
   : F[Either[Error, JsonWebSignatures]] =
-    sequence(primitives
-      .map(primitive => primitive
-        .handleSignSignature(payload)((headerBase, signature) => Signature(primitive.header, headerBase, signature))
-      )
-    ).map(_.sequence.map(signatures => JsonWebSignatures(payload, signatures)))
+    val signatures = primitives.map(primitive => JsonWebSignature.handleSignSignatureFunc[F, Signature](
+      primitive.header, payload, primitive.key, primitive.configuration
+    )((headerBase, signature) => Signature(primitive.header, headerBase, signature)))
+    sequence(signatures).map(_.sequence.map(signatures => JsonWebSignatures(payload, signatures)))
 end JsonWebSignaturesCompanion
