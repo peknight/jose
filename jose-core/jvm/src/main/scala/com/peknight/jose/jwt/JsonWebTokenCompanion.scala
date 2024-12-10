@@ -16,8 +16,8 @@ import fs2.compression.Compression
 
 trait JsonWebTokenCompanion:
   def getClaims[F[_]: Async: Compression](jwt: String, configuration: JoseConfiguration = JoseConfiguration.default)
-                                         (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
-                                         (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+                                         (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                         (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, JsonWebTokenClaims]] =
     case class State(
                       hasSignature: Boolean = false,
@@ -46,7 +46,7 @@ trait JsonWebTokenCompanion:
         case (jwt, nested, state) =>
           for
             structure <- JsonWebStructure.parse(jwt).eLiftET[F].invalid(jwt, nested)
-            payload <- EitherT(structure.getPayloadString[F](configuration)(verificationPrimitiveF)(decryptionPrimitiveF))
+            payload <- EitherT(structure.getPayloadString[F](configuration)(verificationPrimitivesF)(decryptionPrimitivesF))
               .invalid(jwt, nested)
             header <- structure.getUnprotectedHeader.eLiftET[F].invalid(jwt, nested)
             nextNested = structure :: nested

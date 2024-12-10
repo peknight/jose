@@ -5,6 +5,7 @@ import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
+import com.peknight.jose.jwk.KeyType
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, ECB}
 import com.peknight.security.cipher.{RSA, RSAES}
 
@@ -12,6 +13,7 @@ trait RSAESAlgorithm extends KeyEncryptionAlgorithm with RSAES with RSA with RSA
   override def algorithm: String = RSA.algorithm
   override def mode: CipherAlgorithmMode = ECB
   def headerParams: Seq[HeaderParam] = Seq.empty
+  def keyType: Option[KeyType] = Some(KeyType.RSA)
   private[jose] def canOverrideCek: Boolean = true
 end RSAESAlgorithm
 object RSAESAlgorithm:

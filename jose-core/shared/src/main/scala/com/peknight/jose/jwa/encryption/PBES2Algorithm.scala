@@ -1,6 +1,7 @@
 package com.peknight.jose.jwa.encryption
 
 import com.peknight.jose.jwa.encryption.HeaderParam.{p2c, p2s}
+import com.peknight.jose.jwk.KeyType
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.cipher.Symmetric
@@ -11,6 +12,7 @@ trait PBES2Algorithm extends KeyEncryptionAlgorithm with Symmetric with PBES2Alg
   def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(p2s, p2c)
   def requirement: Requirement = Optional
+  def keyType: Option[KeyType] = None
   private[jose] def canOverrideCek: Boolean = encryption.canOverrideCek
   def algorithm: String = s"PBES2-HS${prf.digest.bitLength}+A${encryption.blockSize * 8}KW"
 end PBES2Algorithm

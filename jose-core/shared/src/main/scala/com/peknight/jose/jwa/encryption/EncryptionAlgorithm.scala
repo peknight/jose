@@ -6,6 +6,7 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
+import com.peknight.jose.jwk.KeyType
 import com.peknight.jose.jwx.Requirement
 import com.peknight.security.spec.SecretKeySpecAlgorithm
 
@@ -13,6 +14,7 @@ trait EncryptionAlgorithm extends AlgorithmIdentifier with EncryptionAlgorithmPl
   def cekByteLength: Int
   def cekAlgorithm: SecretKeySpecAlgorithm
   def requirement: Requirement
+  def keyType: Option[KeyType] = None
 end EncryptionAlgorithm
 object EncryptionAlgorithm:
   val values: List[EncryptionAlgorithm] = AESCBCHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values

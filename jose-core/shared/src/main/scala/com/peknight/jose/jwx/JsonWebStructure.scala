@@ -7,6 +7,7 @@ import com.peknight.jose.jws.JsonWebSignature
 
 trait JsonWebStructure extends HeaderEither with JsonWebStructurePlatform:
   def compact: Either[Error, String]
+  def getMergedHeader: Either[Error, JoseHeader]
 end JsonWebStructure
 object JsonWebStructure:
   def parse(value: String): Either[Error, JsonWebStructure] =

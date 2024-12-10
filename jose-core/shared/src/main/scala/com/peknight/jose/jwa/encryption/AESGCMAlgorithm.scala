@@ -13,10 +13,10 @@ trait AESGCMAlgorithm extends EncryptionAlgorithm with AES with AESGCMAlgorithmP
   def cekByteLength: Int = blockSize
   def ivByteLength: Int = 12
   def tagByteLength: Int = 16
+  def cekAlgorithm: SecretKeySpecAlgorithm = this
   override def algorithm: String = AES.algorithm
   override def mode: CipherAlgorithmMode = GCM
   override def identifier: String = s"A${blockSize * 8}GCM"
-  def cekAlgorithm: SecretKeySpecAlgorithm = this
 end AESGCMAlgorithm
 object AESGCMAlgorithm:
   val values: List[AESGCMAlgorithm] = List(A128GCM, A192GCM, A256GCM)

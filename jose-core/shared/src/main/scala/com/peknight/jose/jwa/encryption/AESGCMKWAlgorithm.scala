@@ -6,6 +6,8 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.HeaderParam.{iv, tag}
+import com.peknight.jose.jwk.KeyType
+import com.peknight.jose.jwk.KeyType.OctetSequence
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
 import com.peknight.security.cipher.mode.{CipherAlgorithmMode, GCM}
@@ -16,6 +18,7 @@ trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm with AESWrap with AESGCMK
   def tagByteLength = 16
   def headerParams: Seq[HeaderParam] = Seq(iv, tag)
   def requirement: Requirement = Optional
+  def keyType: Option[KeyType] = Some(OctetSequence)
   private[jose] def canOverrideCek: Boolean = true
   override def algorithm: String = AES.algorithm
   override def mode: CipherAlgorithmMode = GCM

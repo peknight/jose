@@ -3,6 +3,7 @@ package com.peknight.jose.jwa
 import cats.Applicative
 import com.peknight.codec.Codec
 import com.peknight.codec.error.DecodingFailure
+import com.peknight.jose.jwk.KeyType
 import com.peknight.security.algorithm.Algorithm
 import com.peknight.security.error.UnknownAlgorithm
 
@@ -10,6 +11,7 @@ import scala.reflect.ClassTag
 
 trait AlgorithmIdentifier extends Algorithm with AlgorithmIdentifierPlatform:
   def identifier: String = algorithm
+  def keyType: Option[KeyType]
   override def toString: String = identifier
 end AlgorithmIdentifier
 object AlgorithmIdentifier:

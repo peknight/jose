@@ -5,11 +5,13 @@ import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
+import com.peknight.jose.jwk.KeyType
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
 
 trait EdDSA extends JWSAlgorithm with com.peknight.security.signature.EdDSA with EdDSAPlatform:
   override def requirement: Requirement = Optional
+  def keyType: Option[KeyType] = Some(KeyType.OctetKeyPair)
 end EdDSA
 object EdDSA extends EdDSA:
   val values: List[EdDSA] = List(EdDSA)

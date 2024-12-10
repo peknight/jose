@@ -6,9 +6,12 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
+import com.peknight.jose.jwk.KeyType
 
 
-trait CompressionAlgorithm extends AlgorithmIdentifier with CompressionAlgorithmPlatform
+trait CompressionAlgorithm extends AlgorithmIdentifier with CompressionAlgorithmPlatform:
+  def keyType: Option[KeyType] = None
+end CompressionAlgorithm
 object CompressionAlgorithm:
   val values: List[CompressionAlgorithm] = List(Deflate)
   given Eq[CompressionAlgorithm] = Eq.fromUniversalEquals

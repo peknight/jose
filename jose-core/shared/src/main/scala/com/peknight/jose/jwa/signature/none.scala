@@ -4,6 +4,7 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.jose.error.{CanNotHaveKey, JoseError}
+import com.peknight.jose.jwk.KeyType
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.Optional
 import scodec.bits.ByteVector
@@ -13,6 +14,7 @@ import java.security.Key
 object none extends JWSAlgorithm with com.peknight.security.algorithm.NONE with NonePlatform:
   val requirement: Requirement = Optional
   override def identifier: String = "none"
+  def keyType: Option[KeyType] = None
 
   def sign(key: Option[Key], data: ByteVector, doKeyValidation: Boolean = true)
   : Either[JoseError, ByteVector] =

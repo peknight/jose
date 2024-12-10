@@ -1,12 +1,13 @@
 package com.peknight.jose.jws
 
-import cats.Id
-import cats.data.EitherT
+import cats.data.{EitherT, NonEmptyList}
 import cats.effect.{Async, Sync}
 import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
+import cats.{Id, Monad}
+import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.error.Error
@@ -60,26 +61,26 @@ trait JsonWebSignaturePlatform { self: JsonWebSignature =>
     check[F](key, configuration).map(_.flatMap(_ => decodePayload(configuration.charset)))
 
   def getPayloadBytes[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
-                                               (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
-                                               (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+                                               (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                               (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, ByteVector]] =
-    handleGetPayload[F, ByteVector](configuration)(verificationPrimitiveF)(decodePayload)
+    handleGetPayload[F, ByteVector](configuration)(verificationPrimitivesF)(decodePayload)
 
   def getPayloadString[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
-                                                (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
-                                                (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+                                                (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                                (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, String]] =
-    handleGetPayload[F, String](configuration)(verificationPrimitiveF)(decodePayloadString)
+    handleGetPayload[F, String](configuration)(verificationPrimitivesF)(decodePayloadString)
 
   def getPayloadJson[F[_], A](configuration: JoseConfiguration = JoseConfiguration.default)
-                             (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
-                             (decryptionPrimitiveF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, DecryptionPrimitive]])
+                             (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                             (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
                              (using Async[F], Compression[F], Decoder[Id, Cursor[Json], A])
   : F[Either[Error, A]] =
-    handleGetPayload[F, A](configuration)(verificationPrimitiveF)(decodePayloadJson[A])
+    handleGetPayload[F, A](configuration)(verificationPrimitivesF)(decodePayloadJson[A])
 
   private def handleGetPayload[F[_]: Sync, A](configuration: JoseConfiguration = JoseConfiguration.default)
-                                             (verificationPrimitiveF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, VerificationPrimitive]])
+                                             (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
                                              (decodePayload: Charset => Either[Error, A])
   : F[Either[Error, A]] =
     if configuration.skipSignatureVerification then decodePayload(configuration.charset).pure[F] else
@@ -87,12 +88,26 @@ trait JsonWebSignaturePlatform { self: JsonWebSignature =>
         for
           header <- getUnprotectedHeader.eLiftET[F]
           noneAlg = header.isNoneAlgorithm
-          primitive <-
+          primitives <-
             if noneAlg && configuration.skipVerificationKeyResolutionOnNone then
-              VerificationPrimitive(None, configuration).rLiftET[F, Error]
-            else EitherT(verificationPrimitiveF(self, configuration))
-          payload <- EitherT(handleVerifiedPayload[F, A](primitive.key, primitive.configuration)(decodePayload))
+              NonEmptyList.one(VerificationPrimitive(None, configuration)).rLiftET[F, Error]
+            else EitherT(verificationPrimitivesF(self, configuration))
+          payload <- EitherT(handleGetPayloadWithPrimitives[F, A](primitives)(decodePayload))
         yield
           payload
       eitherT.value
+
+  private def handleGetPayloadWithPrimitives[F[_]: Sync, A](primitives: NonEmptyList[VerificationPrimitive])
+                                                           (decodePayload: Charset => Either[Error, A])
+  : F[Either[Error, A]] =
+    handleVerifiedPayload[F, A](primitives.head.key, primitives.head.configuration)(decodePayload).flatMap {
+      case Right(value) => value.asRight[Error].pure[F]
+      case Left(error) => Monad[[X] =>> EitherT[F, Error, X]].tailRecM[List[VerificationPrimitive], A](primitives.tail) {
+        case head :: tail => EitherT(handleVerifiedPayload(head.key, head.configuration)(decodePayload).map {
+          case Right(value) => value.asRight[List[VerificationPrimitive]].asRight[Error]
+          case Left(error) => tail.asLeft[A].asRight[Error]
+        })
+        case Nil => error.lLiftET[F, Either[List[VerificationPrimitive], A]]
+      }.value
+    }
 }

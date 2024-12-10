@@ -20,6 +20,7 @@ case class JoseConfiguration(
                               knownCriticalHeaders: List[String] = List.empty[String],
                               keyDecipherModeOverride: Option[KeyDecipherMode] = None,
                               random: Option[SecureRandom] = None,
+                              certificateFactoryProvider: Option[Provider | JProvider] = None,
                               cipherProvider: Option[Provider | JProvider] = None,
                               keyAgreementProvider: Option[Provider | JProvider] = None,
                               keyFactoryProvider: Option[Provider | JProvider] = None,
