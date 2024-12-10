@@ -16,8 +16,8 @@ import scodec.bits.ByteVector
 
 import java.security.interfaces.{ECPrivateKey, RSAPrivateKey}
 
-class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebKeySetFilter" should "succeed with some X5 selections" in {
+class JsonWebKeySetForDecryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
+  "JsonWebKeySetForDecryption" should "succeed with some X5 selections" in {
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"v5UvsMi60ASbQEIKdOdkXDfBRKgoLHH4lZLwUiiDq_VscTatbZDvTFnfmFKHExTz" +
       "n0LKTjTNhKhY81CNLTNItRqmsTZ5cMnR0PTS777ncQ70l_YxAXxpBWANOkEPzRMbF4R7d9GBJQUzKgVVWvGH_6BG-oSuDMc82j3rInMp38T-a" +
       "fcf3F9gcpfhELM1xChfjaMyExLezhPi2F4O41z9kWpHF3hYwu-h_xuJA_apc2gPf1RvpB6v2m4ll4QdnQIu1MIb_8z7018OWdCIUf2sGVepnH" +
@@ -125,7 +125,7 @@ class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetFilter" should "succeed with some kid selections" in {
+  "JsonWebKeySetForDecryption" should "succeed with some kid selections" in {
     val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"rSK-0_k\",\"use\":\"enc\",\"x\":\"qQGegqPCpvi9tLJF_ofPR6PJIRb-O" +
       "gZX3n8TKwR5a30\",\"y\":\"HQAAFdTf3O1egAoYGmsPDjaIYdeS6Gm-Dv175yim4OM\",\"crv\":\"P-256\",\"d\":\"aI6PD_LfL4lF" +
       "UdyAHFnRSUYhBL_8k7gxfoDXeWiI1Gs\"},{\"kty\":\"EC\",\"kid\":\"KGAbCMI\",\"use\":\"enc\",\"x\":\"nfXylbOqF7aW5w" +
@@ -202,7 +202,7 @@ class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetFilter" should "succeed with some kid symmetric selections" in {
+  "JsonWebKeySetForDecryption" should "succeed with some kid symmetric selections" in {
     val json = "{\"keys\":[{\"kty\":\"oct\",\"kid\":\"one\",\"k\":\"1gfpc39Jq5H5eR_JbwmAojgUlHIH0GoKz7COzLY1nRE\"},{" +
       "\"kty\":\"oct\",\"kid\":\"deux\",\"k\":\"9vlp7BLzRr-a9pOKK7BA25o88u6cY2o9Lz6--FfSWXw\"},{\"kty\":\"oct\",\"ki" +
       "d\":\"tres\",\"k\":\"i001zDJd6-7rP5pnldgK-jcDjT8N12o3bIjwgeWAYEc\"},{\"kty\":\"oct\",\"kid\":\"quatro\",\"k\"" +
@@ -222,7 +222,7 @@ class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetFilter" should "succeed with key ops in selector" in {
+  "JsonWebKeySetForDecryption" should "succeed with key ops in selector" in {
     val json = "{\"keys\":[{\"kty\":\"EC\",\"key_ops\":[\"sign\"],\"x\":\"QPd8QUsROHjClFvQENhc-UXaaTBC-s10b50sD2B1WU" +
       "o\",\"y\":\"bz4xdwK8Edtm9HREbLy7EI9mzg-rUAUVosK5ybFLaRA\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"key_ops\":[\"" +
       "sign\"],\"n\":\"gxhgbcxZcQ_AHMFuaKJsWNRDh4kKN2CRdMQwhvUyw9brriPomDcGIVSpeq1iiPPd56umWXLF6TgxbVFsqxH7lTh013F8S" +
@@ -259,7 +259,7 @@ class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetFilter" should "succeed with use in selector" in {
+  "JsonWebKeySetForDecryption" should "succeed with use in selector" in {
     val json = "{\"keys\":[{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"QPd8QUsROHjClFvQENhc-UXaaTBC-s10b50sD2B1WUo\",\"y" +
       "\":\"bz4xdwK8Edtm9HREbLy7EI9mzg-rUAUVosK5ybFLaRA\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"use\":\"sig\",\"n\":" +
       "\"gxhgbcxZcQ_AHMFuaKJsWNRDh4kKN2CRdMQwhvUyw9brriPomDcGIVSpeq1iiPPd56umWXLF6TgxbVFsqxH7lTh013F8SSYg8pOQ3YYbg-J" +
@@ -295,4 +295,4 @@ class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           keys3.length == 1 && key3.equals(secondKey) && keys4.isEmpty
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
-end JsonWebKeySetFilterFlatSpec
+end JsonWebKeySetForDecryptionFlatSpec
