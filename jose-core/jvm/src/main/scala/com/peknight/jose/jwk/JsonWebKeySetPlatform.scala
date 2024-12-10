@@ -1,13 +1,14 @@
 package com.peknight.jose.jwk
 
-import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.eq.*
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
+import cats.{Applicative, Monad}
+import com.peknight.cats.ext.syntax.eitherT.{&&, eLiftET, rLiftET}
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
 import com.peknight.jose.jwa.encryption.{`ECDH-ESAlgorithm`, `ECDH-ESWithAESWrapAlgorithm`}
@@ -16,9 +17,10 @@ import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
 import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, JosePrimitive, JsonWebStructure}
+import com.peknight.security.provider.Provider
 import com.peknight.validation.collection.list.either.nonEmpty
 
-import java.security.Key
+import java.security.{Key, Provider as JProvider}
 
 trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
   def handleFilter[F[_]: Sync, Primitive <: JosePrimitive](structure: JsonWebStructure, configuration: JoseConfiguration)
@@ -32,27 +34,19 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
           .tailRecM[(List[JsonWebKey], List[JsonWebKey]), List[JsonWebKey]]((self.keys, Nil)) {
             case (Nil, acc) => acc.asRight[(List[JsonWebKey], List[JsonWebKey])].rLiftET[F, Error]
             case (jwk :: tail, acc) =>
-              val flag = header.keyID.fold(true)(keyID => jwk.keyID.contains(keyID)) &&
+              ((header.keyID.fold(true)(keyID => jwk.keyID.contains(keyID)) &&
                 header.algorithm.flatMap(_.keyType).fold(true)(_ == jwk.keyType) &&
-                filter(header, jwk)
-              if flag then
-                header.x509CertificateSHA1Thumbprint.fold(true.rLiftET[F, Error])(x5t =>
-                  EitherT(jwk.getX509CertificateSHA1Thumbprint[F](configuration.certificateFactoryProvider,
-                    configuration.messageDigestProvider))
-                    .map(_.forall(_ === x5t))
-                ).flatMap {
-                  case true =>
-                    header.x509CertificateSHA256Thumbprint.fold(true.rLiftET[F, Error])(x5tS256 =>
-                      EitherT(jwk.getX509CertificateSHA256Thumbprint[F](configuration.certificateFactoryProvider,
-                        configuration.messageDigestProvider))
-                        .map(_.forall(_ === x5tS256))
-                    ).map {
-                      case true => (tail, jwk :: acc).asLeft[List[JsonWebKey]]
-                      case false => (tail, acc).asLeft[List[JsonWebKey]]
-                    }
-                  case false => (tail, acc).asLeft[List[JsonWebKey]].rLiftET[F, Error]
+                filter(header, jwk)).rLiftET[F, Error] &&
+                filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA1Thumbprint, configuration)(
+                  jwk.getX509CertificateSHA1Thumbprint
+                ) &&
+                filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA256Thumbprint, configuration)(
+                  jwk.getX509CertificateSHA256Thumbprint
+                ))
+                .map {
+                  case true => (tail, jwk :: acc).asLeft[List[JsonWebKey]]
+                  case false => (tail, acc).asLeft[List[JsonWebKey]]
                 }
-              else (tail, acc).asLeft[List[JsonWebKey]].rLiftET[F, Error]
           }
         primitives <- keys.traverse[[X] =>> EitherT[F, Error, X], Key] {
           case jwk: AsymmetricJsonWebKey =>
@@ -63,6 +57,16 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
       yield
         primitives
     eitherT.value
+
+  private def filterX509CertificateSHAThumbprint[F[_]: Applicative](x509CertificateSHAThumbprint: Option[Base64UrlNoPad],
+                                                                    configuration: JoseConfiguration)
+                                                                   (getX509CertificateSHAThumbprint: (Option[Provider | JProvider], Option[Provider | JProvider]) => F[Either[Error, Option[Base64UrlNoPad]]])
+  : EitherT[F, Error, Boolean] =
+    x509CertificateSHAThumbprint.fold(true.rLiftET[F, Error])(x5t =>
+      EitherT(getX509CertificateSHAThumbprint(configuration.certificateFactoryProvider,
+        configuration.messageDigestProvider))
+        .map(_.forall(_ === x5t))
+    )
 
   def filterForVerification[F[_]: Sync](jws: JsonWebSignature, configuration: JoseConfiguration)
   : F[Either[Error, NonEmptyList[VerificationPrimitive]]] =
