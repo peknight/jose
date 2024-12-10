@@ -23,10 +23,10 @@ import com.peknight.validation.collection.list.either.nonEmpty
 import java.security.{Key, Provider as JProvider}
 
 trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
-  def handleFilter[F[_]: Sync, Primitive <: JosePrimitive](structure: JsonWebStructure, configuration: JoseConfiguration)
-                                                          (filter: (JoseHeader, JsonWebKey) => Boolean)
-                                                          (f: (Key, JoseConfiguration) => Primitive)
-  : F[Either[Error, NonEmptyList[Primitive]]] =
+
+  private def handleFilter[F[_]: Sync](structure: JsonWebStructure, configuration: JoseConfiguration)
+                                      (filter: (JoseHeader, JsonWebKey) => Boolean)
+  : F[Either[Error, List[JsonWebKey]]] =
     val eitherT =
       for
         header <- structure.getMergedHeader.eLiftET[F]
@@ -48,6 +48,18 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
                   case false => (tail, acc).asLeft[List[JsonWebKey]]
                 }
           }
+      yield
+        keys
+    eitherT.value
+
+  private def handlePrimitives[F[_]: Sync, Primitive <: JosePrimitive](structure: JsonWebStructure,
+                                                                       configuration: JoseConfiguration)
+                                                                      (filter: (JoseHeader, JsonWebKey) => Boolean)
+                                                                      (f: (Key, JoseConfiguration) => Primitive)
+  : F[Either[Error, NonEmptyList[Primitive]]] =
+    val eitherT =
+      for
+        keys <- EitherT(handleFilter[F](structure, configuration)(filter))
         primitives <- keys.traverse[[X] =>> EitherT[F, Error, X], Key] {
           case jwk: AsymmetricJsonWebKey =>
             EitherT(jwk.toPrivateKey[F](configuration.keyFactoryProvider)).map(_.asInstanceOf)
@@ -68,26 +80,44 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
         .map(_.forall(_ === x5t))
     )
 
-  def filterForVerification[F[_]: Sync](jws: JsonWebSignature, configuration: JoseConfiguration)
+  private def verificationPredict(header: JoseHeader, jwk: JsonWebKey): Boolean =
+    jwk.publicKeyUse.forall(_ == Signature) && jwk.keyOperations.forall(_.exists(KeyOperationType.verifyOps.contains))
+
+  def filterForVerification[F[_]: Sync](jws: JsonWebSignature,
+                                        configuration: JoseConfiguration = JoseConfiguration.default)
+  : F[Either[Error, List[JsonWebKey]]] =
+    jws.getUnprotectedHeader match
+      case Left(error) => error.asLeft[List[JsonWebKey]].pure[F]
+      case Right(header) if header.isNoneAlgorithm => Nil.asRight[Error].pure[F]
+      case _ => handleFilter[F](jws, configuration)(verificationPredict)
+
+  def verificationPrimitives[F[_]: Sync](jws: JsonWebSignature,
+                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, NonEmptyList[VerificationPrimitive]]] =
     jws.getUnprotectedHeader match
       case Left(error) => error.asLeft[NonEmptyList[VerificationPrimitive]].pure[F]
       case Right(header) if header.isNoneAlgorithm =>
         NonEmptyList.one(VerificationPrimitive(None, configuration)).asRight[Error].pure[F]
-      case _ => handleFilter(jws, configuration)((header, jwk) =>
-        jwk.publicKeyUse.forall(_ == Signature) &&
-          jwk.keyOperations.forall(_.exists(KeyOperationType.verifyOps.contains))
-      )((key, configuration) => VerificationPrimitive(Some(key), configuration))
+      case _ => handlePrimitives(jws, configuration)(verificationPredict)((key, configuration) =>
+        VerificationPrimitive(Some(key), configuration)
+      )
 
-  def filterForDecryption[F[_]: Sync](jwe: JsonWebEncryption, configuration: JoseConfiguration)
+  private def decryptionPredict(header: JoseHeader, jwk: JsonWebKey): Boolean =
+    jwk.publicKeyUse.forall(_ == Encryption) &&
+      jwk.keyOperations.forall(_.exists(KeyOperationType.decryptOps.contains)) &&
+      header.algorithm
+        .filter(alg => alg.isInstanceOf[`ECDH-ESAlgorithm`] || alg.isInstanceOf[`ECDH-ESWithAESWrapAlgorithm`])
+        .flatMap(_ => header.ephemeralPublicKey).map(_.keyType)
+        .fold(true)(_ == jwk.keyType)
+
+  def filterForDecryption[F[_]: Sync](jwe: JsonWebEncryption,
+                                      configuration: JoseConfiguration = JoseConfiguration.default)
+  : F[Either[Error, List[JsonWebKey]]] =
+    handleFilter[F](jwe, configuration)(decryptionPredict)
+
+  def decryptionPrimitives[F[_]: Sync](jwe: JsonWebEncryption,
+                                       configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, NonEmptyList[DecryptionPrimitive]]] =
-    handleFilter(jwe, configuration)((header, jwk) =>
-      jwk.publicKeyUse.forall(_ == Encryption) &&
-        jwk.keyOperations.forall(_.exists(KeyOperationType.decryptOps.contains)) &&
-        header.algorithm
-          .filter(alg => alg.isInstanceOf[`ECDH-ESAlgorithm`] || alg.isInstanceOf[`ECDH-ESWithAESWrapAlgorithm`])
-          .flatMap(_ => header.ephemeralPublicKey).map(_.keyType)
-          .fold(true)(_ == jwk.keyType)
-    )(DecryptionPrimitive.apply)
+    handlePrimitives(jwe, configuration)(decryptionPredict)(DecryptionPrimitive.apply)
 }
 
