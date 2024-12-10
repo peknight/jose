@@ -261,16 +261,16 @@ class JsonWebKeySetFilterFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   "JsonWebKeySetFilter" should "succeed with use in selector" in {
     val json = "{\"keys\":[{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"QPd8QUsROHjClFvQENhc-UXaaTBC-s10b50sD2B1WUo\",\"y" +
-      "\":\"bz4xdwK8Edtm9HREbLy7EI9mzg-rUAUVosK5ybFLaRA\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"use\":\"sign\",\"n\"" +
-      ":\"gxhgbcxZcQ_AHMFuaKJsWNRDh4kKN2CRdMQwhvUyw9brriPomDcGIVSpeq1iiPPd56umWXLF6TgxbVFsqxH7lTh013F8SSYg8pOQ3YYbg-" +
-      "JLJoVWEQZwVsBwzHXvjW4qXyfWMCyBD6p7ta_2LEZjkvVCAVaoTLjK8_1fl3Njj2d-kAzIyKC3mBWajuu51jH2tmCV_CKj7MqShO0Wa7UqNyV" +
-      "tLIiKqApi-be1D_s9dzgPBbAAwJ3qJy4g74Q5cBfVUaJ9QpqKIWYuITuD02IzSpapckqKeF6vfCuZkS9hwBr4vviY2rTLzVRnVlvKkUek4084" +
-      "qa9arZTF8uLnyiSiVw\",\"e\":\"AQAB\"},{\"kty\":\"RSA\",\"use\":\"enc\",\"n\":\"kGWRVJUV2J6Bg96M37BUIeBj0O16sra" +
-      "xlwZBmeTC4xPKEbOGLgBMfm_7DpwbhpS2jioLp54ldyDqVXmEphWQecnHGCT3uWaAv9CbARpOPOL9FRzuQrYDSMRjoY4S_nlL3nAC8lNros48" +
-      "APoj6XwAQVo-cIcjJSpMNJUSLIE0dNLk9067zxugEG5ljX7IHFe0GpAZWUyb5W3VlQOAEgYoguxgtJIyatfpGTxkpLbEO8lo6OGnJMFrykdUe" +
-      "jUTpUY3u_5rAPXLr37M676nblZGxHCB5mgRxGig9EqKEbDbWyuwkHCQspvconhMPGYBB2t6cptTQTt-h8XOCd0nYIK_vw\",\"e\":\"AQAB" +
-      "\"},{\"kty\":\"EC\",\"use\":\"enc\",\"x\":\"E7i5NiWEyw5GPFFtxKjWhT12rqRN7dbtvRAtdmxOoKs\",\"y\":\"y77a93eutsP" +
-      "WgyqKvDpHoN0XbIJ_rGB4DMd9sVF378o\",\"crv\":\"P-256\"}]}"
+      "\":\"bz4xdwK8Edtm9HREbLy7EI9mzg-rUAUVosK5ybFLaRA\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"use\":\"sig\",\"n\":" +
+      "\"gxhgbcxZcQ_AHMFuaKJsWNRDh4kKN2CRdMQwhvUyw9brriPomDcGIVSpeq1iiPPd56umWXLF6TgxbVFsqxH7lTh013F8SSYg8pOQ3YYbg-J" +
+      "LJoVWEQZwVsBwzHXvjW4qXyfWMCyBD6p7ta_2LEZjkvVCAVaoTLjK8_1fl3Njj2d-kAzIyKC3mBWajuu51jH2tmCV_CKj7MqShO0Wa7UqNyVt" +
+      "LIiKqApi-be1D_s9dzgPBbAAwJ3qJy4g74Q5cBfVUaJ9QpqKIWYuITuD02IzSpapckqKeF6vfCuZkS9hwBr4vviY2rTLzVRnVlvKkUek4084q" +
+      "a9arZTF8uLnyiSiVw\",\"e\":\"AQAB\"},{\"kty\":\"RSA\",\"use\":\"enc\",\"n\":\"kGWRVJUV2J6Bg96M37BUIeBj0O16srax" +
+      "lwZBmeTC4xPKEbOGLgBMfm_7DpwbhpS2jioLp54ldyDqVXmEphWQecnHGCT3uWaAv9CbARpOPOL9FRzuQrYDSMRjoY4S_nlL3nAC8lNros48A" +
+      "Poj6XwAQVo-cIcjJSpMNJUSLIE0dNLk9067zxugEG5ljX7IHFe0GpAZWUyb5W3VlQOAEgYoguxgtJIyatfpGTxkpLbEO8lo6OGnJMFrykdUej" +
+      "UTpUY3u_5rAPXLr37M676nblZGxHCB5mgRxGig9EqKEbDbWyuwkHCQspvconhMPGYBB2t6cptTQTt-h8XOCd0nYIK_vw\",\"e\":\"AQAB\"" +
+      "},{\"kty\":\"EC\",\"use\":\"enc\",\"x\":\"E7i5NiWEyw5GPFFtxKjWhT12rqRN7dbtvRAtdmxOoKs\",\"y\":\"y77a93eutsPWg" +
+      "yqKvDpHoN0XbIJ_rGB4DMd9sVF378o\",\"crv\":\"P-256\"}]}"
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
