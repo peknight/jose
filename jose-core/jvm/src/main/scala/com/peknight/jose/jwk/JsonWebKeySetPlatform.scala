@@ -14,6 +14,7 @@ import com.peknight.error.syntax.either.label
 import com.peknight.jose.jwa.encryption.{`ECDH-ESAlgorithm`, `ECDH-ESWithAESWrapAlgorithm`}
 import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
+import com.peknight.jose.jwk.KeyType.EllipticCurve
 import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
 import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, JosePrimitive, JsonWebStructure}
@@ -35,7 +36,8 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
             case (Nil, acc) => acc.asRight[(List[JsonWebKey], List[JsonWebKey])].rLiftET[F, Error]
             case (jwk :: tail, acc) =>
               ((header.keyID.fold(true)(keyID => jwk.keyID.contains(keyID)) &&
-                header.algorithm.flatMap(_.keyType).fold(true)(_ == jwk.keyType) &&
+                header.algorithm.flatMap(_.keyType).fold(true)(keyType => keyType == jwk.keyType) &&
+                header.algorithm.fold(true)(algorithm => jwk.algorithm.forall(_ == algorithm)) &&
                 filter(header, jwk)).rLiftET[F, Error] &&
                 filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA1Thumbprint, configuration)(
                   jwk.getX509CertificateSHA1Thumbprint
