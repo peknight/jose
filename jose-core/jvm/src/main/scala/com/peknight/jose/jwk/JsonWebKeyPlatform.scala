@@ -5,6 +5,7 @@ import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.eq.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
@@ -15,7 +16,7 @@ import com.peknight.codec.base.{Base, Base64UrlNoPad}
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.error.{BareKeyCertMismatch, JoseError}
+import com.peknight.jose.error.{BareKeyCertMismatch, JoseError, ThumbprintMismatch}
 import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.jose.syntax.x509Certificate.base64UrlThumbprint
 import com.peknight.security.certificate.factory.X509
@@ -84,12 +85,53 @@ trait JsonWebKeyPlatform { self: JsonWebKey =>
   : F[Either[Error, Option[Base64UrlNoPad]]] =
     thumbprint match
       case Some(value) => value.some.asRight.pure
-      case None => getLeafCertificate[F](certificateFactoryProvider).flatMap {
-        case Right(Some(certificate)) =>
-          certificate.base64UrlThumbprint[F](hashAlgo, messageDigestProvider).map(_.map(_.some))
-        case Right(None) => none.asRight.pure
-        case Left(error) => error.asLeft.pure
-      }
+      case None => calculateX509CertificateThumbprint[F](hashAlgo, certificateFactoryProvider, messageDigestProvider)
+
+  def checkX509CertificateSHA1Thumbprint[F[_]: Sync](certificateFactoryProvider: Option[Provider | JProvider] = None,
+                                                     messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, Unit]] =
+    checkX509CertificateThumbprint[F](self.x509CertificateSHA1Thumbprint, `SHA-1`, certificateFactoryProvider,
+      messageDigestProvider)
+
+  def checkX509CertificateSHA256Thumbprint[F[_]: Sync](certificateFactoryProvider: Option[Provider | JProvider] = None,
+                                                       messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, Unit]] =
+    checkX509CertificateThumbprint[F](self.x509CertificateSHA256Thumbprint, `SHA-256`, certificateFactoryProvider,
+      messageDigestProvider)
+
+  private def checkX509CertificateThumbprint[F[_]: Sync](thumbprint: Option[Base64UrlNoPad],
+                                                         hashAlgo: MessageDigestAlgorithm,
+                                                         certificateFactoryProvider: Option[Provider | JProvider] = None,
+                                                         messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, Unit]] =
+    thumbprint match
+      case Some(value) =>
+        calculateX509CertificateThumbprint[F](hashAlgo, certificateFactoryProvider, messageDigestProvider).map(_.flatMap {
+          case Some(thumbprint) => isTrue(thumbprint === value, ThumbprintMismatch(hashAlgo, value, Some(thumbprint)))
+          case None => ThumbprintMismatch(hashAlgo, value, None).asLeft
+        })
+      case None => ().asRight.pure
+
+  def calculateX509CertificateSHA1Thumbprint[F[_]: Sync](certificateFactoryProvider: Option[Provider | JProvider] = None,
+                                                         messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, Option[Base64UrlNoPad]]] =
+    calculateX509CertificateThumbprint[F](`SHA-1`, certificateFactoryProvider, messageDigestProvider)
+
+  def calculateX509CertificateSHA256Thumbprint[F[_]: Sync](certificateFactoryProvider: Option[Provider | JProvider] = None,
+                                                           messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, Option[Base64UrlNoPad]]] =
+    calculateX509CertificateThumbprint[F](`SHA-256`, certificateFactoryProvider, messageDigestProvider)
+
+  private def calculateX509CertificateThumbprint[F[_]: Sync](hashAlgo: MessageDigestAlgorithm,
+                                                             certificateFactoryProvider: Option[Provider | JProvider] = None,
+                                                             messageDigestProvider: Option[Provider | JProvider] = None)
+  : F[Either[Error, Option[Base64UrlNoPad]]] =
+    getLeafCertificate[F](certificateFactoryProvider).flatMap {
+      case Right(Some(certificate)) =>
+        certificate.base64UrlThumbprint[F](hashAlgo, messageDigestProvider).map(_.map(_.some))
+      case Right(None) => none.asRight.pure
+      case Left(error) => error.asLeft.pure
+    }
 
   private def baseToCertificate[F[_]: Sync](base: Base, provider: Option[Provider | JProvider] = None)
   : F[Either[Error, X509Certificate]] =
