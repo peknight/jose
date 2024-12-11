@@ -1,14 +1,20 @@
 package com.peknight.jose.jwk
 
 import cats.Id
+import cats.data.EitherT
 import cats.effect.IO
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import cats.effect.testing.scalatest.AsyncIOSpec
+import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
+import com.peknight.jose.jwa.signature.*
+import com.peknight.jose.jws.JsonWebSignature
+import com.peknight.jose.jwx.JoseHeader
 import org.scalatest.flatspec.AsyncFlatSpec
+import scodec.bits.ByteVector
 
 class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebKeySetForVerification" should "succeed with " in {
+  "JsonWebKeySetForVerification" should "succeed with unique kid tests" in {
     // JSON content from a PingFederate JWKS endpoint (a snapshot build circa Jan '15)
     val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"zq2ym\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaI" +
       "hf9ou3taXkQ6-nNoUfZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wce" +
@@ -43,8 +49,61 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        keys1 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("zq2yb"))), "", empty)))
+        keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS512),
+          keyID = Some(KeyId("zq2yf"))), "", empty)))
+        // a kid that's not in there
+        keys3 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("nope"))), "", empty)))
+        // a kid that is in there but for the wrong key type
+        keys4 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("zq2yg"))), "", empty)))
+        keys5 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES512),
+          keyID = Some(KeyId("zq2yi"))), "", empty)))
+        keys6 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES384),
+          keyID = Some(KeyId("zq2yh"))), "", empty)))
+        // real kid, wrong key type
+        keys7 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES256),
+          keyID = Some(KeyId("zq2yj"))), "", empty)))
+        // what would likely be the next kid
+        keys8 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES256),
+          keyID = Some(KeyId("zq2y0"))), "", empty)))
       yield
-        true
+        keys1.length == 1 && keys1.head.keyID.contains(KeyId("zq2yb")) &&
+          keys2.length == 1 && keys2.head.keyID.contains(KeyId("zq2yf")) &&
+          keys3.isEmpty && keys4.isEmpty &&
+          keys5.length == 1 && keys5.head.keyID.contains(KeyId("zq2yi")) &&
+          keys6.length == 1 && keys6.head.keyID.contains(KeyId("zq2yh")) &&
+          keys7.isEmpty && keys8.isEmpty
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with unique kid tests googles jwks end point" in {
+    // JSON content from https://www.googleapis.com/oauth2/v2/certs on Jan 7, 2015
+    val json = "{\"keys\":[{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"da522f3b66777ff6af63460d2b54" +
+      "9ad43b6660d6\",\"n\":\"69Eh051UHkBJx55OkavsrpeeulxaHzxC9pMjVNQnjhY5pwJ0YjB_FgJwOdFHEdPOc8uzi_Pnfr0ov0mE4cRTjn" +
+      "EsSF9_sB0sJaLE-W5e54-UxwgEPNWd4qT-sYdBl5LOwRoCth9gJ_6YA0zCr0V3AmAwoPnYRC9xo0R5aZY4Xvk=\",\"e\":\"AQAB\"},{\"k" +
+      "ty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"3b2b4413738f55cb2405ee30334082be07e0fcc0\",\"n\":\"8" +
+      "A6XgAQoenKyOJCz6AA-YZ3oN1GTEr3TVvJLV5ZoFdmPNvUohB2RXEJ4jRY16_z2SUK40ZPl_XPCAjl7vzf0BznUJYV33JwZFmCYoSWofllQUQ" +
+      "u2iaJjyuQG7_PSYhBO5XxfTcIZGL6n4_87vp9jIFdm5J9bZgvwUgI5q7iooJs=\",\"e\":\"AQAB\"}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        keys1 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("da522f3b66777ff6af63460d2b549ad43b6660d6"))), "", empty)))
+
+        keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("3b2b4413738f55cb2405ee30334082be07e0fcc0"))), "", empty)))
+        // a kid that's not in there
+        keys3 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("nope"))), "", empty)))
+      yield
+        keys1.length == 1 && keys1.head.keyID.contains(KeyId("da522f3b66777ff6af63460d2b549ad43b6660d6")) &&
+          keys2.length == 1 && keys2.head.keyID.contains(KeyId("3b2b4413738f55cb2405ee30334082be07e0fcc0")) &&
+          keys3.isEmpty
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 end JsonWebKeySetForVerificationFlatSpec
