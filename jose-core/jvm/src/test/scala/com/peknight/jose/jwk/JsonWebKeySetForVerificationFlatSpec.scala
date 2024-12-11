@@ -4,16 +4,18 @@ import cats.Id
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.jose.syntax.x509Certificate.base64UrlThumbprint
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
 import com.peknight.jose.error.ThumbprintMismatch
+import com.peknight.jose.jwa.ecc.{`P-256`, `P-384`, `P-521`}
 import com.peknight.jose.jwa.signature.*
-import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
+import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, EllipticCurveJsonWebKey}
 import com.peknight.jose.jws.JsonWebSignature
+import com.peknight.jose.jwt.JsonWebToken
 import com.peknight.jose.jwx.JoseHeader
+import com.peknight.jose.syntax.x509Certificate.base64UrlThumbprint
 import com.peknight.security.digest.{`SHA-1`, `SHA-256`}
 import com.peknight.validation.std.either.{isTrue, typed}
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -334,11 +336,11 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
           keyID = Some(KeyId("5"))), "", empty)))
         keys6 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES512),
           keyID = Some(KeyId("6"))), "", empty)))
-        x509CertificateSHA256Thumbprint7 <- Base64UrlNoPad.fromString("Xm5kcmgZp3dZmZc_-K31CzStJl5pH3QjRp45D8uhinM")
+        x5tS2567 <- Base64UrlNoPad.fromString("Xm5kcmgZp3dZmZc_-K31CzStJl5pH3QjRp45D8uhinM")
           .eLiftET[IO]
 
         keys7 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS512),
-          x509CertificateSHA256Thumbprint = Some(x509CertificateSHA256Thumbprint7)), "", empty)))
+          x509CertificateSHA256Thumbprint = Some(x5tS2567)), "", empty)))
 
         three <- jwks.keys.find(_.keyID.contains(KeyId("3"))).toRight(OptionEmpty.label("three")).eLiftET[IO]
         three <- typed[AsymmetricJsonWebKey](three).eLiftET[IO]
@@ -397,4 +399,279 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
         keys.length == 1 && keys.head.keyID.contains(KeyId("rsa1"))
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
+
+  "JsonWebKeySetForVerification" should "succeed with unique kid tests Nri Php jwks end point" in {
+    // JSON content from https://connect.openid4.us/connect4us.jwk on Jan 8, 2015
+    val json = "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"tf_sB4M0sHearRLzz1q1JRgRdRnwk0lz-IcVDFlpp2dtDVyA-ZM8Tu1swp7upaTN" +
+      "ykf7cp3Ne_6uW3JiKvRMDdNdvHWCzDHmbmZWGdnFF9Ve-D1cUxj4ETVpUM7AIXWbGs34fUNYl3Xzc4baSyvYbc3h6iz8AIdb_1bQLxJsHBi-y" +
+      "dg3NMJItgQJqBiwCmQYCOnJlekR-Ga2a5XlIx46Wsj3Pz0t0dzM8gVSU9fU3QrKKzDFCoFHTgig1YZNNW5W2H6QwANL5h-nbgre5sWmDmdnfi" +
+      "U6Pj5GOQDmp__rweinph8OAFNF6jVqrRZ3QJEmMnO42naWOsxV2FAUXafksQ\",\"e\":\"AQAB\",\"kid\":\"ABOP-00\"}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        keys <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS384),
+          keyID = Some(KeyId("ABOP-00"))), "", empty)))
+      yield
+        keys.length == 1 && keys.head.keyID.contains(KeyId("ABOP-00"))
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with no kid test nov jwks end point" in {
+    // JSON content from https://connect-op.herokuapp.com/jwks.json on Jan 8, 2015
+    val json = "{\"keys\":[{\"kty\":\"RSA\",\"e\":\"AQAB\",\"n\":\"pKybs0WaHU_y4cHxWbm8Wzj66HtcyFn7Fh3n-99qTXu5yNa30" +
+      "MRYIYfSDwe9JVc1JUoGw41yq2StdGBJ40HxichjE-Yopfu3B58QlgJvToUbWD4gmTDGgMGxQxtv1En2yedaynQ73sDpIK-12JJDY55pvf-PCi" +
+      "SQ9OjxZLiVGKlClDus44_uv2370b9IN2JiEOF-a7JBqaTEYLPpXaoKWDSnJNonr79tL0T7iuJmO1l705oO3Y0TQ-INLY6jnKG_RpsvyvGNnwP" +
+      "9pMvcP1phKsWZ10ofuuhJGRp8IxQL9RfzT87OvF0RBSO1U73h09YP-corWDsnKIi6TbzRpN5YDw\",\"use\":\"sig\"}]}"
+    val cs = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Nvbm5lY3Qtb3AuaGVyb2t1YXBwLmNvbSIsInN1YiI6I" +
+      "jZiOTYyYzk1Nzk4NThkNzJjNjY0M2FiZjhkN2E2ZWJjIiwiYXVkIjoiZGIwZTdmYTNmNmQwN2ZhMjYzMjZhNzE4NjQwMGVhOTEiLCJleHAiOj" +
+      "E0MjA3NTI0NzAsImlhdCI6MTQyMDczMDg3MCwibm9uY2UiOiJiOGU1OTlhM2JkYTRkNDExYzhiMDc0OGM1MGQwZjQxNyJ9.FNyq7K90vW7eLm" +
+      "sjzUPQ8eTnTreOWXVt_WKyqS686_D_kZ9tl3_uE3tKBw004XyFwMYd-4zWhvXaDPkhFGJ6BPy_woxnQdiTobNE-jyQscp6-6keg3QRkjV-Te7" +
+      "F48Pyfzl-lwvzhb76ygjuv7v_1Nf49fHZb-SiQ2KmapabHpIfVvuqTQ_MZjU613XJIW0tMqFv4__fgaZD-JU6qCkVbkXpvIMg_tZDafsipJ6Z" +
+      "YH9_9JuXQqjzmsM6vHN53MiQZaDtwb6nLDFln6YPqmVPXJV6SLvM_vn0g5w6jvmfsPGZL-xo-iqWbYtnMK-dX4HmnLpK4JVba_OnA9NQfj2DRQ"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        jws <- JsonWebSignature.parse(cs).eLiftET[IO]
+        keys <- EitherT(jwks.verificationPrimitives[IO](jws))
+        _ <- EitherT(jws.check[IO](keys.head.key, keys.head.configuration))
+      yield
+        keys.length == 1
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with no kid test ryo tio jwks end point" in {
+    // JSON content from https://openidconnect.info/jwk/jwk.json on Jan 8, 2015
+    // missing kty and misused alg, user should be use
+    val json = "{\"keys\":[{\"alg\":\"RSA\",\"mod\":\"4ZLcBYTH4S3b80iEkDKTAmLvNM3XkqgdQoLPtNgNoilmHD1wian5_EDl2IvwAJ" +
+      "Rug9I0TnhVuMZW3ylhsPxus3Iu70nCQbOdsoBCobNzm6RaLUsz6LjRa2mvLMHeG1CP5rGWiv5GwBU8DNuUf_uPWXMe9K3i3E27nm4NnwDcOMP" +
+      "ETpr6PLB2h4iXsHrKGLIFPdoPx_TIcrbj7RR9vWtrkj1pHt2OnJy5cFmXXRc77SZw0qRouVD0cqiS0XPHTaoFgmFr1x7NdbENxMJZJ-VPaIqN" +
+      "0ht2tFX5oOCClhNjBTKc2U-c-b32ETtUnNUu1kHafS-V0qsobmy-Cq_gyyQY2w\",\"exp\":\"AQAB\",\"user\":\"sig\"}]}"
+    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](json).map(_.keys.isEmpty).getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with unique kid and x5t test thinktecture jwks end point" in {
+    // JSON content from https://identity.thinktecture.com/.well-known/jwks on Jan 8, 2015
+    //  n is regular base64 rather than base64url http://www.ietf.org/mail-archive/web/jose/current/msg04783.html
+    val json = "{\"keys\":[{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"a3rMUgMFv9tPclLa6yF3zAkfquE\",\"x5t\":\"a3rMUg" +
+      "MFv9tPclLa6yF3zAkfquE\",\"e\":\"AQAB\",\"n\":\"qnTksBdxOiOlsmRNd+mMS2M3o1IDpK4uAr0T4/YqO3zYHAGAWTwsq4ms+NWynq" +
+      "Y5HaB4EThNxuq2GWC5JKpO1YirOrwS97B5x9LJyHXPsdJcSikEI9BxOkl6WLQ0UzPxHdYTLpR4/O+0ILAlXw8NU4+jB4AP8Sn9YGYJ5w0fLw5" +
+      "YmWioXeWvocz1wHrZdJPxS8XnqHXwMUozVzQj+x6daOv5FmrHU1r9/bbp0a1GLv4BbTtSh4kMyz1hXylho0EvPg5p9YIKStbNAW9eNWvv5R8H" +
+      "N7PPei21AsUqxekK0oW9jnEdHewckToX7x5zULWKwwZIksll0XnVczVgy7fCFw==\",\"x5c\":[\"MIIDBTCCAfGgAwIBAgIQNQb+T2ncIrN" +
+      "A6cKvUA1GWTAJBgUrDgMCHQUAMBIxEDAOBgNVBAMTB0RldlJvb3QwHhcNMTAwMTIwMjIwMDAwWhcNMjAwMTIwMjIwMDAwWjAVMRMwEQYDVQQD" +
+      "EwppZHNydjN0ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqnTksBdxOiOlsmRNd+mMS2M3o1IDpK4uAr0T4/YqO3zYHAGAW" +
+      "Twsq4ms+NWynqY5HaB4EThNxuq2GWC5JKpO1YirOrwS97B5x9LJyHXPsdJcSikEI9BxOkl6WLQ0UzPxHdYTLpR4/O+0ILAlXw8NU4+jB4AP8S" +
+      "n9YGYJ5w0fLw5YmWioXeWvocz1wHrZdJPxS8XnqHXwMUozVzQj+x6daOv5FmrHU1r9/bbp0a1GLv4BbTtSh4kMyz1hXylho0EvPg5p9YIKStb" +
+      "NAW9eNWvv5R8HN7PPei21AsUqxekK0oW9jnEdHewckToX7x5zULWKwwZIksll0XnVczVgy7fCFwIDAQABo1wwWjATBgNVHSUEDDAKBggrBgEF" +
+      "BQcDATBDBgNVHQEEPDA6gBDSFgDaV+Q2d2191r6A38tBoRQwEjEQMA4GA1UEAxMHRGV2Um9vdIIQLFk7exPNg41NRNaeNu0I9jAJBgUrDgMCH" +
+      "QUAA4IBAQBUnMSZxY5xosMEW6Mz4WEAjNoNv2QvqNmk23RMZGMgr516ROeWS5D3RlTNyU8FkstNCC4maDM3E0Bi4bbzW3AwrpbluqtcyMN3Pi" +
+      "vqdxx+zKWKiORJqqLIvN8CT1fVPxxXb/e9GOdaR8eXSmB0PgNUhM4IjgNkwBbvWC9F/lzvwjlQgciR7d4GfXPYsE1vf8tmdQaY8/PtdAkExmb" +
+      "rb9MihdggSoGXlELrPA91Yce+fiRcKY3rQlNWVd4DOoJ/cPXsXwry8pWjNCo5JD8Q+RQ5yZEy7YPoifwemLhTdsBz3hlZr28oCGJ3kbnpW0xG" +
+      "vQb3VHSTVVbeei0CfXoW6iz1\"]}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        keys1 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("a3rMUgMFv9tPclLa6yF3zAkfquE"))), "", empty)))
+        x5t <- Base64UrlNoPad.fromString("a3rMUgMFv9tPclLa6yF3zAkfquE").eLiftET[IO]
+        keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          x509CertificateSHA1Thumbprint = Some(x5t)), "", empty)))
+        actualX5t <- keys2.head.x509CertificateSHA1Thumbprint.toRight(OptionEmpty.label("actualX5t")).eLiftET[IO]
+        _ <- isTrue(actualX5t === x5t, ThumbprintMismatch(`SHA-1`, x5t, Some(actualX5t))).eLiftET[IO]
+      yield
+        keys1.length == 1 && keys1.head.keyID.contains(KeyId("a3rMUgMFv9tPclLa6yF3zAkfquE")) &&
+          keys2.length == 1 && keys2.head.keyID.contains(KeyId("a3rMUgMFv9tPclLa6yF3zAkfquE"))
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with not unique kids so disambiguate by alg use kty tests" in {
+    // JSON content from a PingFederate JWKS endpoint modified by hand to fake up some semi-plausible cases (same kid used for different key types and algs)
+    val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"3\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaIhf9o" +
+      "u3taXkQ6-nNoUfZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wceFFrv" +
+      "P2ZGC8uX1cH9IbEpcmHzXI2yAx3UZS8JiMueU6J_YEI\",\"crv\":\"P-521\",\"alg\":\"ES521\"},{\"kty\":\"EC\",\"kid\":\"" +
+      "3\",\"use\":\"sig\",\"x\":\"wwxLXWB-6zA06R6hs2GZQMezXpsql8piHuuz2uy_p8cJ1UDBXEjIblC2g2K0jqVR\",\"y\":\"Bt0Hwj" +
+      "lM4RoyCfq7DM9j34ujq_r45axa0S33YWLdQvHIwTj5bW1z81jqpPw0F_Xm\",\"crv\":\"P-384\",\"alg\":\"ES384\"},{\"kty\":\"" +
+      "EC\",\"kid\":\"3\",\"use\":\"sig\",\"x\":\"9aKnpWa5Fnhvao2cWprEj4tpWCJpY06n2DsaxjJ6vbU\",\"y\":\"ZlAzvRY_PP0l" +
+      "TJ3nkxIP6HUW9KgzzxE4WWicXQuvf6w\",\"crv\":\"P-256\",\"alg\":\"ES256\"},{\"kty\":\"RSA\",\"kid\":\"3\",\"use\"" +
+      ":\"sig\",\"n\":\"qqqF-eYSGLzU_ieAreTxa3Jj7zOy4uVKCpL6PeV5D85jHskPbaL7-SXzW6LlWSW6KUAW1Uwx_nohCZ7D5r24pW1tuQBn" +
+      "L20pfRs8gPpL28zsrK2SYg_AYyTJwmFTyYF5wfE8HZNGapF9-oHO794lSsWx_SpKQrH_vH_yqo8Bv_06Kf730VWIuREyW1kQS7sz56Aae5eH5" +
+      "oBnC45U4GqvshYLzd7CUvPNJWU7pumq_rzlr_MSMHjJs49CHXtqpezQgQvxQWfaOi691yrgLRl1QcrOqXwHNimrR1IOQyXx6_6isXLvGifZup" +
+      "48GmpzWQWyJ4t4Ud95ugc1HLeNlkHtBQ\",\"e\":\"AQAB\"},{\"kty\":\"EC\",\"kid\":\"2\",\"use\":\"sig\",\"x\":\"Aeu8" +
+      "Jbm9XTwhwHcq19BthU6VIz4HU7qDG7CNae81RujWu3aSEWoX1aAVRh_ZMABfMKWCtXvhh2FEpSAcQRiKilfG\",\"y\":\"AOlx2rRLBLI3nh" +
+      "3eAlWI1ciFKWaw-6XEJw4o6nLXHRBVo92ADYJBItvRdKcBk-BYb4Cewma7KtNuIK8zZ2HEen6d\",\"crv\":\"P-521\",\"alg\":\"ES52" +
+      "1\"},{\"kty\":\"EC\",\"kid\":\"2\",\"use\":\"sig\",\"x\":\"gcqegh2wqsLgmikkGF1137rVf5QPhJb0hF7zwWNwSM5jyWwfwT" +
+      "lhNMc4V8FO01Jt\",\"y\":\"-bO4V5xtasOgWsrCGs_bydqT0o3O29cA-5Sl7aqSfB7Z5-N3Dki5Ed2RZEU0Q7g0\",\"crv\":\"P-384\"" +
+      ",\"alg\":\"ES384\"},{\"kty\":\"EC\",\"kid\":\"2\",\"use\":\"sig\",\"x\":\"6elUcv15VpXlU995KVHZ3Jx6V8Cq7rCoody" +
+      "IaXbQxS8\",\"y\":\"mHnmwkt-jhxWKjzx75egxVx2B25QiRzi5l0jNDF9hu8\",\"crv\":\"P-256\",\"alg\":\"ES256\"},{\"kty" +
+      "\":\"RSA\",\"kid\":\"2\",\"use\":\"sig\",\"n\":\"wbcVJs-T_yP6TEWmdAqTo3qFsdtpffUEqVbxtaWr-PiXs4DTWtig6kYO1Hwi" +
+      "m0j780f6pBgWTKAOBhGm4e3RQH86cGA-kC6uD1931OLM1tcRhoaEsz9jrGWn31dSLBX9H_4YqR-a1V3fov09BmfODE7MRVEqmZXHRxGUxXLGZ" +
+      "n294LxZDRGEKwflTo3QZDG-Yirzf4UnbPERmSJsz6KE5FkO1k1YWCh1JnPlE9suQZC6OXIFRYwVHUP_xo5vRxQ0tTO0z1YHfjNNpycLlCNOox" +
+      "buN3f7_vUD08U2v5YnXs8DPGCO_nG0gXDzeioqVDa2cvDKhOtSugbI_nVtPZgWSQ\",\"e\":\"AQAB\"},{\"kty\":\"EC\",\"kid\":\"" +
+      "1\",\"use\":\"sig\",\"x\":\"AeRkafLScUO4UclozSPJpxJDknmB_SM70lA4MLGY9AGwHIu1tTl-x9WjttYZNrQ6eE0bAWGb_0jgVccvz" +
+      "0SD7es-\",\"y\":\"AdIP5LQzH3oNFTZGO-CVnkvD35F3Cd611zYjts5frAeqlxVbB_l8UdiLFqIJVuVLoi-kFJ9htMBIo1b2-dKdhI5T\"," +
+      "\"crv\":\"P-521\",\"alg\":\"ES521\"},{\"kty\":\"EC\",\"kid\":\"1\",\"use\":\"sig\",\"x\":\"cLP7G_dHWU7CGlB3h2" +
+      "Rt-yr4cuT2-ybk6Aq5zoBmzUo5jNrQR_IvrllfvdVfF1ub\",\"y\":\"-OzAuuaPViw3my3UAE3WiXOYlaa5MYz7dbMBSZjZhretKm118itV" +
+      "nCI_WRAkWMa7\",\"crv\":\"P-384\",\"alg\":\"ES384\"},{\"kty\":\"EC\",\"kid\":\"1\",\"use\":\"sig\",\"x\":\"IUk" +
+      "0VFdRVnVVmdCfZxREU0pXmUk9fub4JVnqVZ5DTmI\",\"y\":\"DNr82q7z1vfvIjp5a73t1yKg2vhcUDKqdsKh_FFbBZs\",\"crv\":\"P-" +
+      "256\",\"alg\":\"ES256\"},{\"kty\":\"RSA\",\"kid\":\"1\",\"use\":\"sig\",\"n\":\"lMRL3ng10Ahvh2ILcpEiKNi31ykHP" +
+      "8Iq7AENbwvsUzfag4ZBtid6RFBsfBMRrS_dGx1Ajjkpgj3igGlKiu0ZsSeu3zDK2e4apJGonxOQr7W2Bpv0bltU3bVRUb6i3-jv5sok33l2lK" +
+      "D6q7_UYRCmuo1ui2FGpwhorNVRFMe24HE895lvzGqDXUzsDKtMmZIt6Cj1WfJ68ZQ0gNByg-GVRtZ_BgZmyQwfTmPYxN_0uQ8usHz6kuSEysa" +
+      "rzW_mUX1VEdzJ2dKBxmNwQlTW9v1UDvhUd2VXbGk1BvbJzFYL7z6GbxwhCynN-1bNb2rCFtRSI3UB2MgPbRkyjS97B7j34w\",\"e\":\"AQA" +
+      "B\"}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        keys1 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("1"))), "", empty)))
+        keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES256),
+          keyID = Some(KeyId("2"))), "", empty)))
+        ecJwk <- keys2.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+          .toRight(OptionEmpty.label("ecJwk")).eLiftET[IO]
+      yield
+        keys1.length == 1 && keys1.head.keyID.contains(KeyId("1")) &&
+          keys2.length == 1 && keys2.head.keyID.contains(KeyId("2")) && ecJwk.curve == `P-256`
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with not unique kids so disambiguate by use kty tests" in {
+    // JSON content from a PingFederate JWKS endpoint modified by hand to fake up some semi-plausible cases (same kid used for different key types - no algs so crv is used on ECs)
+    val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"3\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaIhf9o" +
+      "u3taXkQ6-nNoUfZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wceFFrv" +
+      "P2ZGC8uX1cH9IbEpcmHzXI2yAx3UZS8JiMueU6J_YEI\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"kid\":\"3\",\"use\":\"sig" +
+      "\",\"x\":\"wwxLXWB-6zA06R6hs2GZQMezXpsql8piHuuz2uy_p8cJ1UDBXEjIblC2g2K0jqVR\",\"y\":\"Bt0HwjlM4RoyCfq7DM9j34u" +
+      "jq_r45axa0S33YWLdQvHIwTj5bW1z81jqpPw0F_Xm\",\"crv\":\"P-384\"},{\"kty\":\"EC\",\"kid\":\"3\",\"use\":\"sig\"," +
+      "\"x\":\"9aKnpWa5Fnhvao2cWprEj4tpWCJpY06n2DsaxjJ6vbU\",\"y\":\"ZlAzvRY_PP0lTJ3nkxIP6HUW9KgzzxE4WWicXQuvf6w\"," +
+      "\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"kid\":\"3\",\"use\":\"sig\",\"n\":\"qqqF-eYSGLzU_ieAreTxa3Jj7zOy4uVKCpL" +
+      "6PeV5D85jHskPbaL7-SXzW6LlWSW6KUAW1Uwx_nohCZ7D5r24pW1tuQBnL20pfRs8gPpL28zsrK2SYg_AYyTJwmFTyYF5wfE8HZNGapF9-oHO" +
+      "794lSsWx_SpKQrH_vH_yqo8Bv_06Kf730VWIuREyW1kQS7sz56Aae5eH5oBnC45U4GqvshYLzd7CUvPNJWU7pumq_rzlr_MSMHjJs49CHXtqp" +
+      "ezQgQvxQWfaOi691yrgLRl1QcrOqXwHNimrR1IOQyXx6_6isXLvGifZup48GmpzWQWyJ4t4Ud95ugc1HLeNlkHtBQ\",\"e\":\"AQAB\"},{" +
+      "\"kty\":\"EC\",\"kid\":\"2\",\"use\":\"sig\",\"x\":\"Aeu8Jbm9XTwhwHcq19BthU6VIz4HU7qDG7CNae81RujWu3aSEWoX1aAV" +
+      "Rh_ZMABfMKWCtXvhh2FEpSAcQRiKilfG\",\"y\":\"AOlx2rRLBLI3nh3eAlWI1ciFKWaw-6XEJw4o6nLXHRBVo92ADYJBItvRdKcBk-BYb4" +
+      "Cewma7KtNuIK8zZ2HEen6d\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"kid\":\"2\",\"use\":\"sig\",\"x\":\"gcqegh2wqsL" +
+      "gmikkGF1137rVf5QPhJb0hF7zwWNwSM5jyWwfwTlhNMc4V8FO01Jt\",\"y\":\"-bO4V5xtasOgWsrCGs_bydqT0o3O29cA-5Sl7aqSfB7Z5" +
+      "-N3Dki5Ed2RZEU0Q7g0\",\"crv\":\"P-384\"},{\"kty\":\"EC\",\"kid\":\"2\",\"use\":\"sig\",\"x\":\"6elUcv15VpXlU9" +
+      "95KVHZ3Jx6V8Cq7rCoodyIaXbQxS8\",\"y\":\"mHnmwkt-jhxWKjzx75egxVx2B25QiRzi5l0jNDF9hu8\",\"crv\":\"P-256\"},{\"k" +
+      "ty\":\"RSA\",\"kid\":\"2\",\"use\":\"sig\",\"n\":\"wbcVJs-T_yP6TEWmdAqTo3qFsdtpffUEqVbxtaWr-PiXs4DTWtig6kYO1H" +
+      "wim0j780f6pBgWTKAOBhGm4e3RQH86cGA-kC6uD1931OLM1tcRhoaEsz9jrGWn31dSLBX9H_4YqR-a1V3fov09BmfODE7MRVEqmZXHRxGUxXL" +
+      "GZn294LxZDRGEKwflTo3QZDG-Yirzf4UnbPERmSJsz6KE5FkO1k1YWCh1JnPlE9suQZC6OXIFRYwVHUP_xo5vRxQ0tTO0z1YHfjNNpycLlCNO" +
+      "oxbuN3f7_vUD08U2v5YnXs8DPGCO_nG0gXDzeioqVDa2cvDKhOtSugbI_nVtPZgWSQ\",\"e\":\"AQAB\"},{\"kty\":\"EC\",\"kid\":" +
+      "\"1\",\"use\":\"sig\",\"x\":\"AeRkafLScUO4UclozSPJpxJDknmB_SM70lA4MLGY9AGwHIu1tTl-x9WjttYZNrQ6eE0bAWGb_0jgVcc" +
+      "vz0SD7es-\",\"y\":\"AdIP5LQzH3oNFTZGO-CVnkvD35F3Cd611zYjts5frAeqlxVbB_l8UdiLFqIJVuVLoi-kFJ9htMBIo1b2-dKdhI5T" +
+      "\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"kid\":\"1\",\"use\":\"sig\",\"x\":\"cLP7G_dHWU7CGlB3h2Rt-yr4cuT2-ybk6" +
+      "Aq5zoBmzUo5jNrQR_IvrllfvdVfF1ub\",\"y\":\"-OzAuuaPViw3my3UAE3WiXOYlaa5MYz7dbMBSZjZhretKm118itVnCI_WRAkWMa7\"," +
+      "\"crv\":\"P-384\"},{\"kty\":\"EC\",\"kid\":\"1\",\"use\":\"sig\",\"x\":\"IUk0VFdRVnVVmdCfZxREU0pXmUk9fub4JVnq" +
+      "VZ5DTmI\",\"y\":\"DNr82q7z1vfvIjp5a73t1yKg2vhcUDKqdsKh_FFbBZs\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"kid\":" +
+      "\"1\",\"use\":\"sig\",\"n\":\"lMRL3ng10Ahvh2ILcpEiKNi31ykHP8Iq7AENbwvsUzfag4ZBtid6RFBsfBMRrS_dGx1Ajjkpgj3igGl" +
+      "Kiu0ZsSeu3zDK2e4apJGonxOQr7W2Bpv0bltU3bVRUb6i3-jv5sok33l2lKD6q7_UYRCmuo1ui2FGpwhorNVRFMe24HE895lvzGqDXUzsDKtM" +
+      "mZIt6Cj1WfJ68ZQ0gNByg-GVRtZ_BgZmyQwfTmPYxN_0uQ8usHz6kuSEysarzW_mUX1VEdzJ2dKBxmNwQlTW9v1UDvhUd2VXbGk1BvbJzFYL7" +
+      "z6GbxwhCynN-1bNb2rCFtRSI3UB2MgPbRkyjS97B7j34w\",\"e\":\"AQAB\"}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        keys1 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(RS256),
+          keyID = Some(KeyId("1"))), "", empty)))
+        keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES256),
+          keyID = Some(KeyId("2"))), "", empty)))
+        ecJwk2 <- keys2.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+          .toRight(OptionEmpty.label("ecJwk2")).eLiftET[IO]
+        keys3 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES512),
+          keyID = Some(KeyId("2"))), "", empty)))
+        ecJwk3 <- keys3.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+          .toRight(OptionEmpty.label("ecJwk3")).eLiftET[IO]
+        keys4 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES384),
+          keyID = Some(KeyId("2"))), "", empty)))
+        ecJwk4 <- keys4.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+          .toRight(OptionEmpty.label("ecJwk4")).eLiftET[IO]
+        keys5 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(HS256)), "", empty)))
+      yield
+        keys1.length == 1 && keys1.head.keyID.contains(KeyId("1")) &&
+          keys2.length == 1 && keys2.head.keyID.contains(KeyId("2")) && ecJwk2.curve == `P-256` &&
+          keys3.length == 1 && keys3.head.keyID.contains(KeyId("2")) && ecJwk3.curve == `P-521` &&
+          keys4.length == 1 && keys4.head.keyID.contains(KeyId("2")) && ecJwk4.curve == `P-384` &&
+          keys5.isEmpty
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with id token from ping federate" in {
+    // JWKS from a PingFederate JWKS endpoint along with a couple ID Tokens (JWTs) it issued
+    val jwtCs1 = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBrIn0.eyJzdWIiOiJoYWlsaWUiLCJhdWQiOiJhIiwianRpIjoiUXhSYjF2Z2tpSE" +
+      "90MlZoNVdST0pQUiIsImlzcyI6Imh0dHBzOlwvXC9sb2NhbGhvc3Q6OTAzMSIsImlhdCI6MTQyMTA5MzM4MiwiZXhwIjoxNDIxMDkzOTgyLCJ" +
+      "ub25jZSI6Im5hbmFuYW5hIiwiYWNyIjoidXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmFjOmNsYXNzZXM6UGFzc3dvcmQiLCJhdXRoX3Rp" +
+      "bWUiOjE0MjEwOTMzNzZ9.OlvyiduU_lZjcFHXchOzOptaBRt2XW_W2LATCPnfmi_mrfz5BsCvCGmTq6HCBBuOVF0BcbLA1h4ls3naPVu4YeWc" +
+      "1jkKFmlu5UwAdHP3fdUvAQdByyXDAxFgYIwl06EF-qpEX7r5_1D0OnrReq55n_SA-iqRync2nn5ZhkRoEj77E5yMFG93yRp4IP-WNZW3mZjkF" +
+      "PnSCEHfRU0IBURfWkPzSkt5bKx8Vr-Oc1I5hFUyKyap8Ky17q_PoF-bHZG7MZ8B5Q5RvweVbdudain_yH3VAujDtqN_gu-7m1Vt6WdQpFIOGs" +
+      "VSpCK0-wtV3MvXzSKLk-5qwdVSI4GH5K_Q9g"
+    val jwtCs2 = "eyJhbGciOiJFUzI1NiIsImtpZCI6IjhhMDBsIn0.eyJzdWIiOiJoYWlsaWUiLCJhdWQiOiJhIiwianRpIjoiRmUwZ1h1UGpmcH" +
+      "oxSHEzdzRaaUZIQiIsImlzcyI6Imh0dHBzOlwvXC9sb2NhbGhvc3Q6OTAzMSIsImlhdCI6MTQyMTA5Mzg1OSwiZXhwIjoxNDIxMDk0NDU5LCJ" +
+      "ub25jZSI6ImZmcyIsImFjciI6InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphYzpjbGFzc2VzOlBhc3N3b3JkIiwiYXV0aF90aW1lIjox" +
+      "NDIxMDkzMzc2fQ.gzJQZRErEHI_v6z6dZboTPzL7p9_wXrMJIWnYZFEENgq3E1InbrZuQM3wB-mJ5r33kwMibJY7Qi4y-jvk0IYqQ"
+    val jwksJson = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"8a00r\",\"use\":\"sig\",\"x\":\"AZkOsR09YQeFcD6rhINHWAaAr8D" +
+      "Mx9ndFzum50o5KLLUjqF7opKI7TxR5LP_4uUvG2jojF57xxWVwWi2otdETeI-\",\"y\":\"AadJxOSpjf_4VxRjTT_FdAtFX8Pw-CBpaoX-O" +
+      "QPPQ8o0kOrj5nzIltwnEORDldLFIkQQzgTXMzBnWyQurVHU5pUF\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"kid\":\"8a00q\",\"" +
+      "use\":\"sig\",\"x\":\"3n74sKXRbaBNw9qOGslnl-WcNCdC75cWo_UquiGUFKdDM3hudthywE5y0R6d2Li8\",\"y\":\"YbZ_0lregvTb" +
+      "oKmUX7VE7eknQC1yETKUdHzt_YMX4zbTyOxgZL6A38AVfY8Q8HWd\",\"crv\":\"P-384\"},{\"kty\":\"EC\",\"kid\":\"8a00p\"," +
+      "\"use\":\"sig\",\"x\":\"S-EbFKVG-7pXjdgM9SPPw8rN3V8-2uX4bNg4y8R7EhA\",\"y\":\"KTtyNGz9B9_QrkFf7mP90YiH6F40fAY" +
+      "fqpzQh8HG7tc\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"kid\":\"8a00o\",\"use\":\"sig\",\"n\":\"kM-83p_Qaq-1FuxL" +
+      "HH6Y7jQeBT5MK9iHGB75Blnit8rMIcsns72Ls1uhEYiyB3_icK7ibLr2_AHiIl7MnJBY2cCquuwiTccDM5AYUccdypliSlVeAL0MBa_0xfpvB" +
+      "Jw8fB45wX6kJKftbQI8xjvFhqSIuGNyQOzFXnJ_mCBOLv-6Nzn79qWxh47mQ7NJk2wSYdFDsz0NNGjBA2VQ9U6weqL1viZ1sbzXr-bJWCjjEY" +
+      "mKC5k0sjGGXJuvMPEqBY2q68kFXD3kiuslQ3tNS1j4d-IraadxpNVtedQ44-xM7MC-WFm2f5eO0LmJRzyipGNPkTer66q6MSEESguyhsoLNQ" +
+      "\",\"e\":\"AQAB\"},{\"kty\":\"EC\",\"kid\":\"8a00n\",\"use\":\"sig\",\"x\":\"ADoTal4nAvVCgicprEBBFOzNKUKVJl1P" +
+      "h8sISl3Z3tz7TJZlQB485LJ3xil-EmWvqW1-sKFl7dY2YtrGUZvjGp0O\",\"y\":\"AXVB58hIK7buMZmRgDU4hrGvcVQLXa-77_F755OKIk" +
+      "uWP5IJ6GdjFvaRHfIbbHMp-whqjmRrlwfYPN1xmyCGSzpT\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"kid\":\"8a00m\",\"use\"" +
+      ":\"sig\",\"x\":\"5Y4xK9IBGJq5-E6QAVdpiqZb9Z-_tro_rX9TAUdWD3jiVS5N-blEnu5zWzoUoiJk\",\"y\":\"ZDFGBLBbiuvHLMOJ3" +
+      "DoOSRLU94uu5y3s03__HaaaLU04Efc4nGdY3vhTQ4kxEqVj\",\"crv\":\"P-384\"},{\"kty\":\"EC\",\"kid\":\"8a00l\",\"use" +
+      "\":\"sig\",\"x\":\"CWzKLukg4yQzi4oM-2m9M-ClxbU4e6P9G_HRn9A0edI\",\"y\":\"UB1OL_eziV6lA5J0PiAuzoKQU_YbXojbjh0s" +
+      "fxtVlOU\",\"crv\":\"P-256\"},{\"kty\":\"RSA\",\"kid\":\"8a00k\",\"use\":\"sig\",\"n\":\"ux8LdF-7g3X1BlqglZUw3" +
+      "6mqjd9P0JWfWxJYvR6pCFSyqLrETc-fL9_lTG3orohkGnEPe7G-BO65ldF44pYEe3eZzcEuEFtiO5W4_Jap1Z430vdYgC_nZtENIJDWlsGM9e" +
+      "v-cOld7By-8l3-wAyuspOKZijWtx6K57VLajyUHBSmbUtaeCwHQOGyMOV1V-cskbTO2u_HrLOLLkSv9oZrznAwpx_paFHy-aAsdFhb7EiBzwq" +
+      "qHQButo3aT3DsR69gbW_Nmrf6tfkril6B3ePKV4od_5jowa6V3765K6v2L4NER7fuZ2hJVbIc0eJXY8tL3NlkBnjnmQ8DBWQR81Ayhw\",\"e" +
+      "\":\"AQAB\"}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
+        jws1 <- JsonWebSignature.parse(jwtCs1).eLiftET[IO]
+        primitives1 <- EitherT(jwks.verificationPrimitives[IO](jws1))
+        _ <- EitherT(jws1.check[IO](primitives1.head.key, primitives1.head.configuration))
+        jwt1 <- EitherT(JsonWebToken.getClaims[IO](jwtCs1)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
+        jws2 <- JsonWebSignature.parse(jwtCs2).eLiftET[IO]
+        primitives2 <- EitherT(jwks.verificationPrimitives[IO](jws2))
+        _ <- EitherT(jws2.check[IO](primitives2.head.key, primitives2.head.configuration))
+        jwt2 <- EitherT(JsonWebToken.getClaims[IO](jwtCs2)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
+      yield
+        primitives1.length == 1 && primitives2.length == 1
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+  "JsonWebKeySetForVerification" should "succeed with no kids" in {
+    val json = "{\"keys\":[{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaIhf9ou3taXkQ6-nNoUf" +
+      "ZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wceFFrvP2ZGC8uX1cH9Ib" +
+      "EpcmHzXI2yAx3UZS8JiMueU6J_YEI\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"wwxLXWB-6zA06R6hs2" +
+      "GZQMezXpsql8piHuuz2uy_p8cJ1UDBXEjIblC2g2K0jqVR\",\"y\":\"Bt0HwjlM4RoyCfq7DM9j34ujq_r45axa0S33YWLdQvHIwTj5bW1z" +
+      "81jqpPw0F_Xm\",\"crv\":\"P-384\"},{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"9aKnpWa5Fnhvao2cWprEj4tpWCJpY06n2Ds" +
+      "axjJ6vbU\",\"y\":\"ZlAzvRY_PP0lTJ3nkxIP6HUW9KgzzxE4WWicXQuvf6w\",\"crv\":\"P-256\"},{\"kty\":\"OKP\",\"crv\":" +
+      "\"Ed25519\",\"x\":\"EmqN44zWvm_L4PRJqrapUgY8EbDj-A5mhW1BBoad71c\"},{\"kty\":\"OKP\",\"crv\":\"X25519\",\"x\":" +
+      "\"gxFiyHTiib96JZp42H852rQ9tV54vP2zUcBhhPkZ6X0\"},{\"kty\":\"RSA\",\"use\":\"sig\",\"n\":\"qqqF-eYSGLzU_ieAreT" +
+      "xa3Jj7zOy4uVKCpL6PeV5D85jHskPbaL7-SXzW6LlWSW6KUAW1Uwx_nohCZ7D5r24pW1tuQBnL20pfRs8gPpL28zsrK2SYg_AYyTJwmFTyYF5" +
+      "wfE8HZNGapF9-oHO794lSsWx_SpKQrH_vH_yqo8Bv_06Kf730VWIuREyW1kQS7sz56Aae5eH5oBnC45U4GqvshYLzd7CUvPNJWU7pumq_rzlr" +
+      "_MSMHjJs49CHXtqpezQgQvxQWfaOi691yrgLRl1QcrOqXwHNimrR1IOQyXx6_6isXLvGifZup48GmpzWQWyJ4t4Ud95ugc1HLeNlkHtBQ\"," +
+      "\"e\":\"AQAB\"}]}"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
+        empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
+        primitives1 <- EitherT(jwks.verificationPrimitives[IO](JsonWebSignature(JoseHeader(Some(RS256)), "", empty)))
+        primitives2 <- EitherT(jwks.verificationPrimitives[IO](JsonWebSignature(JoseHeader(Some(ES256)), "", empty)))
+        primitives3 <- EitherT(jwks.verificationPrimitives[IO](JsonWebSignature(JoseHeader(Some(ES512)), "", empty)))
+        primitives4 <- EitherT(jwks.verificationPrimitives[IO](JsonWebSignature(JoseHeader(Some(ES384)), "", empty)))
+        primitives5 <- EitherT(jwks.verificationPrimitives[IO](JsonWebSignature(JoseHeader(Some(EdDSA)), "", empty)))
+      yield
+        primitives1.length == 1 && primitives2.length == 1 && primitives3.length == 1 && primitives4.length == 1 &&
+          primitives5.length == 1
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
+
+
 end JsonWebKeySetForVerificationFlatSpec
