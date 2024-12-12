@@ -1,8 +1,8 @@
 package com.peknight.jose.jwe
 
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwe.Recipient.Recipient
+import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jwx.JoseHeader
 import scodec.bits.ByteVector
 
@@ -38,5 +38,5 @@ case class ContentEncryptionKeys(
     recipientHeader.fold(toHeader)(rh => Some(updateHeader(rh)))
 
   def toRecipient(recipientHeader: Option[JoseHeader]): Recipient =
-    Recipient(updateHeader(recipientHeader), Base64UrlNoPad.fromByteVector(contentEncryptionKey))
+    Recipient(updateHeader(recipientHeader), Base64UrlNoPad.fromByteVector(encryptedKey))
 end ContentEncryptionKeys
