@@ -10,6 +10,7 @@ import com.peknight.security.spec.ECGenParameterSpecName
 
 trait Curve extends ECGenParameterSpecName derives CanEqual:
   def name: String
+  override def toString: String = name
 end Curve
 object Curve extends CurveCompanion:
   given stringCodecCurve[F[_]: Applicative]: Codec[F, String, String, Curve] =

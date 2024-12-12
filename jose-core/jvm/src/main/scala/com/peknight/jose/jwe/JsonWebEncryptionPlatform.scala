@@ -17,7 +17,7 @@ import fs2.compression.Compression
 import io.circe.Json
 import scodec.bits.ByteVector
 
-import java.nio.charset.StandardCharsets
+import java.nio.charset.{Charset, StandardCharsets}
 import java.security.Key
 
 trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
@@ -39,6 +39,22 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
         res
     eitherT.value
 
+  def decryptWithPrimitives[F[_]: Async: Compression](primitives: NonEmptyList[DecryptionPrimitive])
+  : F[Either[Error, (ByteVector, DecryptionPrimitive)]] =
+    decrypt(primitives.head.key, primitives.head.configuration).flatMap {
+      case Right(value) => (value, primitives.head).asRight[Error].pure[F]
+      case Left(error) =>
+        Monad[[X] =>> EitherT[F, Error, X]].tailRecM[List[DecryptionPrimitive], (ByteVector, DecryptionPrimitive)](
+          primitives.tail
+        ) {
+          case head :: tail => EitherT(decrypt(head.key, head.configuration).map {
+            case Right(value) => (value, head).asRight[List[DecryptionPrimitive]].asRight[Error]
+            case Left(error) => tail.asLeft[(ByteVector, DecryptionPrimitive)].asRight[Error]
+          })
+          case Nil => error.lLiftET[F, Either[List[DecryptionPrimitive], (ByteVector, DecryptionPrimitive)]]
+        }.value
+    }
+
   def decryptString[F[_]: Async: Compression](key: Key,
                                               configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, String]] =
@@ -54,52 +70,58 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
   : F[Either[Error, A]] =
     decrypt[F](key, configuraion).map(_.flatMap(f))
 
+  def decryptStringWithPrimitives[F[_]: Async: Compression](primitives: NonEmptyList[DecryptionPrimitive])
+  : F[Either[Error, (String, DecryptionPrimitive)]] =
+    handleDecryptWithPrimitives[F, String](primitives)(bytesDecodeToString)
+
+  def decryptJsonWithPrimitives[F[_], A](primitives: NonEmptyList[DecryptionPrimitive])
+                                        (using Async[F], Compression[F], Decoder[Id, Cursor[Json], A])
+  : F[Either[Error, (A, DecryptionPrimitive)]] =
+    handleDecryptWithPrimitives[F, A](primitives)(bytesDecodeToJson[A])
+
+  private def handleDecryptWithPrimitives[F[_]: Async: Compression, A](primitives: NonEmptyList[DecryptionPrimitive])
+                                                                      (f: (ByteVector, Charset) => Either[Error, A])
+  : F[Either[Error, (A, DecryptionPrimitive)]] =
+    decryptWithPrimitives[F](primitives).map(_.flatMap(
+      (bytes, primitive) => f(bytes, primitive.configuration.charset).map((_, primitive))
+    ))
 
   def getPayloadBytes[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
                                                (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
                                                (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, ByteVector]] =
-    handleGetPayload[F, ByteVector](configuration)(decryptionPrimitivesF)(decrypt[F])
+    val eitherT =
+      for
+        primitives <- EitherT(decryptionPrimitivesF(self, configuration))
+        payload <- EitherT(decryptWithPrimitives(primitives))
+      yield
+        payload._1
+    eitherT.value
 
   def getPayloadString[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
                                                 (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
                                                 (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, String]] =
-    handleGetPayload[F, String](configuration)(decryptionPrimitivesF)(decryptString[F])
+    handleGetPayload[F, String](configuration)(decryptionPrimitivesF)(bytesDecodeToString)
 
   def getPayloadJson[F[_], A](configuration: JoseConfiguration = JoseConfiguration.default)
                              (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
                              (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
                              (using Async[F], Compression[F], Decoder[Id, Cursor[Json], A])
   : F[Either[Error, A]] =
-    handleGetPayload[F, A](configuration)(decryptionPrimitivesF)(decryptJson[F, A])
-
+    handleGetPayload[F, A](configuration)(decryptionPrimitivesF)(bytesDecodeToJson[A])
 
   private def handleGetPayload[F[_]: Async: Compression, A](configuration: JoseConfiguration = JoseConfiguration.default)
                                                            (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
-                                                           (decrypt: (Key, JoseConfiguration) => F[Either[Error, A]])
+                                                           (f: (ByteVector, Charset) => Either[Error, A])
   : F[Either[Error, A]] =
     val eitherT =
       for
         primitives <- EitherT(decryptionPrimitivesF(self, configuration))
-        payload <- EitherT(handleDecryptWithPrimitives(primitives)(decrypt))
+        payload <- EitherT(handleDecryptWithPrimitives(primitives)(f))
       yield
-        payload
+        payload._1
     eitherT.value
-
-  private def handleDecryptWithPrimitives[F[_]: Async: Compression, A](primitives: NonEmptyList[DecryptionPrimitive])
-                                                                      (decrypt: (Key, JoseConfiguration) => F[Either[Error, A]])
-  : F[Either[Error, A]] =
-    decrypt(primitives.head.key, primitives.head.configuration).flatMap {
-      case Right(value) => value.asRight[Error].pure[F]
-      case Left(error) => Monad[[X] =>> EitherT[F, Error, X]].tailRecM[List[DecryptionPrimitive], A](primitives.tail) {
-        case head :: tail => EitherT(decrypt(head.key, head.configuration).map {
-          case Right(value) => value.asRight[List[DecryptionPrimitive]].asRight[Error]
-          case Left(error) => tail.asLeft[A].asRight[Error]
-        })
-        case Nil => error.lLiftET[F, Either[List[DecryptionPrimitive], A]]
-      }.value
-    }
 
   private def getAdditionalAuthenticatedData: Either[Error, ByteVector] =
     self.additionalAuthenticatedData

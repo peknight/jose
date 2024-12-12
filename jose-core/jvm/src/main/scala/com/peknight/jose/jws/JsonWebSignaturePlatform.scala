@@ -39,6 +39,20 @@ trait JsonWebSignaturePlatform { self: JsonWebSignature =>
   : F[Either[Error, Unit]] =
     JsonWebSignature.checkVerify(verify[F](key, configuration))
 
+  def checkWithPrimitives[F[_]: Sync](primitives: NonEmptyList[VerificationPrimitive])
+  : F[Either[Error, VerificationPrimitive]] =
+    check[F](primitives.head.key, primitives.head.configuration).flatMap {
+      case Right(_) => primitives.head.asRight[Error].pure[F]
+      case Left(error) =>
+        Monad[[X] =>> EitherT[F, Error, X]].tailRecM[List[VerificationPrimitive], VerificationPrimitive](primitives.tail) {
+          case head :: tail => EitherT(check(head.key, head.configuration).map {
+            case Right(_) => head.asRight[List[VerificationPrimitive]].asRight[Error]
+            case Left(_) => tail.asLeft[VerificationPrimitive].asRight[Error]
+          })
+          case Nil => error.lLiftET[F, Either[List[VerificationPrimitive], VerificationPrimitive]]
+        }.value
+    }
+
   def verifiedPayloadBytes[F[_]: Sync](key: Option[Key] = None,
                                        configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, ByteVector]] =
@@ -100,14 +114,5 @@ trait JsonWebSignaturePlatform { self: JsonWebSignature =>
   private def handleGetPayloadWithPrimitives[F[_]: Sync, A](primitives: NonEmptyList[VerificationPrimitive])
                                                            (decodePayload: Charset => Either[Error, A])
   : F[Either[Error, A]] =
-    handleVerifiedPayload[F, A](primitives.head.key, primitives.head.configuration)(decodePayload).flatMap {
-      case Right(value) => value.asRight[Error].pure[F]
-      case Left(error) => Monad[[X] =>> EitherT[F, Error, X]].tailRecM[List[VerificationPrimitive], A](primitives.tail) {
-        case head :: tail => EitherT(handleVerifiedPayload(head.key, head.configuration)(decodePayload).map {
-          case Right(value) => value.asRight[List[VerificationPrimitive]].asRight[Error]
-          case Left(error) => tail.asLeft[A].asRight[Error]
-        })
-        case Nil => error.lLiftET[F, Either[List[VerificationPrimitive], A]]
-      }.value
-    }
+    checkWithPrimitives[F](primitives).map(_.flatMap(primitive => decodePayload(primitive.configuration.charset)))
 }

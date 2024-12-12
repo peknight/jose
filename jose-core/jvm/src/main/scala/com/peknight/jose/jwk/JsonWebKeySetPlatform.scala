@@ -36,7 +36,7 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
         header <- structure.getMergedHeader.eLiftET[F]
         keys <- Monad[[X] =>> EitherT[F, Error, X]]
           .tailRecM[(List[JsonWebKey], List[JsonWebKey]), List[JsonWebKey]]((self.keys, Nil)) {
-            case (Nil, acc) => acc.asRight[(List[JsonWebKey], List[JsonWebKey])].rLiftET[F, Error]
+            case (Nil, acc) => acc.reverse.asRight[(List[JsonWebKey], List[JsonWebKey])].rLiftET[F, Error]
             case (jwk :: tail, acc) =>
               ((header.keyID.fold(true)(keyID => jwk.keyID.contains(keyID)) &&
                 header.algorithm.fold(true)(algorithm =>
