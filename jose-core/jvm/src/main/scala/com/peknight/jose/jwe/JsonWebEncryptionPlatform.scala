@@ -124,7 +124,7 @@ trait JsonWebEncryptionPlatform { self: JsonWebEncryption =>
     eitherT.value
 
   private def getAdditionalAuthenticatedData: Either[Error, ByteVector] =
-    self.additionalAuthenticatedData
-      .fold(getProtectedHeader)(_.asRight)
-      .flatMap(base => stringEncodeToBytes(base.value, StandardCharsets.US_ASCII))
+    self.additionalAuthenticatedData match
+      case Some(value) => value.decode[Id]
+      case None => getProtectedHeader.flatMap(base => stringEncodeToBytes(base.value, StandardCharsets.US_ASCII))
 }
