@@ -639,11 +639,11 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
         jws1 <- JsonWebSignature.parse(jwtCs1).eLiftET[IO]
         primitives1 <- EitherT(jwks.verificationPrimitives[IO](jws1))
         _ <- EitherT(jws1.check[IO](primitives1.head.key, primitives1.head.configuration))
-        jwt1 <- EitherT(JsonWebToken.getClaims[IO](jwtCs1)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwtCs1)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
         jws2 <- JsonWebSignature.parse(jwtCs2).eLiftET[IO]
         primitives2 <- EitherT(jwks.verificationPrimitives[IO](jws2))
         _ <- EitherT(jws2.check[IO](primitives2.head.key, primitives2.head.configuration))
-        jwt2 <- EitherT(JsonWebToken.getClaims[IO](jwtCs2)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwtCs2)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
       yield
         primitives1.length == 1 && primitives2.length == 1
     run.value.asserting(value => assert(value.getOrElse(false)))

@@ -22,7 +22,6 @@ import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.EncryptionAlgorithm
 import com.peknight.jose.jwa.signature.none
 import com.peknight.jose.jwk.{JsonWebKey, KeyId}
-import com.peknight.jose.jwt.JsonWebToken
 import com.peknight.jose.{base64UrlEncodePayloadLabel, memberNameMap}
 import com.peknight.security.cipher.{Asymmetric, Symmetric}
 import com.peknight.validation.std.either.isTrue
@@ -116,8 +115,6 @@ case class JoseHeader(
     )
 end JoseHeader
 object JoseHeader:
-  def jwtHeader(algorithm: JsonWebAlgorithm): JoseHeader =
-    JoseHeader(algorithm = Some(algorithm), `type` = Some(JsonWebToken.`type`))
   given codecJoseHeader[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
@@ -127,9 +124,7 @@ object JoseHeader:
       .withExtendedField("ext")
     Codec.derived[F, S, JoseHeader]
 
-  given jsonCodecJoseHeader[F[_]: Monad]: Codec[F, Json, Cursor[Json], JoseHeader] =
-    codecJoseHeader[F, Json]
+  given jsonCodecJoseHeader[F[_]: Monad]: Codec[F, Json, Cursor[Json], JoseHeader] = codecJoseHeader[F, Json]
 
-  given circeCodecJoseHeader: io.circe.Codec[JoseHeader] =
-    codec[JoseHeader]
+  given circeCodecJoseHeader: io.circe.Codec[JoseHeader] = codec[JoseHeader]
 end JoseHeader

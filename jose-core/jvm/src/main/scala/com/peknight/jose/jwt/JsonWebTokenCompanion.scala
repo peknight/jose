@@ -18,7 +18,7 @@ trait JsonWebTokenCompanion:
   def getClaims[F[_]: Async: Compression](jwt: String, configuration: JoseConfiguration = JoseConfiguration.default)
                                          (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
                                          (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
-  : F[Either[Error, JsonWebTokenClaims]] =
+  : F[Either[Error, (JsonWebTokenClaims, NonEmptyList[JsonWebStructure])]] =
     case class State(
                       hasSignature: Boolean = false,
                       hasEncryption: Boolean = false,
@@ -41,7 +41,7 @@ trait JsonWebTokenCompanion:
     Monad[[X] =>> EitherT[F, Error, X]]
       .tailRecM[
         (String, List[JsonWebStructure], State),
-        (JsonWebTokenClaims, String, NonEmptyList[JsonWebStructure], State)
+        (JsonWebTokenClaims, NonEmptyList[JsonWebStructure], String, State)
       ]((jwt, Nil, State())) {
         case (jwt, nested, state) =>
           for
@@ -58,12 +58,12 @@ trait JsonWebTokenCompanion:
                   case Left(error) =>
                     if configuration.liberalContentTypeHandling then (payload, nextNested, nextState).asLeft.rLiftET
                     else error.lLiftET.invalid(jwt, nested)
-                  case Right(jwtClaims) => (jwtClaims, jwt, NonEmptyList(structure, nested), nextState).asRight.rLiftET
+                  case Right(jwtClaims) => (jwtClaims, NonEmptyList(structure, nested), jwt, nextState).asRight.rLiftET
           yield
             res
       }
       .value
-      .map(_.flatMap { case (claims, jwt, nested, State(hasSignature, hasEncryption, hasSymmetricEncryption)) =>
+      .map(_.flatMap { case (claims, nested, jwt, State(hasSignature, hasEncryption, hasSymmetricEncryption)) =>
         if configuration.requireSignature && !hasSignature then
           InvalidJsonWebToken(jwt, nested.toList, Some(MissingSignature)).asLeft
         else if configuration.requireEncryption && !hasEncryption then
@@ -71,6 +71,6 @@ trait JsonWebTokenCompanion:
         else if configuration.requireIntegrity && !hasSignature && !hasSymmetricEncryption then
           InvalidJsonWebToken(jwt, nested.toList, Some(MissingIntegrity)).asLeft
         else
-          claims.asRight
+          (claims, nested).asRight
       })
 end JsonWebTokenCompanion

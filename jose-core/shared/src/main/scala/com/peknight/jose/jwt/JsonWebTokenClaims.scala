@@ -23,7 +23,8 @@ case class JsonWebTokenClaims(
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
                                ext: Option[JsonObject] = None
-                             ) extends ExtendedField
+                             ) extends ExtendedField:
+end JsonWebTokenClaims
 object JsonWebTokenClaims:
   private val memberNameMap: Map[String, String] =
     Map(
