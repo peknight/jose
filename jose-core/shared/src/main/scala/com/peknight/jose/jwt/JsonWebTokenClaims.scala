@@ -1,6 +1,8 @@
 package com.peknight.jose.jwt
 
-import cats.Monad
+import cats.syntax.functor.*
+import cats.{Monad, Show}
+import com.peknight.cats.instances.time.instant.given
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
@@ -9,10 +11,18 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
+import com.peknight.commons.time.syntax.temporal.{minus, plus}
+import com.peknight.error.Error
+import com.peknight.error.option.OptionEmpty
+import com.peknight.error.syntax.either.label
 import com.peknight.jose.jwx.ExtendedField
+import com.peknight.validation.collection.iterableOnce.either.{contains, interact}
+import com.peknight.validation.spire.math.interval.either.contains as intervalContains
 import io.circe.{Json, JsonObject}
+import spire.math.Interval
 
 import java.time.Instant
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 case class JsonWebTokenClaims(
                                issuer: Option[String] = None,
@@ -22,8 +32,28 @@ case class JsonWebTokenClaims(
                                notBefore: Option[Instant] = None,
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
-                               ext: Option[JsonObject] = None
+                               ext: JsonObject = JsonObject.empty
                              ) extends ExtendedField:
+  def expectedIssuers(expected: String*): Either[Error, Unit] =
+    issuer.toRight(OptionEmpty).flatMap(issuer => contains(issuer, expected)).label("issuer").as(())
+  def expectedSubjects(expected: String*): Either[Error, Unit] =
+    subject.toRight(OptionEmpty).flatMap(subject => contains(subject, expected)).label("subject").as(())
+  def acceptableAudiences(acceptable: String*): Either[Error, Unit] =
+    audience.toRight(OptionEmpty).flatMap(audience => interact(audience, acceptable)).label("audience").as(())
+  def requireExpirationTime: Either[Error, Unit] = expirationTime.toRight(OptionEmpty.label("expirationTime")).as(())
+  def requireNotBefore: Either[Error, Unit] = notBefore.toRight(OptionEmpty.label("notBefore")).as(())
+  def requireIssuedAt: Either[Error, Unit] = issuedAt.toRight(OptionEmpty.label("issuedAt")).as(())
+  def requireJwtID: Either[Error, Unit] = jwtID.toRight(OptionEmpty.label("jwtID")).as(())
+  def toInterval(allowedClockSkew: FiniteDuration = Duration.Zero): Interval[Instant] =
+    (expirationTime, notBefore) match
+      case (Some(expirationTime), Some(notBefore)) =>
+        Interval.openUpper(notBefore.minus(allowedClockSkew), expirationTime.plus(allowedClockSkew))
+      case (Some(expirationTime), None) => Interval.below(expirationTime.plus(allowedClockSkew))
+      case (None, Some(notBefore)) => Interval.atOrAbove(notBefore.minus(allowedClockSkew))
+      case _ => Interval.all
+  def checkTime(evaluationTime: Instant, allowedClockSkew: FiniteDuration = Duration.Zero): Either[Error, Unit] =
+    given Show[Instant] = Show.fromToString[Instant]
+    intervalContains(evaluationTime, toInterval(allowedClockSkew)).label("evaluationTime").as(())
 end JsonWebTokenClaims
 object JsonWebTokenClaims:
   private val memberNameMap: Map[String, String] =

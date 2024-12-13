@@ -42,7 +42,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): Either[Error, JsonWebKey] =
     key match
       case publicKey: PublicKey =>
@@ -66,7 +66,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): Either[Error, AsymmetricJsonWebKey] =
     fromPublicKey(keyPair.getPublic, Some(keyPair.getPrivate), otherPrimesInfo, curve, publicKeyUse, keyOperations,
       algorithm, keyID, x509URL, x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint,
@@ -86,7 +86,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): Either[Error, AsymmetricJsonWebKey] =
     publicKey match
       case ecPublicKey: ECPublicKey =>
@@ -119,7 +119,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): Either[Error, EllipticCurveJsonWebKey] =
     val ellipticCurve: EllipticCurve = ecPublicKey.getParams.getCurve
     for
@@ -156,7 +156,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): RSAJsonWebKey =
     RSAJsonWebKey(
       Base64UrlNoPad.fromByteVector(rsaPublicKey.rawModulus),
@@ -189,7 +189,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): OctetSequenceJsonWebKey =
     OctetSequenceJsonWebKey(
       Base64UrlNoPad.fromByteVector(ByteVector(key.getEncoded)),
@@ -215,7 +215,7 @@ trait JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ): Either[Error, OctetKeyPairJsonWebKey] =
     val either =
       publicKey match

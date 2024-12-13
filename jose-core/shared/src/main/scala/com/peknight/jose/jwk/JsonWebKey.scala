@@ -89,7 +89,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ) extends AsymmetricJsonWebKey with EllipticCurveJsonWebKeyPlatform:
     val keyType: KeyType = EllipticCurve
     def excludePrivate: EllipticCurveJsonWebKey = copy(eccPrivateKey = None)
@@ -115,7 +115,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ) extends AsymmetricJsonWebKey with RSAJsonWebKeyPlatform:
     val keyType: KeyType = RSA
     def excludePrivate: RSAJsonWebKey = copy(
@@ -140,7 +140,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ) extends JsonWebKey with OctetSequenceJsonWebKeyPlatform:
     val keyType: KeyType = OctetSequence
     def excludePrivate: JsonWebKey = this
@@ -168,7 +168,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
     x509CertificateChain: Option[NonEmptyList[Base64]] = None,
     x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
     x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
-    ext: Option[JsonObject] = None
+    ext: JsonObject = JsonObject.empty
   ) extends AsymmetricJsonWebKey with OctetKeyPairJsonWebKeyPlatform:
     val keyType: KeyType = OctetKeyPair
     def excludePrivate: OctetKeyPairJsonWebKey = copy(eccPrivateKey = None)

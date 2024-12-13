@@ -21,8 +21,8 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "plFol7FKJrN83mNAOpuss\",\"crv\":\"P-256\",\"meh\":\"just some value\",\"number\":860}"
     val flag = decode[Id, JsonWebKey](json).map{ jwk =>
       val json = encodeToJson(jwk)
-      jwk.ext.flatMap(_("meh")).flatMap(_.asString).contains("just some value") &&
-        jwk.ext.flatMap(_("number")).flatMap(_.asNumber).flatMap(_.toInt).contains(860) &&
+      jwk.ext("meh").flatMap(_.asString).contains("just some value") &&
+        jwk.ext("number").flatMap(_.asNumber).flatMap(_.toInt).contains(860) &&
         json.contains("\"meh\"") &&
         json.contains("\"just some value\"") &&
         json.contains("\"number\"") &&
@@ -38,12 +38,12 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        jwk = JsonWebKey.fromRSAKey(publicKey, ext = Some(JsonObject(name -> Json.fromString(value))))
+        jwk = JsonWebKey.fromRSAKey(publicKey, ext = JsonObject(name -> Json.fromString(value)))
         json = encodeToJson(jwk)
         decodedJwk <- decode[Id, RSAJsonWebKey](json).eLiftET[IO]
         decodedPublicKey <- EitherT(decodedJwk.toPublicKey[IO]())
       yield
-        jwk.ext.flatMap(_(name)).flatMap(_.asString).contains(value) &&
+        jwk.ext(name).flatMap(_.asString).contains(value) &&
           json.contains(s"\"$name\"") && json.contains(s"\"$value\"") &&
           publicKey == decodedPublicKey
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -62,7 +62,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         decodedJwk <- decode[Id, OctetSequenceJsonWebKey](encodedJson).eLiftET[IO]
         decodedKey <- decodedJwk.toKey.eLiftET[IO]
       yield
-        jwk.ext.flatMap(_(name)).flatMap(_.asString).contains(value) &&
+        jwk.ext(name).flatMap(_.asString).contains(value) &&
           encodedJson.contains(s"\"k\"") && encodedJson.contains(s"\"$name\"") && encodedJson.contains(s"\"$value\"") &&
           key == decodedKey
     run.value.asserting(value => assert(value.getOrElse(false)))

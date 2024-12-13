@@ -3,6 +3,7 @@ package com.peknight.jose.jwx
 import cats.Monad
 import cats.data.NonEmptyList
 import cats.syntax.either.*
+import cats.syntax.eq.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
 import com.peknight.codec.Decoder.decodeOptionAOU
@@ -16,7 +17,10 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
-import com.peknight.jose.error.UnrecognizedCriticalHeader
+import com.peknight.error.Error
+import com.peknight.error.option.OptionEmpty
+import com.peknight.error.syntax.either.{asError, label}
+import com.peknight.jose.error.{InvalidMediaType, UnrecognizedCriticalHeader}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.compression.CompressionAlgorithm
 import com.peknight.jose.jwa.encryption.EncryptionAlgorithm
@@ -26,7 +30,7 @@ import com.peknight.jose.{base64UrlEncodePayloadLabel, memberNameMap}
 import com.peknight.security.cipher.{Asymmetric, Symmetric}
 import com.peknight.validation.std.either.isTrue
 import io.circe.{Json, JsonObject}
-import org.http4s.Uri
+import org.http4s.{MediaType, Uri}
 
 case class JoseHeader(
                        algorithm: Option[JsonWebAlgorithm] = None,
@@ -51,7 +55,7 @@ case class JoseHeader(
                        pbes2Count: Option[Long] = None,
                        // rfc7797
                        base64UrlEncodePayload: Option[Boolean] = None,
-                       ext: Option[JsonObject] = None
+                       ext: JsonObject = JsonObject.empty
                      ) extends ExtendedField:
   def isBase64UrlEncodePayload: Boolean = base64UrlEncodePayload.getOrElse(true)
   def base64UrlEncodePayload(b64: Boolean): JoseHeader =
@@ -62,12 +66,10 @@ case class JoseHeader(
   end base64UrlEncodePayload
 
   def addExt(label: String, value: Json): JoseHeader =
-    copy(critical = addCritical(label),
-      ext = Some(ext.map(_.add(label, value)).getOrElse(JsonObject(label -> value)))
-    )
+    copy(critical = addCritical(label), ext = ext.add(label, value))
 
   def removeExt(label: String): JoseHeader =
-    copy(critical = removeCritical(label), ext = ext.map(_.remove(label)).filterNot(_.isEmpty))
+    copy(critical = removeCritical(label), ext = ext.remove(label))
 
   def checkCritical(knownCriticalHeaders: List[String]): Either[UnrecognizedCriticalHeader, Unit] =
     critical match
@@ -111,8 +113,28 @@ case class JoseHeader(
       that.pbes2SaltInput.orElse(this.pbes2SaltInput),
       that.pbes2Count.orElse(this.pbes2Count),
       that.base64UrlEncodePayload.orElse(this.base64UrlEncodePayload),
-      Option(this.ext.getOrElse(JsonObject.empty).deepMerge(that.ext.getOrElse(JsonObject.empty))).filter(_.nonEmpty),
+      this.ext.deepMerge(that.ext)
     )
+  def toMediaType: Either[Error, Option[MediaType]] =
+    `type`.fold(Right(None))(typ => JoseHeader.toMediaType(typ).map(Some.apply))
+
+  def requireType: Either[Error, Unit] = `type`.toRight(OptionEmpty.label("type")).as(())
+
+  def expectedType(expected: String): Either[Error, Unit] =
+    `type` match
+      case None => ().asRight
+      case Some(value) =>
+        val either =
+          for
+            typ <- `type`.toRight(OptionEmpty)
+            typ <- JoseHeader.toMediaType(typ)
+            exp <- JoseHeader.toMediaType(expected)
+            _ <- isTrue(typ.mainType === exp.mainType, InvalidMediaType(typ, exp))
+            _ <- isTrue(typ.subType === "*" || typ.subType === exp.subType, InvalidMediaType(typ, exp))
+          yield
+            ()
+        either.label("type")
+  end expectedType
 end JoseHeader
 object JoseHeader:
   given codecJoseHeader[F[_], S](using
@@ -127,4 +149,7 @@ object JoseHeader:
   given jsonCodecJoseHeader[F[_]: Monad]: Codec[F, Json, Cursor[Json], JoseHeader] = codecJoseHeader[F, Json]
 
   given circeCodecJoseHeader: io.circe.Codec[JoseHeader] = codec[JoseHeader]
+
+  def toMediaType(`type`: String): Either[Error, MediaType] =
+    MediaType.parse(if `type`.contains("/") then `type` else s"application/${`type`}").asError
 end JoseHeader

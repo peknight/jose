@@ -11,10 +11,8 @@ import com.peknight.codec.error.DecodingFailure
 import io.circe.{Json, JsonObject}
 
 trait ExtendedField:
-  def ext: Option[JsonObject]
+  def ext: JsonObject
   def decodeExt[F[_], A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[Json], A])
-  : F[Either[DecodingFailure, Option[A]]] =
-    ext.fold(none[A].asRight[DecodingFailure].pure[F])(ext =>
-      decoder.decodeS(Json.fromJsonObject(ext)).map(_.map(_.some))
-    )
+  : F[Either[DecodingFailure, A]] =
+      decoder.decodeS(Json.fromJsonObject(ext))
 end ExtendedField
