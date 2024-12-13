@@ -20,6 +20,7 @@ import com.peknight.jose.jwx.JoseHeader
 import com.peknight.jose.syntax.x509Certificate.base64UrlThumbprint
 import com.peknight.security.digest.{`SHA-1`, `SHA-256`}
 import com.peknight.validation.std.either.{isTrue, typed}
+import com.peknight.validation.std.option.typed as typedOption
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
@@ -531,7 +532,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
           keyID = Some(KeyId("1"))), "", empty)))
         keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES256),
           keyID = Some(KeyId("2"))), "", empty)))
-        ecJwk <- keys2.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+        ecJwk <- keys2.headOption.flatMap(jwk => typedOption[EllipticCurveJsonWebKey](jwk))
           .toRight(OptionEmpty.label("ecJwk")).eLiftET[IO]
       yield
         keys1.length == 1 && keys1.head.keyID.contains(KeyId("1")) &&
@@ -579,15 +580,15 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
           keyID = Some(KeyId("1"))), "", empty)))
         keys2 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES256),
           keyID = Some(KeyId("2"))), "", empty)))
-        ecJwk2 <- keys2.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+        ecJwk2 <- keys2.headOption.flatMap(jwk => typedOption[EllipticCurveJsonWebKey](jwk))
           .toRight(OptionEmpty.label("ecJwk2")).eLiftET[IO]
         keys3 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES512),
           keyID = Some(KeyId("2"))), "", empty)))
-        ecJwk3 <- keys3.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+        ecJwk3 <- keys3.headOption.flatMap(jwk => typedOption[EllipticCurveJsonWebKey](jwk))
           .toRight(OptionEmpty.label("ecJwk3")).eLiftET[IO]
         keys4 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(ES384),
           keyID = Some(KeyId("2"))), "", empty)))
-        ecJwk4 <- keys4.headOption.flatMap(jwk => typed[EllipticCurveJsonWebKey](jwk).toOption)
+        ecJwk4 <- keys4.headOption.flatMap(jwk => typedOption[EllipticCurveJsonWebKey](jwk))
           .toRight(OptionEmpty.label("ecJwk4")).eLiftET[IO]
         keys5 <- EitherT(jwks.filterForVerification[IO](JsonWebSignature(JoseHeader(Some(HS256)), "", empty)))
       yield

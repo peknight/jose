@@ -22,7 +22,7 @@ import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, JosePrimitive, Json
 import com.peknight.security.provider.Provider
 import com.peknight.security.signature.EdDSA
 import com.peknight.validation.collection.list.either.nonEmpty
-import com.peknight.validation.std.either.typed
+import com.peknight.validation.std.option.typed
 
 import java.security.{Key, Provider as JProvider}
 
@@ -42,11 +42,11 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
                 header.algorithm.fold(true)(algorithm =>
                   algorithm.keyType.fold(true)(keyType => keyType == jwk.keyType) &&
                     algorithm.keyType.filter(_ == EllipticCurve)
-                      .flatMap(_ => typed[EllipticCurveJsonWebKey](jwk).toOption)
-                      .flatMap(jwk => typed[ECDSA](algorithm).toOption.map(_.curve == jwk.curve))
+                      .flatMap(_ => typed[EllipticCurveJsonWebKey](jwk))
+                      .flatMap(jwk => typed[ECDSA](algorithm).map(_.curve == jwk.curve))
                       .getOrElse(true) &&
                     algorithm.keyType.filter(_ == OctetKeyPair)
-                      .flatMap(_ => typed[OctetKeyPairJsonWebKey](jwk).toOption)
+                      .flatMap(_ => typed[OctetKeyPairJsonWebKey](jwk))
                       .forall(_.curve.isInstanceOf[EdDSA]) &&
                     jwk.algorithm.forall(_ == algorithm)) &&
                 header.algorithm
