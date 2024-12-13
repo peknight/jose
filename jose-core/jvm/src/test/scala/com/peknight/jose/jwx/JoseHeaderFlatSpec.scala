@@ -9,7 +9,7 @@ class JoseHeaderFlatSpec extends AnyFlatSpec:
   "JoseHeader" should "succeed" in {
     val header = JoseHeader(
       algorithm = Some(HS256),
-      ext = Some(JsonObject("exp" -> Json.fromLong(1363284000)))
+      ext = JsonObject("exp" -> Json.fromLong(1363284000))
     )
     val json = encodeToJson(header)
     val decoded = decode[JoseHeader](json)
