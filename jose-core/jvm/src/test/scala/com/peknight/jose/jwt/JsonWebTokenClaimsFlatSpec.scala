@@ -218,8 +218,6 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "JsonWebTokenClaims" should "succeed with non integer numeric dates" in {
-    println(decode[Id, JsonWebTokenClaims]("{\"sub\":\"brain.d.campbell\",\"nbf\":1430602000.173,\"iat\":1430602060.5" +
-      ",\"exp\":1430602600.77}").left.map(_.message))
     assert(decode[Id, JsonWebTokenClaims]("{\"sub\":\"brain.d.campbell\",\"nbf\":1430602000.173,\"iat\":1430602060.5" +
       ",\"exp\":1430602600.77}").exists(jwtClaims =>
       jwtClaims.expirationTime.exists(_.compareTo(Instant.ofEpochSecond(1430602600)) == 0) &&
