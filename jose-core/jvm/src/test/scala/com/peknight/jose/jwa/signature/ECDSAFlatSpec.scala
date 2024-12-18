@@ -46,7 +46,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         backToConcated <- convertDERToConcatenated(derEncoded, capacity)
       yield
         !(derEncoded === concatedBytes) && concatedBytes === backToConcated
-    IO.unit.asserting(_ => assert(either.getOrElse(false)))
+    assert(either.getOrElse(false))
   }
 
   "ECDSA Algorithm" should "succeed with simple concatenation with length" in {
@@ -58,7 +58,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         concatenated <- convertDERToConcatenated(der, outputLength)
       yield
         outputLength == concatenated.length && concatenated(7) == noPad(0) && concatenated(15) == noPad(1)
-    IO.unit.asserting(_ => assert(either.getOrElse(false)))
+    assert(either.getOrElse(false))
   }
 
   "ECDSA Algorithm" should "succeed with simple concatenation with diff lengths" in {
@@ -73,7 +73,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         val first = concatenated.leftHalf
         val second = concatenated.rightHalf
         outputLength == concatenated.length && a === first && b === second
-    IO.unit.asserting(_ => assert(either.getOrElse(false)))
+    assert(either.getOrElse(false))
   }
 
   "ECDSA Algorithm" should "succeed with simple concatenation with very diff lengths" in {
@@ -88,7 +88,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         val first = concatenated.leftHalf
         val second = concatenated.rightHalf
         outputLength == concatenated.length && a === first && b === second
-    IO.unit.asserting(_ => assert(either.getOrElse(false)))
+    assert(either.getOrElse(false))
   }
 
   "ECDSA Algorithm" should "succeed with too short previously" in {
@@ -104,7 +104,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         concatenated <- convertDERToConcatenated(der, outputLength)
       yield
         outputLength == concatenated.length && concatenated(0) == 0 && concatenated(66) == 0
-    IO.unit.asserting(_ => assert(either.getOrElse(false)))
+    assert(either.getOrElse(false))
   }
 
   "ECDSA Algorithm" should "succeed with backward compatibility" in {

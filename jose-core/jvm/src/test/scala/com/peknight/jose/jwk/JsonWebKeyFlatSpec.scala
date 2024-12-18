@@ -165,11 +165,11 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "JsonWebKey" should "failed with handle wrong type 1" in {
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKey]("""{"kty":1}""").isLeft))
+    assert(decode[Id, JsonWebKey]("""{"kty":1}""").isLeft)
   }
 
   "JsonWebKey" should "failed with handle wrong type 2" in {
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKey](
+    assert(decode[Id, JsonWebKey](
       s"""
          |{
          |  "kty":"RSA",
@@ -178,11 +178,11 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |  "alg":"RS256"
          |}
       """.stripMargin
-    ).isLeft))
+    ).isLeft)
   }
 
   "JsonWebKey" should "failed with handle wrong type 3" in {
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKey](
+    assert(decode[Id, JsonWebKey](
       s"""
          |{ "kty":"EC",
          |  "crv":"P-256",
@@ -192,11 +192,11 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |  "kid":"1"
          |}
       """.stripMargin
-    ).isLeft))
+    ).isLeft)
   }
 
   "JsonWebKey" should "failed with handle wrong type 4" in {
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKey](
+    assert(decode[Id, JsonWebKey](
       s"""
          |{
          |  "kty":"EC",
@@ -206,6 +206,6 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |  "kid":"1s"
          |}
       """.stripMargin
-    ).isLeft))
+    ).isLeft)
   }
 end JsonWebKeyFlatSpec

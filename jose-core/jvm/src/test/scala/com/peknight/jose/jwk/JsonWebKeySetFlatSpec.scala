@@ -61,7 +61,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |  ]
          |}
       """.stripMargin
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](json).map(_.keys.size == 3).getOrElse(false)))
+    assert(decode[Id, JsonWebKeySet](json).map(_.keys.size == 3).getOrElse(false))
   }
 
   "JsonWebKeySet" should "succeed with one unknown key type" in {
@@ -99,7 +99,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |  ]
          |}
       """.stripMargin
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](json).map(_.keys.length == 3).getOrElse(false)))
+    assert(decode[Id, JsonWebKeySet](json).map(_.keys.length == 3).getOrElse(false))
   }
 
   "JsonWebKeySet" should "succeed with parse example public keys" in {
@@ -131,7 +131,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
          |    ]
          |}
       """.stripMargin
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](jwkJson).map { jwkSet =>
+    assert(decode[Id, JsonWebKeySet](jwkJson).map { jwkSet =>
       val flag1 =
         jwkSet.keys match
           case (first: EllipticCurveJsonWebKey) :: (second: RSAJsonWebKey) :: Nil => true
@@ -152,7 +152,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       val flag5 =
         encodeToJson(jwkSet).contains("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx")
       flag1 && flag2 && flag3 && flag4 && flag5
-    }.getOrElse(false)))
+    }.getOrElse(false))
   }
 
   "JsonWebKeySet" should "succeed with parse example private keys" in {
@@ -175,7 +175,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "G8Ibp1BUb0JUiraRNqUfLhcQb_d9GF4Dh7e74WbRsobRonujTYN1xCaP6TO61jvWrX-L18txXw494Q_cgk\",\"qi\":\"GyM_p6JrXySiz1t" +
       "oFgKbWV-JdI3jQ4ypu9rbMWx3rQJBfmt0FoYzgUIZEVFEcOqwemRN81zoDAaa-Bk0KWNGDjJHZDdDmFhW3AN7lI-puxk_mHZGJ11rxyR8O55X" +
       "LSe3SPmRfKwZI6yU24ZxvQKFYItdldUKGzO6Ia6zTKhAVRU\",\"alg\":\"RS256\",\"kid\":\"2011-04-29\"}]}"
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](jwkJson).map { jwkSet =>
+    assert(decode[Id, JsonWebKeySet](jwkJson).map { jwkSet =>
       val flag1 =
         jwkSet.keys match
           case (first: EllipticCurveJsonWebKey) :: (second: RSAJsonWebKey) :: Nil => true
@@ -196,7 +196,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       val flag5 =
         encodeToJson(jwkSet).contains("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx")
       flag1 && flag2 && flag3 && flag4 && flag5
-    }.getOrElse(false)))
+    }.getOrElse(false))
   }
 
   "JsonWebKeySet" should "succeed with parse example symmetric keys" in {
@@ -392,7 +392,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         |    ]
         |}
       """.stripMargin
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](json).map(_.keys.length == 3).getOrElse(false)))
+    assert(decode[Id, JsonWebKeySet](json).map(_.keys.length == 3).getOrElse(false))
   }
 
   "JsonWebKeySet" should "succeed with okps ok" in {
@@ -443,12 +443,12 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         |    ]
         |}
       """.stripMargin
-    IO.unit.asserting(_ => assert(
+    assert(
       decode[Id, JsonWebKeySet](json)
         .map(_.keys.length)
         .map(length => 2 <= length && length <= 6)
         .getOrElse(false)
-    ))
+    )
   }
 
   /*
@@ -534,6 +534,6 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         json = encodeToJson(jsonWebKeySet)
       yield
         jsonWebKeySet.keys.length == 2 && !json.contains("=")
-    IO.unit.asserting(_ => assert(run.getOrElse(false)))
+    assert(run.getOrElse(false))
   }
 end JsonWebKeySetFlatSpec

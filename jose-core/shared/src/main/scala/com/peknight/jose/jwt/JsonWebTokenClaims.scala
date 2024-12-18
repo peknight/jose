@@ -56,15 +56,24 @@ case class JsonWebTokenClaims(
     intervalContains(evaluationTime, toInterval(allowedClockSkew)).label("evaluationTime").as(())
 end JsonWebTokenClaims
 object JsonWebTokenClaims:
+  val issuerLabel: String = "iss"
+  val subjectLabel: String = "sub"
+  val audienceLabel: String = "aud"
+  val expirationTimeLabel: String = "exp"
+  val notBeforeLabel: String = "nbf"
+  val issuedAtLabel: String = "iat"
+  val jwtIDLabel: String = "jti"
+  val initialRegisteredClaimNames: Set[String] =
+    Set(issuerLabel, subjectLabel, audienceLabel, expirationTimeLabel, notBeforeLabel, issuedAtLabel, jwtIDLabel)
   private val memberNameMap: Map[String, String] =
     Map(
-      "issuer" -> "iss",
-      "subject" -> "sub",
-      "audience" -> "aud",
-      "expirationTime" -> "exp",
-      "notBefore" -> "nbf",
-      "issuedAt" -> "iat",
-      "jwtID" -> "jti",
+      "issuer" -> issuerLabel,
+      "subject" -> subjectLabel,
+      "audience" -> audienceLabel,
+      "expirationTime" -> expirationTimeLabel,
+      "notBefore" -> notBeforeLabel,
+      "issuedAt" -> issuedAtLabel,
+      "jwtID" -> jwtIDLabel,
     )
 
   given codecJsonWebTokenClaims[F[_], S](using

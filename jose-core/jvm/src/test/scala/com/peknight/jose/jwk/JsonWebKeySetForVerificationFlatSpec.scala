@@ -452,7 +452,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
       "Rug9I0TnhVuMZW3ylhsPxus3Iu70nCQbOdsoBCobNzm6RaLUsz6LjRa2mvLMHeG1CP5rGWiv5GwBU8DNuUf_uPWXMe9K3i3E27nm4NnwDcOMP" +
       "ETpr6PLB2h4iXsHrKGLIFPdoPx_TIcrbj7RR9vWtrkj1pHt2OnJy5cFmXXRc77SZw0qRouVD0cqiS0XPHTaoFgmFr1x7NdbENxMJZJ-VPaIqN" +
       "0ht2tFX5oOCClhNjBTKc2U-c-b32ETtUnNUu1kHafS-V0qsobmy-Cq_gyyQY2w\",\"exp\":\"AQAB\",\"user\":\"sig\"}]}"
-    IO.unit.asserting(_ => assert(decode[Id, JsonWebKeySet](json).map(_.keys.isEmpty).getOrElse(false)))
+    assert(decode[Id, JsonWebKeySet](json).map(_.keys.isEmpty).getOrElse(false))
   }
 
   "JsonWebKeySetForVerification" should "succeed with unique kid and x5t test thinktecture jwks end point" in {

@@ -1,10 +1,25 @@
 package com.peknight.jose.jwt
 
 import cats.Id
-import com.peknight.codec.circe.parser.decode
-import org.scalatest.flatspec.AnyFlatSpec
+import com.peknight.cats.instances.time.instant.given
+import cats.syntax.order.*
+import cats.effect.IO
+import cats.effect.testing.scalatest.AsyncIOSpec
+import com.peknight.commons.time.syntax.temporal.{minus, plus}
+import com.peknight.cats.effect.ext.Clock
 
-class JsonWebTokenClaimsFlatSpec extends AnyFlatSpec:
+import scala.concurrent.duration.*
+import com.peknight.jose.jwx.encodeToJson
+import com.peknight.codec.base.Base64UrlNoPad
+import com.peknight.codec.circe.parser.decode
+import io.circe.parser.decode as circeDecode
+import com.peknight.jose.jwa.encryption.randomBytes
+import io.circe.JsonObject
+import org.scalatest.flatspec.AsyncFlatSpec
+
+import java.time.Instant
+
+class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebTokenClaims" should "failed with get bad issuer" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"iss":{"name":"value"}}""").isLeft)
   }
@@ -58,9 +73,126 @@ class JsonWebTokenClaimsFlatSpec extends AnyFlatSpec:
   }
   "JsonWebTokenClaims" should "succeed with get jwt id" in {
     val jwtId = "Xk9c2inNN8fFs60epZil3"
-    assert(decode[Id, JsonWebTokenClaims](s"""{"jti":"$jwtId"}""").exists(_.jwtID.contains(jwtId)))
+    assert(decode[Id, JsonWebTokenClaims](s"""{"jti":"$jwtId"}""").exists(_.jwtID.contains(JwtId(jwtId))))
   }
   "JsonWebTokenClaims" should "failed with bad jwt id" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"jti":["nope", "not", "good"]}""").isLeft)
+  }
+  "JsonWebTokenClaims" should "succeed with generate and get jwt" in {
+    randomBytes[IO](16)
+      .map(bytes => JsonWebTokenClaims(jwtID = Some(JwtId(Base64UrlNoPad.fromByteVector(bytes).value))))
+      .asserting(jwtClaims => assert(
+        jwtClaims.jwtID.exists(_.value.length == 22) &&
+          jwtClaims.copy(jwtID = Some(JwtId("igotyourjtirighthere"))).jwtID.exists(_.value == "igotyourjtirighthere")
+      ))
+  }
+  "JsonWebTokenClaims" should "succeed with get null expiration time" in {
+    assert(decode[Id, JsonWebTokenClaims](s"""{"right":123456781}""").exists(_.expirationTime.isEmpty))
+  }
+  "JsonWebTokenClaims" should "succeed with get expiration time" in {
+    val exp = 1418823169
+    assert(decode[Id, JsonWebTokenClaims](s"""{"exp":$exp}""").exists(_.expirationTime.exists(_.getEpochSecond == exp)))
+  }
+  "JsonWebTokenClaims" should "failed with get bad expiration time" in {
+    assert(decode[Id, JsonWebTokenClaims](s"""{"exp":"nope"}""").isLeft)
+  }
+  "JsonWebTokenClaims" should "succeed with get null not before" in {
+    assert(decode[Id, JsonWebTokenClaims](s"""{"right":123456781}""").exists(_.notBefore.isEmpty))
+  }
+  "JsonWebTokenClaims" should "succeed with get not before" in {
+    val nbf = 1418823169
+    assert(decode[Id, JsonWebTokenClaims](s"""{"nbf":$nbf}""").exists(_.notBefore.exists(_.getEpochSecond == nbf)))
+  }
+  "JsonWebTokenClaims" should "failed with get bad not before" in {
+    assert(decode[Id, JsonWebTokenClaims](s"""{"nbf":["nope", "not", "good"]}""").isLeft)
+  }
+  "JsonWebTokenClaims" should "succeed with get null issued at" in {
+    assert(decode[Id, JsonWebTokenClaims](s"""{"right":123456781, "wrong":123452781}""").exists(_.issuedAt.isEmpty))
+  }
+  "JsonWebTokenClaims" should "succeed with get issued at" in {
+    val iat = 1418823169
+    assert(decode[Id, JsonWebTokenClaims](s"""{"iat":$iat}""").exists(_.issuedAt.exists(_.getEpochSecond == iat)))
+  }
+  "JsonWebTokenClaims" should "failed with get bad issued at" in {
+    assert(decode[Id, JsonWebTokenClaims](s"""{"iat":"not"}""").isLeft)
+  }
+  "JsonWebTokenClaims" should "succeed with basic create" in {
+    val json = encodeToJson(JsonWebTokenClaims(
+      issuer = Some("issuer"),
+      subject = Some("subject"),
+      audience = Some(Set("audience")),
+      expirationTime = Some(Instant.ofEpochSecond(231458800)),
+      notBefore = Some(Instant.ofEpochSecond(231459600)),
+      issuedAt = Some(Instant.ofEpochSecond(231459000)),
+      jwtID = Some(JwtId("id"))
+    ))
+    assert(json.contains(""""iss":"issuer""""))
+    assert(json.contains(""""aud":"audience""""))
+    assert(json.contains(""""sub":"subject""""))
+    assert(json.contains(""""jti":"id""""))
+    assert(json.contains(""""exp":231458800"""))
+    assert(json.contains(""""iat":231459000"""))
+    assert(json.contains(""""nbf":231459600"""))
+  }
+
+  "JsonWebTokenClaims" should "succeed with testing audience" in {
+    assert(encodeToJson(JsonWebTokenClaims(audience = Some(Set("audience")))).contains(""""aud":"audience""""))
+    assert(encodeToJson(JsonWebTokenClaims(audience = Some(Set("audience1", "audience2", "outlier"))))
+      .contains(""""aud":["audience1","audience2","outlier"]"""))
+    assert(encodeToJson(JsonWebTokenClaims(audience = Some(Set("one", "two", "three"))))
+      .contains(""""aud":["one","two","three"]"""))
+    assert(encodeToJson(JsonWebTokenClaims()) == "{}")
+  }
+
+  "JsonWebTokenClaims" should "succeed with create with helpers" in {
+    val run =
+      for
+        bytes <- randomBytes[IO](16)
+        now <- Clock.realTimeInstant[IO]
+      yield
+        (encodeToJson(JsonWebTokenClaims(
+          issuer = Some("issuer"),
+          subject = Some("subject"),
+          audience = Some(Set("audience")),
+          expirationTime = Some(now.plus(10.minutes)),
+          notBefore = Some(now.minus(5.minutes)),
+          issuedAt = Some(now),
+          jwtID = Some(JwtId(Base64UrlNoPad.fromByteVector(bytes).value))
+        )), now)
+    run.asserting((json, now) => assert(
+      json.contains(""""iss":"issuer"""") &&
+        json.contains(""""aud":"audience"""") &&
+        json.contains(""""sub":"subject"""") &&
+        json.contains(""""jti":"""") &&
+        json.contains(""""exp":""") &&
+        json.contains(""""iat":""") &&
+        json.contains(""""nbf":""") &&
+        decode[Id, JsonWebTokenClaims](json).exists(
+          jwtClaims => jwtClaims.jwtID.exists(_.value.length == 22) &&
+            jwtClaims.notBefore.exists(nbf => nbf <= now.minus(300000.millis) && nbf > now.minus(302000.millis)) &&
+            jwtClaims.issuedAt.exists(iat => iat < now.plus(100.millis) && now.minus(2000.millis) < iat) &&
+            jwtClaims.expirationTime.exists(exp => exp > now.plus(598000.millis) && exp < now.plus(600000.millis))
+        )
+    ))
+  }
+
+  "JsonWebTokenClaims" should "succeed with set expiration time in the future part of minute" in {
+    Clock.realTimeInstant[IO].asserting { now =>
+      val json = encodeToJson(JsonWebTokenClaims(expirationTime = Some(now.plus(0.167.minutes))))
+      assert(decode[Id, JsonWebTokenClaims](json).exists(jwtClaims => jwtClaims.expirationTime.exists(exp =>
+        now < exp && now.plus(9.seconds) < exp && now.plus(11.seconds) >= exp
+      )))
+    }
+  }
+
+  "JsonWebTokenClaims" should "succeed with get claims map" in {
+    val json = "{\"sub\":\"subject\",\"aud\":\"audience\",\"iss\":\"issuer\",\"jti\":\"mz3uxaCcLmQ2cwAV3oJxEQ\",\"ex" +
+      "p\":1418906607,\"email\":\"user@somewhere.io\", \"name\":\"Joe User\", \"someclaim\":\"yup\"}"
+    assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => circeDecode[JsonObject](encodeToJson(jwtClaims)))
+      .exists(jsonObject =>
+        jsonObject.filterKeys(key => !JsonWebTokenClaims.initialRegisteredClaimNames.contains(key)).size == 3 &&
+          jsonObject.size == 8 &&
+          jsonObject.filterKeys(key => key != JsonWebTokenClaims.audienceLabel).size == 7
+      ))
   }
 end JsonWebTokenClaimsFlatSpec

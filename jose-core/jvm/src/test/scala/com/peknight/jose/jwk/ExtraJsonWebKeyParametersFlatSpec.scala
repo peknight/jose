@@ -28,7 +28,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         json.contains("\"number\"") &&
         json.contains("860")
     }.isRight
-    IO.unit.asserting(_ => assert(flag))
+    assert(flag)
   }
 
   "JsonWebKey" should "succeed with key with custom params" in {

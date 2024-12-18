@@ -15,7 +15,7 @@ import scodec.bits.ByteVector
 
 class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ConcatKeyDerivationFunction" should "succeed with get reps" in {
-    IO.unit.asserting(_ => assert(
+    assert(
       ConcatKeyDerivationFunction.getReps(256, 256) == 1 &&
         ConcatKeyDerivationFunction.getReps(384, 256) == 2 &&
         ConcatKeyDerivationFunction.getReps(512, 256) == 2 &&
@@ -23,7 +23,7 @@ class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec
         ConcatKeyDerivationFunction.getReps(1032, 256) == 5 &&
         ConcatKeyDerivationFunction.getReps(2048, 256) == 8 &&
         ConcatKeyDerivationFunction.getReps(2056, 256) == 9
-    ))
+    )
   }
 
   "ConcatKeyDerivationFunction" should "succeed with get data length data" in {
