@@ -1,6 +1,7 @@
 package com.peknight.jose.jwt
 
 import cats.Id
+import cats.syntax.eq.*
 import com.peknight.cats.instances.time.instant.given
 import cats.syntax.order.*
 import cats.effect.IO
@@ -194,5 +195,36 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           jsonObject.size == 8 &&
           jsonObject.filterKeys(key => key != JsonWebTokenClaims.audienceLabel).size == 7
       ))
+  }
+
+  "JsonWebTokenClaims" should "succeed with decodeExt" in {
+    case class Claims(`string`: String, array: List[String])
+    import com.peknight.codec.configuration.given
+    import com.peknight.codec.circe.sum.jsonType.given
+    val json = """{"string":"a value","array":["one","two","three"]}"""
+    assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => jwtClaims.decodeExt[Id, Claims])
+      .exists(claims => claims.`string` == "a value" && claims.array === List("one", "two", "three")))
+  }
+
+  "JsonWebTokenClaims" should "succeed with simple claims example from draft" in {
+    import com.peknight.codec.configuration.given
+    import com.peknight.codec.circe.sum.jsonType.given
+    val json = """{"iss":"joe","exp":1300819380,"http://example.com/is_root":true}"""
+    assert(decode[Id, JsonWebTokenClaims](json).exists(jwtClaims =>
+      jwtClaims.issuer.contains("joe") &&
+        jwtClaims.expirationTime.exists(_.compareTo(Instant.ofEpochSecond(1300819380)) == 0)
+        jwtClaims.decodeExt[Id, Map[String, Boolean]].exists(ext => ext.getOrElse("http://example.com/is_root", false))
+    ))
+  }
+
+  "JsonWebTokenClaims" should "succeed with non integer numeric dates" in {
+    println(decode[Id, JsonWebTokenClaims]("{\"sub\":\"brain.d.campbell\",\"nbf\":1430602000.173,\"iat\":1430602060.5" +
+      ",\"exp\":1430602600.77}").left.map(_.message))
+    assert(decode[Id, JsonWebTokenClaims]("{\"sub\":\"brain.d.campbell\",\"nbf\":1430602000.173,\"iat\":1430602060.5" +
+      ",\"exp\":1430602600.77}").exists(jwtClaims =>
+      jwtClaims.expirationTime.exists(_.compareTo(Instant.ofEpochSecond(1430602600)) == 0) &&
+        jwtClaims.issuedAt.exists(_.compareTo(Instant.ofEpochSecond(1430602060)) == 0) &&
+        jwtClaims.notBefore.exists(_.compareTo(Instant.ofEpochSecond(1430602000)) == 0)
+    ))
   }
 end JsonWebTokenClaimsFlatSpec

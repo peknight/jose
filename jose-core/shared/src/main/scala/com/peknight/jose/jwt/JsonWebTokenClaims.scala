@@ -7,6 +7,7 @@ import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.instances.time.instant.codecInstantOfEpochSecondNS
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
@@ -89,11 +90,7 @@ object JsonWebTokenClaims:
     given CodecConfiguration = CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withExtendedField("ext")
-    given Codec[F, S, Cursor[S], Instant] =
-      Codec[F, S, Cursor[S], Instant](using
-        Encoder[F, S, Long].contramap[Instant](_.getEpochSecond),
-        Decoder[F, Cursor[S], Long].map[Instant](Instant.ofEpochSecond)
-      )
+    given Codec[F, S, Cursor[S], Instant] = codecInstantOfEpochSecondNS[F, S]
     given Codec[F, S, Cursor[S], Set[String]] =
       Codec.cursor[F, S, Set[String]] { a =>
         if a.size == 1 then
