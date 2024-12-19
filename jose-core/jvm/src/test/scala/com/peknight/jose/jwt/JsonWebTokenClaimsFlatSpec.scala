@@ -1,24 +1,23 @@
 package com.peknight.jose.jwt
 
 import cats.Id
-import cats.syntax.eq.*
-import com.peknight.cats.instances.time.instant.given
-import cats.syntax.order.*
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.commons.time.syntax.temporal.{minus, plus}
+import cats.syntax.eq.*
+import cats.syntax.order.*
 import com.peknight.cats.effect.ext.Clock
-
-import scala.concurrent.duration.*
-import com.peknight.jose.jwx.encodeToJson
+import com.peknight.cats.instances.time.instant.given
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
-import io.circe.parser.decode as circeDecode
+import com.peknight.codec.circe.sum.jsonType.given
+import com.peknight.commons.time.syntax.temporal.{minus, plus}
 import com.peknight.jose.jwa.encryption.randomBytes
+import com.peknight.jose.jwx.encodeToJson
 import io.circe.JsonObject
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.time.Instant
+import scala.concurrent.duration.*
 
 class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebTokenClaims" should "failed with get bad issuer" in {
@@ -189,7 +188,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebTokenClaims" should "succeed with get claims map" in {
     val json = "{\"sub\":\"subject\",\"aud\":\"audience\",\"iss\":\"issuer\",\"jti\":\"mz3uxaCcLmQ2cwAV3oJxEQ\",\"ex" +
       "p\":1418906607,\"email\":\"user@somewhere.io\", \"name\":\"Joe User\", \"someclaim\":\"yup\"}"
-    assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => circeDecode[JsonObject](encodeToJson(jwtClaims)))
+    assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => decode[Id, JsonObject](encodeToJson(jwtClaims)))
       .exists(jsonObject =>
         jsonObject.filterKeys(key => !JsonWebTokenClaims.initialRegisteredClaimNames.contains(key)).size == 3 &&
           jsonObject.size == 8 &&
@@ -199,20 +198,19 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
   "JsonWebTokenClaims" should "succeed with decodeExt" in {
     case class Claims(`string`: String, array: List[String])
-    import com.peknight.codec.configuration.given
     import com.peknight.codec.circe.sum.jsonType.given
+    import com.peknight.codec.configuration.given
     val json = """{"string":"a value","array":["one","two","three"]}"""
     assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => jwtClaims.decodeExt[Id, Claims])
       .exists(claims => claims.`string` == "a value" && claims.array === List("one", "two", "three")))
   }
 
   "JsonWebTokenClaims" should "succeed with simple claims example from draft" in {
-    import com.peknight.codec.configuration.given
     import com.peknight.codec.circe.sum.jsonType.given
     val json = """{"iss":"joe","exp":1300819380,"http://example.com/is_root":true}"""
     assert(decode[Id, JsonWebTokenClaims](json).exists(jwtClaims =>
       jwtClaims.issuer.contains("joe") &&
-        jwtClaims.expirationTime.exists(_.compareTo(Instant.ofEpochSecond(1300819380)) == 0)
+        jwtClaims.expirationTime.exists(_ === Instant.ofEpochSecond(1300819380)) &&
         jwtClaims.decodeExt[Id, Map[String, Boolean]].exists(ext => ext.getOrElse("http://example.com/is_root", false))
     ))
   }
@@ -220,9 +218,9 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebTokenClaims" should "succeed with non integer numeric dates" in {
     assert(decode[Id, JsonWebTokenClaims]("{\"sub\":\"brain.d.campbell\",\"nbf\":1430602000.173,\"iat\":1430602060.5" +
       ",\"exp\":1430602600.77}").exists(jwtClaims =>
-      jwtClaims.expirationTime.exists(_.compareTo(Instant.ofEpochSecond(1430602600)) == 0) &&
-        jwtClaims.issuedAt.exists(_.compareTo(Instant.ofEpochSecond(1430602060)) == 0) &&
-        jwtClaims.notBefore.exists(_.compareTo(Instant.ofEpochSecond(1430602000)) == 0)
+      jwtClaims.expirationTime.exists(_ === Instant.ofEpochMilli(1430602600770L)) &&
+        jwtClaims.issuedAt.exists(_ === Instant.ofEpochMilli(1430602060500L)) &&
+        jwtClaims.notBefore.exists(_ === Instant.ofEpochMilli(1430602000173L))
     ))
   }
 end JsonWebTokenClaimsFlatSpec
