@@ -78,4 +78,41 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwtClaims.subject.contains(subjectValue)
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
+
+  "Googles Too Small Key" should "succeed after they moved to 2048" in {
+    // endpoints mentioned were found at https://accounts.google.com/.well-known/openid-configuration
+    // JWKS content from https://www.googleapis.com/oauth2/v3/certs on July 8, 2015
+    val jwksJson = "{\"keys\":[{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"e53139984bd36d2c23055244" +
+      "1608cc0b5179487a\",\"n\":\"w5F_3au2fyRLapW4K1g0zT6hjF-co8hjHJWniH3aBOKP45xuSRYXnPrpBHkXM6jFkVHs2pCFAOg6o0tl65" +
+      "iRCcf3hOAI6VOIXjMCJqxNap0-j_lJ6Bc6TBKgX3XD96iEI92iaxn_UIVZ_SpPrbPVyRmH0P7B6oDkwFpApviJRtQzv1F6uyh9W_sNnEZrCZD" +
+      "cs5lL5Xa_44-EkhVNz8yGZmAz9d04htNU7xElmXKs8fRdospyv380WeaWFoNJpc-3ojgRus26jvPy8Oc-d4M5yqs9mI72-1G0zbGVFI_PfxZR" +
+      "L8YdFAIZLg44zGzL2M7pFmagJ7Aj46LUb3p_n9V1NQ\",\"e\":\"AQAB\"},{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig" +
+      "\",\"kid\":\"bc8a31927af20860418f6b2231bbfd7ebcc04665\",\"n\":\"ucGr4fFCJYGVUwHYWAtBNclebyhMjALOTUmmAXdMrCIOg" +
+      "T8TxBEn5oXCrszWX7RoC37nFqc1GlMorfII19qMwHdC_iskju3Rh-AuHr29zkDpYIuh4lRW0xJ0Xyo2Iw4PlV9qgqPJLfkmE5V-sr5RxZNe0T" +
+      "1jyYaOGIJ5nF3WbDkgYW4GNHXhv-5tOwWLThJRtH_n6wtYqsBwqAdVX-EVbkyZvYeOzbiNiop7bDM5Td6ER1oCBC4NZjvjdmnOh8-_x6vB449" +
+      "jL5IRAOIIv8NW9dLtQd2DescZOw46HZjWO-zwyhjQeYY87R93yM9yivJdfrjQxydgEs8Ckh03NDATmQ\",\"e\":\"AQAB\"}]}"
+    // an ID token from making an openid request to https://accounts.google.com/o/oauth2/v2/auth
+    val jwt = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImJjOGEzMTkyN2FmMjA4NjA0MThmNmIyMjMxYmJmZDdlYmNjMDQ2NjUifQ.eyJpc3MiOiJhY2" +
+      "NvdW50cy5nb29nbGUuY29tIiwic3ViIjoiMTA5MzM5ODA3NjQ3Nzc3MzkzOTYxIiwiYXpwIjoiMTA3ODQ0OTAyOTY4Ni5hcHBzLmdvb2dsZXV" +
+      "zZXJjb250ZW50LmNvbSIsImF1ZCI6IjEwNzg0NDkwMjk2ODYuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJpYXQiOjE0MzYzODUzMzYs" +
+      "ImV4cCI6MTQzNjM4ODkzNn0.B8jAoYKnsN0Xy62VjBXIrk5B-3ZdbQNt_qzndhlOJXpo4W0C1Q4BvC8YjFc2k6T1qNuehfSrO9xvm-BQGAXRy" +
+      "uQSZPpcQOtP2_LR39oYpnBgDwGKxTdJwAHTIoYTti1R1o-sAkMk-dt4lP45RbUXJEKST0RLKe9RdjNKLtcg62wSvVuLwaqRYyIRWK3Tb8aRA3" +
+      "Eay8uUe8Llk5qJ-1E1pSOscvlYF6EVNkafKBa4jC5utAu5WwvdDoMFz3ZPOzNnhQsjOdxtnAjN3mI9EWNALUsLrdY54-O0JnVJGywKEnwfeDB" +
+      "cUClt_ZBwV-Rl8WMv8TWZRJ8SWywnYi2gaBnaPw"
+    val run =
+      for
+        jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt)(jwks.verificationPrimitives)(
+          jwks.decryptionPrimitives
+        ))
+        _ <- jwtClaims.requireExpirationTime.eLiftET[IO]
+        _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1436388930L)).eLiftET[IO]
+        _ <- jwtClaims.requireSubject.eLiftET[IO]
+        _ <- jwtClaims.expectedIssuers(issuer).eLiftET[IO]
+        // borrowed a bitbucket client id
+        _ <- jwtClaims.acceptableAudiences("1078449029686.apps.googleusercontent.com").eLiftET[IO]
+      yield
+        jwtClaims.subject.contains("109339807647777393961")
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
 end GooglesTooSmallKeyFlatSpec
