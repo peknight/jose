@@ -2,7 +2,6 @@ package com.peknight.jose.jwk
 
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Sync
-import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.eq.*
 import cats.syntax.traverse.*
@@ -104,21 +103,18 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
   def filterForVerification[F[_]: Sync](jws: JsonWebSignature,
                                         configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, List[JsonWebKey]]] =
-    jws.getUnprotectedHeader match
-      case Left(error) => error.asLeft[List[JsonWebKey]].pure[F]
-      case Right(header) if header.isNoneAlgorithm => Nil.asRight[Error].pure[F]
-      case _ => handleFilter[F](jws, configuration)(verificationPredict)
+    VerificationPrimitive.handleFilterForVerification[F](jws, configuration)(
+      handleFilter[F](jws, configuration)(verificationPredict)
+    )
 
   def verificationPrimitives[F[_]: Sync](jws: JsonWebSignature,
                                          configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, NonEmptyList[VerificationPrimitive]]] =
-    jws.getUnprotectedHeader match
-      case Left(error) => error.asLeft[NonEmptyList[VerificationPrimitive]].pure[F]
-      case Right(header) if header.isNoneAlgorithm =>
-        NonEmptyList.one(VerificationPrimitive(None, configuration)).asRight[Error].pure[F]
-      case _ => handlePrimitives(jws, false, configuration)(verificationPredict)((key, configuration) =>
+    VerificationPrimitive.handleVerificationPrimitivesF[F](jws, configuration)(
+      handlePrimitives(jws, false, configuration)(verificationPredict)((key, configuration) =>
         VerificationPrimitive(Some(key), configuration)
       )
+    )
 
   private def decryptionPredict(header: JoseHeader, jwk: JsonWebKey): Boolean =
     jwk.publicKeyUse.forall(_ == Encryption) && jwk.keyOperations.forall(_.exists(KeyOperationType.decryptOps.contains))
