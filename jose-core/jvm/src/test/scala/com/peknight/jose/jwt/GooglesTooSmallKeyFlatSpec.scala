@@ -48,7 +48,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     "gPqfveZxnySJCguVx1pWpZ0q9cBMdgvetrbUfRO2Sz1YFgfD7k9BacWwOM-eiFtgrWwOTo8\",\"e\":\"AQAB\"}]}"
   private val clientId: String = "822737555429-evvkd00otqr5gl110nfapisjfoea36jf.apps.googleusercontent.com"
   private val issuer: String = "accounts.google.com"
-  private val evalucationTime: Instant = Instant.ofEpochSecond(1431612438L)
+  private val evaluationTime: Instant = Instant.ofEpochSecond(1431612438L)
   private val subjectValue: String = "116308408314661478132"
 
   "Googles Too Small Key" should "failed with strict by default" in {
@@ -70,7 +70,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           jwks.verificationPrimitives
         )(jwks.decryptionPrimitives))
         _ <- jwtClaims.requireExpirationTime.eLiftET[IO]
-        _ <- jwtClaims.checkTime(evalucationTime).eLiftET[IO]
+        _ <- jwtClaims.checkTime(evaluationTime).eLiftET[IO]
         _ <- jwtClaims.requireSubject.eLiftET[IO]
         _ <- jwtClaims.expectedIssuers(issuer).eLiftET[IO]
         _ <- jwtClaims.acceptableAudiences(clientId).eLiftET[IO]
