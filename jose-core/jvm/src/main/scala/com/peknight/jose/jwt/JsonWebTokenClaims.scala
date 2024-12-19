@@ -14,10 +14,8 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.commons.time.syntax.temporal.{minus, plus}
 import com.peknight.error.Error
-import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.either.label
 import com.peknight.jose.jwx.ExtendedField
-import com.peknight.validation.collection.iterableOnce.either.{contains, interact}
 import com.peknight.validation.spire.math.interval.either.contains as intervalContains
 import io.circe.{Json, JsonObject}
 import spire.math.Interval
@@ -34,17 +32,7 @@ case class JsonWebTokenClaims(
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
                                ext: JsonObject = JsonObject.empty
-                             ) extends ExtendedField:
-  def expectedIssuers(expected: String*): Either[Error, Unit] =
-    issuer.toRight(OptionEmpty).flatMap(issuer => contains(issuer, expected)).label("issuer").as(())
-  def expectedSubjects(expected: String*): Either[Error, Unit] =
-    subject.toRight(OptionEmpty).flatMap(subject => contains(subject, expected)).label("subject").as(())
-  def acceptableAudiences(acceptable: String*): Either[Error, Unit] =
-    audience.toRight(OptionEmpty).flatMap(audience => interact(audience, acceptable)).label("audience").as(())
-  def requireExpirationTime: Either[Error, Unit] = expirationTime.toRight(OptionEmpty.label("expirationTime")).as(())
-  def requireNotBefore: Either[Error, Unit] = notBefore.toRight(OptionEmpty.label("notBefore")).as(())
-  def requireIssuedAt: Either[Error, Unit] = issuedAt.toRight(OptionEmpty.label("issuedAt")).as(())
-  def requireJwtID: Either[Error, Unit] = jwtID.toRight(OptionEmpty.label("jwtID")).as(())
+                             ) extends ExtendedField with JsonWebTokenClaimsPlatform:
   def toInterval(allowedClockSkew: FiniteDuration = Duration.Zero): Interval[Instant] =
     (expirationTime, notBefore) match
       case (Some(expirationTime), Some(notBefore)) =>
@@ -56,27 +44,7 @@ case class JsonWebTokenClaims(
     given Show[Instant] = Show.fromToString[Instant]
     intervalContains(evaluationTime, toInterval(allowedClockSkew)).label("evaluationTime").as(())
 end JsonWebTokenClaims
-object JsonWebTokenClaims:
-  val issuerLabel: String = "iss"
-  val subjectLabel: String = "sub"
-  val audienceLabel: String = "aud"
-  val expirationTimeLabel: String = "exp"
-  val notBeforeLabel: String = "nbf"
-  val issuedAtLabel: String = "iat"
-  val jwtIDLabel: String = "jti"
-  val initialRegisteredClaimNames: Set[String] =
-    Set(issuerLabel, subjectLabel, audienceLabel, expirationTimeLabel, notBeforeLabel, issuedAtLabel, jwtIDLabel)
-  private val memberNameMap: Map[String, String] =
-    Map(
-      "issuer" -> issuerLabel,
-      "subject" -> subjectLabel,
-      "audience" -> audienceLabel,
-      "expirationTime" -> expirationTimeLabel,
-      "notBefore" -> notBeforeLabel,
-      "issuedAt" -> issuedAtLabel,
-      "jwtID" -> jwtIDLabel,
-    )
-
+object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
   given codecJsonWebTokenClaims[F[_], S](using
     monad: Monad[F],
     objectType: ObjectType[S],
