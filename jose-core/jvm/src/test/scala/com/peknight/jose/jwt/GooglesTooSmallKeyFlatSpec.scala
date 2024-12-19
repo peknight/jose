@@ -66,9 +66,9 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](idToken,
-            JoseConfiguration(doKeyValidation = false, skipSignatureVerification = true, requireSignature = false)
-          )(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](idToken, JoseConfiguration(doKeyValidation = false))(
+          jwks.verificationPrimitives
+        )(jwks.decryptionPrimitives))
         _ <- jwtClaims.requireExpirationTime.eLiftET[IO]
         _ <- jwtClaims.checkTime(evalucationTime).eLiftET[IO]
         _ <- jwtClaims.requireSubject.eLiftET[IO]
