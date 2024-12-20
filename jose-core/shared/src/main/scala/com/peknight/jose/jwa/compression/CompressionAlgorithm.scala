@@ -10,7 +10,7 @@ import com.peknight.jose.jwk.KeyType
 
 
 trait CompressionAlgorithm extends AlgorithmIdentifier with CompressionAlgorithmPlatform:
-  def keyType: Option[KeyType] = None
+  def keyTypes: List[KeyType] = Nil
 end CompressionAlgorithm
 object CompressionAlgorithm:
   val values: List[CompressionAlgorithm] = List(Deflate)

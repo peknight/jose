@@ -11,7 +11,7 @@ import com.peknight.security.cipher.AESWrap
 
 trait AESWrapAlgorithm extends KeyWrappingAlgorithm with AESWrap with AESWrapAlgorithmPlatform:
   def headerParams: Seq[HeaderParam] = Seq.empty
-  def keyType: Option[KeyType] = Some(OctetSequence)
+  def keyTypes: List[KeyType] = List(OctetSequence)
   private[jose] def canOverrideCek: Boolean = true
   override def identifier: String = s"A${blockSize * 8}KW"
 end AESWrapAlgorithm

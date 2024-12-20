@@ -102,7 +102,7 @@ class OpenIdConnectFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
               DecryptionPrimitive.defaultDecryptionPrimitivesF
             ))
             _ <- jwtClaims.expectedIssuers("http://server.example.com").eLiftET[IO]
-            _ <- jwtClaims.acceptableAudiences("s6BhdRkqt3").eLiftET[IO]
+            _ <- jwtClaims.expectedAudiences("s6BhdRkqt3").eLiftET[IO]
             _ <- jwtClaims.requireSubject.eLiftET[IO]
             _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1311280978L)).eLiftET[IO]
             _ <- isTrue(jwtClaims.subject.contains("248289761001"), Error("subject not match")).eLiftET[IO]
@@ -165,7 +165,7 @@ class OpenIdConnectFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
               DecryptionPrimitive.defaultDecryptionPrimitivesF
             ))
             _ <- jwtClaims.expectedIssuers("http://server.example.com").eLiftET[IO]
-            _ <- jwtClaims.acceptableAudiences("s6BhdRkqt3").eLiftET[IO]
+            _ <- jwtClaims.expectedAudiences("s6BhdRkqt3").eLiftET[IO]
             _ <- jwtClaims.requireSubject.eLiftET[IO]
             _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1311280978L)).eLiftET[IO]
             _ <- isTrue(jwtClaims.subject.contains("248289761001"), Error("subject not match")).eLiftET[IO]

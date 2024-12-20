@@ -73,7 +73,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- jwtClaims.checkTime(evaluationTime).eLiftET[IO]
         _ <- jwtClaims.requireSubject.eLiftET[IO]
         _ <- jwtClaims.expectedIssuers(issuer).eLiftET[IO]
-        _ <- jwtClaims.acceptableAudiences(clientId).eLiftET[IO]
+        _ <- jwtClaims.expectedAudiences(clientId).eLiftET[IO]
       yield
         jwtClaims.subject.contains(subjectValue)
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -110,7 +110,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- jwtClaims.requireSubject.eLiftET[IO]
         _ <- jwtClaims.expectedIssuers(issuer).eLiftET[IO]
         // borrowed a bitbucket client id
-        _ <- jwtClaims.acceptableAudiences("1078449029686.apps.googleusercontent.com").eLiftET[IO]
+        _ <- jwtClaims.expectedAudiences("1078449029686.apps.googleusercontent.com").eLiftET[IO]
       yield
         jwtClaims.subject.contains("109339807647777393961")
     run.value.asserting(value => assert(value.getOrElse(false)))

@@ -18,7 +18,7 @@ trait AESGCMKWAlgorithm extends KeyEncryptionAlgorithm with AESWrap with AESGCMK
   def tagByteLength = 16
   def headerParams: Seq[HeaderParam] = Seq(iv, tag)
   def requirement: Requirement = Optional
-  def keyType: Option[KeyType] = Some(OctetSequence)
+  def keyTypes: List[KeyType] = List(OctetSequence)
   private[jose] def canOverrideCek: Boolean = true
   override def algorithm: String = AES.algorithm
   override def mode: CipherAlgorithmMode = GCM

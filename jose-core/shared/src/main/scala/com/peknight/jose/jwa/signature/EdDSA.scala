@@ -11,7 +11,7 @@ import com.peknight.jose.jwx.Requirement.Optional
 
 trait EdDSA extends JWSAlgorithm with com.peknight.security.signature.EdDSA with EdDSAPlatform:
   override def requirement: Requirement = Optional
-  def keyType: Option[KeyType] = Some(KeyType.OctetKeyPair)
+  def keyTypes: List[KeyType] = List(KeyType.OctetKeyPair)
 end EdDSA
 object EdDSA extends EdDSA:
   val values: List[EdDSA] = List(EdDSA)

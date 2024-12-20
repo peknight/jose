@@ -14,7 +14,7 @@ import java.security.Key
 object none extends JWSAlgorithm with com.peknight.security.algorithm.NONE with NonePlatform:
   val requirement: Requirement = Optional
   override def identifier: String = "none"
-  def keyType: Option[KeyType] = None
+  def keyTypes: List[KeyType] = Nil
 
   def sign(key: Option[Key], data: ByteVector, doKeyValidation: Boolean = true)
   : Either[JoseError, ByteVector] =

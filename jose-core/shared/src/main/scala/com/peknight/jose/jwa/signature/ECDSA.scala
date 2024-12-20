@@ -12,7 +12,7 @@ import com.peknight.jose.jwk.KeyType.EllipticCurve
 trait ECDSA extends JWSAlgorithm with com.peknight.security.signature.ECDSA with ECDSAPlatform:
   def curve: Curve
   override def identifier: String = s"ES${digest.bitLength}"
-  def keyType: Option[KeyType] = Some(EllipticCurve)
+  def keyTypes: List[KeyType] = List(EllipticCurve)
 end ECDSA
 object ECDSA:
   val values: List[ECDSA] = List(ES256, ES384, ES512, ES256K)

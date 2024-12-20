@@ -63,7 +63,7 @@ class AzureActiveDirectorySamplesFlatSpec extends AsyncFlatSpec with AsyncIOSpec
           jwks.decryptionPrimitives
         ))
         _ <- jwtClaims.expectedIssuers("https://sts.windows.net/30aa0e58-719c-44f0-b5bb-e131f1f68ab3/").eLiftET[IO]
-        _ <- jwtClaims.acceptableAudiences("56c77428-2d91-48a0-93e6-ca9154965e51").eLiftET[IO]
+        _ <- jwtClaims.expectedAudiences("56c77428-2d91-48a0-93e6-ca9154965e51").eLiftET[IO]
         _ <- jwtClaims.expectedSubjects("R6fpavFrzrZF7VuG3w7ECVDAIrbf_5O-SBY986Gpgao").eLiftET[IO]
         _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1470086999)).eLiftET[IO]
       yield
@@ -127,7 +127,7 @@ class AzureActiveDirectorySamplesFlatSpec extends AsyncFlatSpec with AsyncIOSpec
         ))
         _ <- jwtClaims.expectedIssuers("https://login.microsoftonline.com/30aa0e58-719c-44f0-b5bb-e131f1f68ab3/v2.0")
           .eLiftET[IO]
-        _ <- jwtClaims.acceptableAudiences("6914484a-38ea-4a0b-801a-bb924cef5235").eLiftET[IO]
+        _ <- jwtClaims.expectedAudiences("6914484a-38ea-4a0b-801a-bb924cef5235").eLiftET[IO]
         _ <- jwtClaims.expectedSubjects("6OksvR7G1p8qCqYBp76iRlh_lDboQ7iWEwpL-G8RQtM").eLiftET[IO]
         _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1470148369)).eLiftET[IO]
       yield

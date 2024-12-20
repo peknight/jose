@@ -15,7 +15,7 @@ trait DirectEncryptionAlgorithm extends KeyManagementAlgorithm with Symmetric wi
   def algorithm: String = "dir"
   def headerParams: Seq[HeaderParam] = Seq.empty
   def requirement: Requirement = Recommended
-  override def keyType: Option[KeyType] = Some(OctetSequence)
+  override def keyTypes: List[KeyType] = List(OctetSequence)
   private[jose] def canOverrideCek: Boolean = false
 end DirectEncryptionAlgorithm
 object DirectEncryptionAlgorithm:

@@ -10,8 +10,9 @@ import com.peknight.cats.ext.syntax.eitherT.{&&, eLiftET, rLiftET}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
+import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.encryption.{`ECDH-ESAlgorithm`, `ECDH-ESWithAESWrapAlgorithm`}
-import com.peknight.jose.jwa.signature.ECDSA
+import com.peknight.jose.jwa.signature.{ECDSA, JWSAlgorithm}
 import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, EllipticCurveJsonWebKey, OctetKeyPairJsonWebKey}
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair}
@@ -39,14 +40,9 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
             case (jwk :: tail, acc) =>
               ((header.keyID.fold(true)(keyID => jwk.keyID.contains(keyID)) &&
                 header.algorithm.fold(true)(algorithm =>
-                  algorithm.keyType.fold(true)(keyType => keyType == jwk.keyType) &&
-                    algorithm.keyType.filter(_ == EllipticCurve)
-                      .flatMap(_ => typed[EllipticCurveJsonWebKey](jwk))
-                      .flatMap(jwk => typed[ECDSA](algorithm).map(_.curve == jwk.curve))
-                      .getOrElse(true) &&
-                    algorithm.keyType.filter(_ == OctetKeyPair)
-                      .flatMap(_ => typed[OctetKeyPairJsonWebKey](jwk))
-                      .forall(_.curve.isInstanceOf[EdDSA]) &&
+                  filterByKeyTypes(algorithm, jwk) &&
+                    filterByECDSACurve(algorithm, jwk) &&
+                    filterByEdDSACurve(algorithm, jwk) &&
                     jwk.algorithm.forall(_ == algorithm)) &&
                 header.algorithm
                   .filter(alg => alg.isInstanceOf[`ECDH-ESAlgorithm`] || alg.isInstanceOf[`ECDH-ESWithAESWrapAlgorithm`])
@@ -86,6 +82,21 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
       yield
         primitives
     eitherT.value
+
+  private def filterByKeyTypes(algorithm: JsonWebAlgorithm, jwk: JsonWebKey): Boolean =
+    algorithm.keyTypes match
+      case Nil => true
+      case keyTypes => keyTypes.contains(jwk.keyType)
+
+  private def filterByECDSACurve(algorithm: JsonWebAlgorithm, jwk: JsonWebKey): Boolean =
+    (algorithm, jwk) match
+      case (ecdsa: ECDSA, key: EllipticCurveJsonWebKey) => ecdsa.curve === key.curve
+      case _ => true
+
+  private def filterByEdDSACurve(algorithm: JsonWebAlgorithm, jwk: JsonWebKey): Boolean =
+    (algorithm, jwk) match
+      case (edDSA: EdDSA, key: OctetKeyPairJsonWebKey)  => key.curve.isInstanceOf[EdDSA]
+      case _ => true
 
   private def filterX509CertificateSHAThumbprint[F[_]: Applicative](x509CertificateSHAThumbprint: Option[Base64UrlNoPad],
                                                                     configuration: JoseConfiguration)

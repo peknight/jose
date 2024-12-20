@@ -12,7 +12,7 @@ trait PBES2Algorithm extends KeyEncryptionAlgorithm with Symmetric with PBES2Alg
   def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(p2s, p2c)
   def requirement: Requirement = Optional
-  def keyType: Option[KeyType] = None
+  def keyTypes: List[KeyType] = Nil
   private[jose] def canOverrideCek: Boolean = encryption.canOverrideCek
   def algorithm: String = s"PBES2-HS${prf.digest.bitLength}+A${encryption.blockSize * 8}KW"
 end PBES2Algorithm

@@ -8,7 +8,7 @@ import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.ecc.{Curve, `P-256`, `P-384`, `P-521`}
 import com.peknight.jose.jwa.encryption.HeaderParam.{apu, apv, epk}
 import com.peknight.jose.jwk.KeyType
-import com.peknight.jose.jwk.KeyType.EllipticCurve
+import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair}
 import com.peknight.jose.jwx.Requirement
 import com.peknight.jose.jwx.Requirement.`Recommended+`
 import com.peknight.security.key.agreement.ECDH
@@ -19,7 +19,7 @@ trait `ECDH-ESAlgorithm` extends KeyAgreementAlgorithm with ECDH with `ECDH-ESAl
   val requirement: Requirement = `Recommended+`
   def headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)
   def supportedCurves: List[Curve] = List(`P-256`, `P-384`, `P-521`)
-  override def keyType: Option[KeyType] = Some(EllipticCurve)
+  override def keyTypes: List[KeyType] = List(EllipticCurve, OctetKeyPair)
   private[jose] def canOverrideCek: Boolean = false
   override def oid: Option[ObjectIdentifier] = Some(ObjectIdentifier.unsafeFromString("1.3.132.1.12"))
 end `ECDH-ESAlgorithm`

@@ -12,7 +12,7 @@ import com.peknight.security.oid.ObjectIdentifier
 
 trait HmacSHA extends JWSAlgorithm with com.peknight.security.mac.HmacSHA with HmacSHAPlatform:
   override def identifier: String = s"HS${digest.bitLength}"
-  def keyType: Option[KeyType] = Some(OctetSequence)
+  def keyTypes: List[KeyType] = List(OctetSequence)
 end HmacSHA
 object HmacSHA:
   val values: List[HmacSHA] = List(HS256, HS384, HS512)

@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.ecc
 
-import cats.Applicative
+import cats.{Applicative, Eq}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
@@ -13,6 +13,7 @@ trait Curve extends ECGenParameterSpecName derives CanEqual:
   override def toString: String = name
 end Curve
 object Curve extends CurveCompanion:
+  given Eq[Curve] = Eq.fromUniversalEquals[Curve]
   given stringCodecCurve[F[_]: Applicative]: Codec[F, String, String, Curve] =
     Codec.applicative[F, String, String, Curve](_.name)(
       name => values

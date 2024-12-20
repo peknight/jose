@@ -7,14 +7,14 @@ import com.peknight.codec.sum.StringType
 import com.peknight.jose.jwa.AlgorithmIdentifier.stringCodecAlgorithmIdentifier
 import com.peknight.jose.jwa.encryption.HeaderParam.{apu, apv, epk}
 import com.peknight.jose.jwk.KeyType
-import com.peknight.jose.jwk.KeyType.EllipticCurve
+import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair}
 import com.peknight.security.cipher.Asymmetric
 
 trait `ECDH-ESWithAESWrapAlgorithm` extends KeyAgreementAlgorithm with Asymmetric
   with `ECDH-ESWithAESWrapAlgorithmPlatform`:
   def encryption: AESWrapAlgorithm
   def headerParams: Seq[HeaderParam] = Seq(epk, apu, apv)
-  def keyType: Option[KeyType] = Some(EllipticCurve)
+  def keyTypes: List[KeyType] = List(EllipticCurve, OctetKeyPair)
   def algorithm: String = s"ECDH-ES+A${encryption.blockSize * 8}KW"
   private[jose] def canOverrideCek: Boolean = encryption.canOverrideCek
 end `ECDH-ESWithAESWrapAlgorithm`

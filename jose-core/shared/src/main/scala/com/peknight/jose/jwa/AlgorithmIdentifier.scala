@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 
 trait AlgorithmIdentifier extends Algorithm with AlgorithmIdentifierPlatform:
   def identifier: String = algorithm
-  def keyType: Option[KeyType]
+  def keyTypes: List[KeyType]
   override def toString: String = identifier
 end AlgorithmIdentifier
 object AlgorithmIdentifier:

@@ -14,7 +14,7 @@ trait EncryptionAlgorithm extends AlgorithmIdentifier with EncryptionAlgorithmPl
   def cekByteLength: Int
   def cekAlgorithm: SecretKeySpecAlgorithm
   def requirement: Requirement
-  def keyType: Option[KeyType] = None
+  def keyTypes: List[KeyType] = Nil
 end EncryptionAlgorithm
 object EncryptionAlgorithm:
   val values: List[EncryptionAlgorithm] = AESCBCHmacSHA2Algorithm.values ::: AESGCMAlgorithm.values
