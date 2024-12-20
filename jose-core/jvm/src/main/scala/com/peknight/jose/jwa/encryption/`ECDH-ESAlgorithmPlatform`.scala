@@ -10,6 +10,7 @@ import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.error.*
+import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwe.ContentEncryptionKeys
 import com.peknight.jose.jwk.JsonWebKey
@@ -33,7 +34,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
                              initializationVector: Option[ByteVector] = None,
@@ -60,7 +61,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                                    cekLength: Int,
                                    ephemeralPublicKey: PublicKey,
                                    ephemeralPrivateKey: PrivateKey,
-                                   encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                                   encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                                    agreementPartyUInfo: Option[ByteVector] = None,
                                    agreementPartyVInfo: Option[ByteVector] = None,
                                    keyAgreementProvider: Option[Provider | JProvider] = None,
@@ -84,7 +85,7 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              ephemeralPublicKey: Option[PublicKey] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,

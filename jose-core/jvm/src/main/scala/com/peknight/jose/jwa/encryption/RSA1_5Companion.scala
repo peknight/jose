@@ -7,6 +7,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.SecretKeySpecAlgorithm
 import scodec.bits.ByteVector
@@ -19,7 +20,7 @@ trait RSA1_5Companion extends RSAESAlgorithmPlatform { self: RSAESAlgorithm =>
                                        cekLength: Int,
                                        cekAlgorithm: SecretKeySpecAlgorithm,
                                        keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                                       encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                                       encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                                        ephemeralPublicKey: Option[PublicKey] = None,
                                        agreementPartyUInfo: Option[ByteVector] = None,
                                        agreementPartyVInfo: Option[ByteVector] = None,

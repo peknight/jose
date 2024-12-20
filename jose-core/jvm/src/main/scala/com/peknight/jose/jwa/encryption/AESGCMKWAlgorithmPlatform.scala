@@ -5,6 +5,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.ContentEncryptionKeys
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.{GCMParameterSpec, SecretKeySpecAlgorithm}
@@ -17,7 +18,7 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
                              initializationVector: Option[ByteVector] = None,
@@ -47,7 +48,7 @@ trait AESGCMKWAlgorithmPlatform { self: AESGCMKWAlgorithm =>
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              ephemeralPublicKey: Option[PublicKey] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,

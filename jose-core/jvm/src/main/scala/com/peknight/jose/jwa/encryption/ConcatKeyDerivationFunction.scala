@@ -26,7 +26,6 @@ object ConcatKeyDerivationFunction:
                       algorithm: Option[AlgorithmIdentifier], agreementPartyUInfo: Option[ByteVector],
                       agreementPartyVInfo: Option[ByteVector], provider: Option[Provider | JProvider]
                      ): F[Either[Error, ByteVector]] =
-
     val eitherT =
       for
         algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(enc => stringEncodeToBytes(enc.identifier).map(_.some))

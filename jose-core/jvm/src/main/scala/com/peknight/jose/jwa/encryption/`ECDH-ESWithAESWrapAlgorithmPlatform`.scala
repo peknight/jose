@@ -22,7 +22,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
                              initializationVector: Option[ByteVector] = None,
@@ -38,7 +38,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
     val eitherT =
       for
         ContentEncryptionKeys(agreedKey, _, ephemeralPublicKey, _, _, _, _) <- EitherT(`ECDH-ES`.encryptKey[F](
-          key, self.encryption.blockSize, AES, None, encryptionAlgorithm, agreementPartyUInfo,
+          key, self.encryption.blockSize, AES, None, Some(self), agreementPartyUInfo,
           agreementPartyVInfo, initializationVector, pbes2SaltInput, pbes2Count, random, cipherProvider,
           keyAgreementProvider, keyPairGeneratorProvider, macProvider, messageDigestProvider))
         ContentEncryptionKeys(contentEncryptionKey, encryptedKey, _, _, _, _, _) <- EitherT(self.encryption.encryptKey[F](
@@ -54,7 +54,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              ephemeralPublicKey: Option[PublicKey] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
@@ -71,7 +71,7 @@ trait `ECDH-ESWithAESWrapAlgorithmPlatform` { self: `ECDH-ESWithAESWrapAlgorithm
     val eitherT =
       for
         agreedKey <- EitherT(`ECDH-ES`.decryptKey[F](key, ByteVector.empty, self.encryption.blockSize, AES,
-          keyDecipherModeOverride, encryptionAlgorithm, ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo,
+          keyDecipherModeOverride, Some(self), ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo,
           initializationVector, authenticationTag, pbes2SaltInput, pbes2Count, random, cipherProvider,
           keyAgreementProvider, macProvider, messageDigestProvider))
         cek <- EitherT(self.encryption.decryptKey[F](agreedKey, encryptedKey, cekLength, cekAlgorithm,

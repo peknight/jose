@@ -5,6 +5,7 @@ import cats.syntax.applicative.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.jose.error.CanNotHaveKey
+import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.ContentEncryptionKeys
 import com.peknight.security.provider.Provider
 import com.peknight.security.spec.SecretKeySpecAlgorithm
@@ -18,7 +19,7 @@ trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              cekOverride: Option[ByteVector] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
                              initializationVector: Option[ByteVector] = None,
@@ -40,7 +41,7 @@ trait DirectEncryptionAlgorithmPlatform { self: DirectEncryptionAlgorithm =>
                              cekLength: Int,
                              cekAlgorithm: SecretKeySpecAlgorithm,
                              keyDecipherModeOverride: Option[KeyDecipherMode] = None,
-                             encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                             encryptionAlgorithm: Option[AlgorithmIdentifier] = None,
                              ephemeralPublicKey: Option[PublicKey] = None,
                              agreementPartyUInfo: Option[ByteVector] = None,
                              agreementPartyVInfo: Option[ByteVector] = None,
