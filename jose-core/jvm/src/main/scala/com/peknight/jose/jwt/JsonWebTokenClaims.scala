@@ -32,7 +32,7 @@ case class JsonWebTokenClaims(
                                issuedAt: Option[Instant] = None,
                                jwtID: Option[JwtId] = None,
                                ext: JsonObject = JsonObject.empty
-                             ) extends ExtendedField with JsonWebTokenClaimsPlatform:
+                             ) extends ExtendedField with JsonWebTokenClaimsPlatform derives CanEqual:
   def toInterval(allowedClockSkew: FiniteDuration = Duration.Zero): Interval[Instant] =
     (expirationTime, notBefore) match
       case (Some(expirationTime), Some(notBefore)) =>

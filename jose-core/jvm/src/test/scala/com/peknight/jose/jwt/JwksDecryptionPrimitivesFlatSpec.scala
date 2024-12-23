@@ -9,14 +9,12 @@ import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
-import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.encryption.{`A128CBC-HS256`, `ECDH-ES+A128KW`, dir}
 import com.peknight.jose.jwa.signature.ES256
 import com.peknight.jose.jwe.JsonWebEncryption
-import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey
 import com.peknight.jose.jwk.{JsonWebKey, JsonWebKeySet, KeyId}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
 import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
