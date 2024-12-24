@@ -13,6 +13,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.RS256
 import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
 import com.peknight.jose.jwk.*
+import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
 import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
 import com.peknight.security.cipher.RSA
@@ -285,4 +286,39 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
+  "JsonWebToken getClaims" should "succeed with missing cty in nested" in {
+    // Nested jwt without "cty":"JWT" -> expect failure here as the cty is a MUST for nesting
+    // setEnableLiberalContentTypeHandling() on the builder will enable a best effort to deal with the content even
+    // when cty isn't specified
+    val jwt = "eyJ6aXAiOiJERUYiLCJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTEyOENCQy1IUzI1NiIsImVwayI6eyJrdHkiOiJFQyIsIngiOiIwR" +
+      "Gk0VTBZQ0R2NHAtS2hETUZwUThvY0FsZzA2SEwzSHR6UldRbzlDLWV3IiwieSI6IjBfVFJjR1Y3Qy05d0xseFJZSExJOFlKTXlET2hWNW5YeH" +
+      "VPMGdRVmVxd0EiLCJjcnYiOiJQLTI1NiJ9fQ..xw5H8Kztd_sqzbXjt4GKUg.YNa163HLj7MwlvjzGihbOHnJ2PC3NOTnnvVOanuk1O9XFJ97" +
+      "pbbHHQzEeEwG6jfvDgdmlrLjcIJkSu1U8qRby7Xr4gzP6CkaDPbKwvLveETZSNdmZh37XKfnQ4LvKgiko6OQzyLYG1gc97kUOeikXTYVaYaeV" +
+      "1838Bi4q3DsIG-j4ZESg0-ePQesw56A80AEE3j6wXwZ4vqugPP9_ogZzkPFcHf1lt3-A4amNMjDbV8.u-JJCoakXI55BG2rz_kBlg"
+    val run =
+      for
+        sigJwk <- decode[Id, AsymmetricJsonWebKey]("{\"kty\":\"EC\",\"x\":\"loF6m9WAW_GKrhoh48ctg_d78fbIsmUb02XDOwJj" +
+          "59c\",\"y\":\"kDCHDkCbWjeX8DjD9feQKcndJyerdsLJ4VZ5YSTWCoU\",\"crv\":\"P-256\",\"d\":\"6D1C9gJsT9KXNtTNyqg" +
+          "pdyQuIrK-qzo0_QJOVe9DqJg\"}").eLiftET[IO]
+        encJwk <- decode[Id, AsymmetricJsonWebKey]("{\"kty\":\"EC\",\"x\":\"PNbMydlpYRBFTYn_XDFvvRAFqE4e0EJmK6-zULTV" +
+          "ERs\",\"y\":\"dyO9wGVgKS3gtP5bx0PE8__MOV_HLSpiwK-mP1RGZgk\",\"crv\":\"P-256\",\"d\":\"FIs8wVojHBdl7vkiZVn" +
+          "LBPw5S9lbn4JF2WWY1OTupic\"}").eLiftET[IO]
+        sigKey <- EitherT(sigJwk.toPublicKey[IO]())
+        encKey <- EitherT(encJwk.toPrivateKey[IO]())
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+          skipSignatureVerification = true, liberalContentTypeHandling = true, requireSignature = false))(
+          VerificationPrimitive.verificationKey(Some(sigKey))
+        )(DecryptionPrimitive.decryptionKey(encKey)))
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwt)(
+          VerificationPrimitive.verificationKey(Some(sigKey))
+        )(DecryptionPrimitive.decryptionKey(encKey)).map(_.swap.asError))
+        _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1420219088L)).eLiftET[IO]
+        _ <- jwtClaims.expectedAudiences("canada").eLiftET[IO]
+        _ <- jwtClaims.expectedIssuers("usa").eLiftET[IO]
+        _ <- jwtClaims.requireExpirationTime.eLiftET[IO]
+      yield
+        jwtClaims.ext("message").flatMap(_.asString).contains("eh") && nested.length == 2 &&
+          nested.head.isInstanceOf[JsonWebSignature] && nested.tail.head.isInstanceOf[JsonWebEncryption]
+    run.value.asserting(value => assert(value.getOrElse(false)))
+  }
 end JsonWebTokenGetClaimsFlatSpec

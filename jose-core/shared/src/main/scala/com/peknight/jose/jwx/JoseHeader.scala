@@ -120,9 +120,9 @@ case class JoseHeader(
 
   def requireType: Either[Error, Unit] = `type`.toRight(OptionEmpty.label("type")).as(())
 
-  def expectedType(expected: String): Either[Error, Unit] =
+  def expectedType(expected: String, requireType: Boolean = false): Either[Error, Unit] =
     `type` match
-      case None => ().asRight
+      case None => if requireType then OptionEmpty.label("type").asLeft else ().asRight
       case Some(value) =>
         val either =
           for
