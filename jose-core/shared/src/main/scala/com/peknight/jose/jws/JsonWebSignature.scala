@@ -38,6 +38,8 @@ case class JsonWebSignature private[jws] (
     handleDecodePayloadJson(payload)
   def compact: Either[Error, String] = compact(payload)
   def getMergedHeader: Either[Error, JoseHeader] = getUnprotectedHeader
+  def excludeHeader: Either[Error, JsonWebSignature] = 
+    getProtectedHeader.map(`protected` => copy(headerEither = Left(Right(`protected`))))
 end JsonWebSignature
 
 object JsonWebSignature extends JsonWebSignatureCompanion:
