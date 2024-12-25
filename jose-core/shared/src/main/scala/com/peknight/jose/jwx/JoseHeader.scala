@@ -1,11 +1,11 @@
 package com.peknight.jose.jwx
 
-import cats.Monad
 import cats.data.NonEmptyList
 import cats.syntax.either.*
 import cats.syntax.eq.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
+import cats.{Id, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.iso.codec
@@ -14,6 +14,7 @@ import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.*
+import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
@@ -137,6 +138,33 @@ case class JoseHeader(
   end expectedType
 end JoseHeader
 object JoseHeader:
+  def withExt[A](ext: A, algorithm: Option[JsonWebAlgorithm] = None,
+                 encryptionAlgorithm: Option[EncryptionAlgorithm] = None,
+                 compressionAlgorithm: Option[CompressionAlgorithm] = None,
+                 jwkSetURL: Option[Uri] = None,
+                 jwk: Option[JsonWebKey] = None,
+                 keyID: Option[KeyId] = None,
+                 x509URL: Option[Uri] = None,
+                 x509CertificateChain: Option[NonEmptyList[Base64NoPad]] = None,
+                 x509CertificateSHA1Thumbprint: Option[Base64UrlNoPad] = None,
+                 x509CertificateSHA256Thumbprint: Option[Base64UrlNoPad] = None,
+                 `type`: Option[String] = None,
+                 contentType: Option[String] = None,
+                 critical: Option[List[String]] = None,
+                 ephemeralPublicKey: Option[JsonWebKey] = None,
+                 agreementPartyUInfo: Option[Base64UrlNoPad] = None,
+                 agreementPartyVInfo: Option[Base64UrlNoPad] = None,
+                 initializationVector: Option[Base64UrlNoPad] = None,
+                 authenticationTag: Option[Base64UrlNoPad] = None,
+                 pbes2SaltInput: Option[Base64UrlNoPad] = None,
+                 pbes2Count: Option[Long] = None,
+                 base64UrlEncodePayload: Option[Boolean] = None
+                )(using Encoder[Id, Json, A]): JoseHeader =
+    JoseHeader(algorithm, encryptionAlgorithm, compressionAlgorithm, jwkSetURL, jwk, keyID, x509URL,
+      x509CertificateChain, x509CertificateSHA1Thumbprint, x509CertificateSHA256Thumbprint, `type`, contentType,
+      critical, ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo, initializationVector, authenticationTag,
+      pbes2SaltInput, pbes2Count, base64UrlEncodePayload, ext.asS[Id, Json].asObject.getOrElse(JsonObject.empty))
+
   given codecJoseHeader[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
