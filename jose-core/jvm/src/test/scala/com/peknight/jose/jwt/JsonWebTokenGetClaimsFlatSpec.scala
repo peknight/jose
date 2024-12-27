@@ -2,9 +2,8 @@ package com.peknight.jose.jwt
 
 import cats.Id
 import cats.data.EitherT
-import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.cats.effect.ext.Clock
+import cats.effect.{Clock, IO}
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.commons.time.syntax.temporal.minus
@@ -270,7 +269,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebToken getClaims" should "succeed with error expired error code validation" in {
     val run =
       for
-        now <- EitherT(Clock.realTimeInstant[IO].asError)
+        now <- EitherT(Clock[IO].realTimeInstant.asError)
         jwtClaims = JsonWebTokenClaims(issuer = Some("ISS"), subject = Some("SUB"), audience = Some(Set("AUD")),
           expirationTime = Some(now.minus(1.minute)))
         privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)

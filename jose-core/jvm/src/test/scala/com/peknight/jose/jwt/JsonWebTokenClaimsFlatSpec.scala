@@ -1,11 +1,10 @@
 package com.peknight.jose.jwt
 
 import cats.Id
-import cats.effect.IO
+import cats.effect.{Clock, IO}
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.eq.*
 import cats.syntax.order.*
-import com.peknight.cats.effect.ext.Clock
 import com.peknight.cats.instances.time.instant.given
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
@@ -148,7 +147,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         bytes <- randomBytes[IO](16)
-        now <- Clock.realTimeInstant[IO]
+        now <- Clock[IO].realTimeInstant
       yield
         (encodeToJson(JsonWebTokenClaims(
           issuer = Some("issuer"),
@@ -177,7 +176,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "JsonWebTokenClaims" should "succeed with set expiration time in the future part of minute" in {
-    Clock.realTimeInstant[IO].asserting { now =>
+    Clock[IO].realTimeInstant.asserting { now =>
       val json = encodeToJson(JsonWebTokenClaims(expirationTime = Some(now.plus(0.167.minutes))))
       assert(decode[Id, JsonWebTokenClaims](json).exists(jwtClaims => jwtClaims.expirationTime.exists(exp =>
         now < exp && now.plus(9.seconds) < exp && now.plus(11.seconds) >= exp
