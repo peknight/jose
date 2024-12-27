@@ -2,6 +2,7 @@ package com.peknight.jose.jwt
 
 import cats.syntax.functor.*
 import cats.{Monad, Show}
+import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
@@ -12,7 +13,6 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
-import com.peknight.jose.jwx.ExtendedField
 import com.peknight.validation.spire.math.interval.either.contains as intervalContains
 import io.circe.{Json, JsonObject}
 import spire.math.Interval
@@ -28,7 +28,7 @@ case class JsonWebTokenClaims(
                                issuedAt: Option[Long] = None,
                                jwtID: Option[JwtId] = None,
                                ext: JsonObject = JsonObject.empty
-                             ) extends ExtendedField with JsonWebTokenClaimsPlatform:
+                             ) extends Ext with JsonWebTokenClaimsPlatform:
   def toInterval(allowedClockSkew: FiniteDuration = Duration.Zero): Interval[Long] =
     (expirationTime, notBefore) match
       case (Some(expirationTime), Some(notBefore)) =>
@@ -52,7 +52,7 @@ object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
     given CodecConfiguration = CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-      .withExtendedField("ext")
+      .withExtField("ext")
     given Codec[F, S, Cursor[S], Set[String]] =
       Codec.cursor[F, S, Set[String]] { a =>
         if a.size == 1 then

@@ -8,6 +8,7 @@ import cats.syntax.traverse.*
 import cats.{Id, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
+import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
@@ -57,7 +58,7 @@ case class JoseHeader(
                        // rfc7797
                        base64UrlEncodePayload: Option[Boolean] = None,
                        ext: JsonObject = JsonObject.empty
-                     ) extends ExtendedField:
+                     ) extends Ext:
   def isBase64UrlEncodePayload: Boolean = base64UrlEncodePayload.getOrElse(true)
   def base64UrlEncodePayload(b64: Boolean): JoseHeader =
     if b64 then
@@ -171,7 +172,7 @@ object JoseHeader:
   ): Codec[F, S, Cursor[S], JoseHeader] =
     given CodecConfiguration = CodecConfiguration.default
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-      .withExtendedField("ext")
+      .withExtField("ext")
     Codec.derived[F, S, JoseHeader]
 
   given jsonCodecJoseHeader[F[_]: Monad]: Codec[F, Json, Cursor[Json], JoseHeader] = codecJoseHeader[F, Json]

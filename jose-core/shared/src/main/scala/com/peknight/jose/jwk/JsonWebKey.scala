@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.{Applicative, Monad}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64, Base64UrlNoPad}
+import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.CodecConfiguration
@@ -17,7 +18,6 @@ import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
-import com.peknight.jose.jwx.ExtendedField
 import com.peknight.security.key.agreement.{X25519, X448}
 import com.peknight.security.signature.{Ed25519, Ed448}
 import com.peknight.security.spec.NamedParameterSpecName
@@ -27,7 +27,7 @@ import org.http4s.Uri
 /**
  * https://datatracker.ietf.org/doc/html/rfc7517
  */
-sealed trait JsonWebKey extends ExtendedField with JsonWebKeyPlatform:
+sealed trait JsonWebKey extends Ext with JsonWebKeyPlatform:
   def keyType: KeyType
   def publicKeyUse: Option[PublicKeyUseType]
   def keyOperations: Option[Seq[KeyOperationType]]
@@ -190,7 +190,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
       .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withTransformConstructorNames(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
       .withDiscriminator("kty")
-      .withExtendedField("ext")
+      .withExtField("ext")
 
   given codecEllipticCurveJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
                                               Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
