@@ -1,6 +1,7 @@
 package com.peknight.jose.jwe
 
 import cats.Monad
+import cats.data.Ior
 import cats.parse.{Parser, Parser0}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.Base64UrlNoPad
@@ -14,13 +15,13 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
-import com.peknight.jose.jwx.HeaderEither.given
+import com.peknight.jose.jwx.HeaderIor.given
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure}
 import io.circe.{Json, JsonObject}
 
 case class JsonWebEncryption private[jwe] (
-                                            headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
+                                            headerIor: JoseHeader Ior Base64UrlNoPad,
                                             sharedHeader: Option[JoseHeader],
                                             recipientHeader: Option[JoseHeader],
                                             encryptedKey: Base64UrlNoPad,
@@ -41,20 +42,20 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
   def apply(header: JoseHeader, sharedHeader: Option[JoseHeader], recipientHeader: Option[JoseHeader],
             encryptedKey: Base64UrlNoPad, initializationVector: Base64UrlNoPad, ciphertext: Base64UrlNoPad,
             authenticationTag: Base64UrlNoPad, additionalAuthenticatedData: Option[Base64UrlNoPad]): JsonWebEncryption =
-    JsonWebEncryption(Left(Left(header)), sharedHeader, recipientHeader, encryptedKey, initializationVector, ciphertext,
+    JsonWebEncryption(Ior.Left(header), sharedHeader, recipientHeader, encryptedKey, initializationVector, ciphertext,
       authenticationTag, additionalAuthenticatedData)
 
   def apply(`protected`: Base64UrlNoPad, sharedHeader: Option[JoseHeader], recipientHeader: Option[JoseHeader],
             encryptedKey: Base64UrlNoPad, initializationVector: Base64UrlNoPad, ciphertext: Base64UrlNoPad,
             authenticationTag: Base64UrlNoPad, additionalAuthenticatedData: Option[Base64UrlNoPad]): JsonWebEncryption =
-    JsonWebEncryption(Left(Right(`protected`)), sharedHeader, recipientHeader, encryptedKey, initializationVector,
+    JsonWebEncryption(Ior.Right(`protected`), sharedHeader, recipientHeader, encryptedKey, initializationVector,
       ciphertext, authenticationTag, additionalAuthenticatedData)
 
   def apply(header: JoseHeader, `protected`: Base64UrlNoPad, sharedHeader: Option[JoseHeader],
             recipientHeader: Option[JoseHeader], encryptedKey: Base64UrlNoPad, initializationVector: Base64UrlNoPad,
             ciphertext: Base64UrlNoPad, authenticationTag: Base64UrlNoPad,
             additionalAuthenticatedData: Option[Base64UrlNoPad]): JsonWebEncryption =
-    JsonWebEncryption(Right((header, `protected`)), sharedHeader, recipientHeader, encryptedKey, initializationVector,
+    JsonWebEncryption(Ior.Both(header, `protected`), sharedHeader, recipientHeader, encryptedKey, initializationVector,
       ciphertext, authenticationTag, additionalAuthenticatedData)
 
   private val jsonWebEncryptionParser: Parser0[JsonWebEncryption] =

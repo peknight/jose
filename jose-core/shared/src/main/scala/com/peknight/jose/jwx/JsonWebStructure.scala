@@ -5,7 +5,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jws.JsonWebSignature
 
-trait JsonWebStructure extends HeaderEither with JsonWebStructurePlatform:
+trait JsonWebStructure extends HeaderIor with JsonWebStructurePlatform:
   def compact: Either[Error, String]
   def getMergedHeader: Either[Error, JoseHeader]
 end JsonWebStructure

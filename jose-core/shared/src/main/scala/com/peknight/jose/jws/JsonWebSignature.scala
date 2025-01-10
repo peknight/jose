@@ -1,5 +1,6 @@
 package com.peknight.jose.jws
 
+import cats.data.Ior
 import cats.parse.{Parser, Parser0}
 import cats.syntax.either.*
 import cats.{Id, Monad}
@@ -25,7 +26,7 @@ import java.nio.charset.{Charset, StandardCharsets}
  * https://datatracker.ietf.org/doc/html/rfc7797#section-3
  */
 case class JsonWebSignature private[jws] (
-  headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
+  headerIor: JoseHeader Ior Base64UrlNoPad,
   payload: String,
   signature: Base64UrlNoPad
 ) extends Signature with JsonWebStructure with JsonWebSignaturePlatform:
@@ -39,19 +40,19 @@ case class JsonWebSignature private[jws] (
   def compact: Either[Error, String] = compact(payload)
   def getMergedHeader: Either[Error, JoseHeader] = getUnprotectedHeader
   def excludeHeader: Either[Error, JsonWebSignature] = 
-    getProtectedHeader.map(`protected` => copy(headerEither = Left(Right(`protected`))))
+    getProtectedHeader.map(`protected` => copy(headerIor = Ior.Right(`protected`)))
 end JsonWebSignature
 
 object JsonWebSignature extends JsonWebSignatureCompanion:
   def apply(header: JoseHeader, payload: String, signature: Base64UrlNoPad): JsonWebSignature =
-    JsonWebSignature(Left(Left(header)), payload, signature)
+    JsonWebSignature(Ior.Left(header), payload, signature)
 
   def apply(`protected`: Base64UrlNoPad, payload: String, signature: Base64UrlNoPad): JsonWebSignature =
-    JsonWebSignature(Left(Right(`protected`)), payload, signature)
+    JsonWebSignature(Ior.Right(`protected`), payload, signature)
 
   def apply(header: JoseHeader, `protected`: Base64UrlNoPad, payload: String, signature: Base64UrlNoPad)
   : JsonWebSignature =
-    JsonWebSignature(Right((header, `protected`)), payload, signature)
+    JsonWebSignature(Ior.Both(header, `protected`), payload, signature)
 
   private val jsonWebSignatureParser: Parser0[JsonWebSignature] =
     (Base64UrlNoPad.baseParser ~ (Parser.char('.') *> Parser.charsWhile0(_ != '.')).rep(2)).flatMapE0 {

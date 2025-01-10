@@ -1,5 +1,6 @@
 package com.peknight.jose.jws
 
+import cats.data.Ior
 import cats.{Id, Monad}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
@@ -10,13 +11,13 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.error.Error
 import com.peknight.jose.jws.JsonWebSignature.concat
-import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
+import com.peknight.jose.jwx.{HeaderIor, JoseHeader}
 import io.circe.{Json, JsonObject}
 import scodec.bits.ByteVector
 
 import java.nio.charset.{Charset, StandardCharsets}
 
-trait Signature extends HeaderEither:
+trait Signature extends HeaderIor:
   def signature: Base64UrlNoPad
   def isBase64UrlEncodePayload: Either[Error, Boolean] =
     getUnprotectedHeader.map(_.isBase64UrlEncodePayload)
@@ -37,18 +38,17 @@ trait Signature extends HeaderEither:
     getProtectedHeader.map(h => s"${h.value}..${signature.value}")
 end Signature
 object Signature:
-  case class Signature private (
-    headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)], signature: Base64UrlNoPad
-  ) extends com.peknight.jose.jws.Signature
+  case class Signature private (headerIor: JoseHeader Ior Base64UrlNoPad, signature: Base64UrlNoPad)
+    extends com.peknight.jose.jws.Signature
   object Signature:
     def apply(header: JoseHeader, signature: Base64UrlNoPad): Signature =
-      Signature(Left(Left(header)), signature)
+      Signature(Ior.Left(header), signature)
 
     def apply(`protected`: Base64UrlNoPad, signature: Base64UrlNoPad): Signature =
-      Signature(Left(Right(`protected`)), signature)
+      Signature(Ior.Right(`protected`), signature)
 
     def apply(header: JoseHeader, `protected`: Base64UrlNoPad, signature: Base64UrlNoPad): Signature =
-      Signature(Right((header, `protected`)), signature)
+      Signature(Ior.Both(header, `protected`), signature)
 
     given codecSignature[F[_], S](using
      Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],

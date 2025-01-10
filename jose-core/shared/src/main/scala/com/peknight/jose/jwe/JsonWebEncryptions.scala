@@ -1,7 +1,7 @@
 package com.peknight.jose.jwe
 
 import cats.Monad
-import cats.data.NonEmptyList
+import cats.data.{Ior, NonEmptyList}
 import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.Encoder.encodeNonEmptyListA
 import com.peknight.codec.base.Base64UrlNoPad
@@ -15,22 +15,22 @@ import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwe.Recipient.Recipient
 import com.peknight.jose.jwe.Recipient.Recipient.codecRecipient
-import com.peknight.jose.jwx.HeaderEither.codecProtectedHeaderEither
+import com.peknight.jose.jwx.HeaderIor.codecProtectedHeaderIor
 import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
-import com.peknight.jose.jwx.{HeaderEither, JoseHeader}
+import com.peknight.jose.jwx.{HeaderIor, JoseHeader}
 import io.circe.{Json, JsonObject}
 
 case class JsonWebEncryptions private[jwe] (
-                                             headerEither: Either[Either[JoseHeader, Base64UrlNoPad], (JoseHeader, Base64UrlNoPad)],
+                                             headerIor: JoseHeader Ior Base64UrlNoPad,
                                              sharedHeader: Option[JoseHeader],
                                              recipients: NonEmptyList[Recipient],
                                              initializationVector: Base64UrlNoPad,
                                              ciphertext: Base64UrlNoPad,
                                              authenticationTag: Base64UrlNoPad,
                                              additionalAuthenticatedData: Option[Base64UrlNoPad]
-                                           ) extends HeaderEither with JsonWebEncryptionsPlatform:
+                                           ) extends HeaderIor with JsonWebEncryptionsPlatform:
   def toList: NonEmptyList[JsonWebEncryption] =
-    recipients.map(recipient => JsonWebEncryption(headerEither, sharedHeader, recipient.recipientHeader,
+    recipients.map(recipient => JsonWebEncryption(headerIor, sharedHeader, recipient.recipientHeader,
       recipient.encryptedKey, initializationVector, ciphertext, authenticationTag, additionalAuthenticatedData
     ))
 end JsonWebEncryptions
@@ -38,24 +38,24 @@ object JsonWebEncryptions extends JsonWebEncryptionsCompanion:
   def apply(header: JoseHeader, sharedHeader: Option[JoseHeader], recipients: NonEmptyList[Recipient],
             initializationVector: Base64UrlNoPad, ciphertext: Base64UrlNoPad, authenticationTag: Base64UrlNoPad,
             additionalAuthenticatedData: Option[Base64UrlNoPad]): JsonWebEncryptions =
-    JsonWebEncryptions(Left(Left(header)), sharedHeader, recipients, initializationVector, ciphertext,
+    JsonWebEncryptions(Ior.Left(header), sharedHeader, recipients, initializationVector, ciphertext,
       authenticationTag, additionalAuthenticatedData)
 
   def apply(`protected`: Base64UrlNoPad, sharedHeader: Option[JoseHeader], recipients: NonEmptyList[Recipient],
             initializationVector: Base64UrlNoPad, ciphertext: Base64UrlNoPad, authenticationTag: Base64UrlNoPad,
             additionalAuthenticatedData: Option[Base64UrlNoPad]): JsonWebEncryptions =
-    JsonWebEncryptions(Left(Right(`protected`)), sharedHeader, recipients, initializationVector, ciphertext,
+    JsonWebEncryptions(Ior.Right(`protected`), sharedHeader, recipients, initializationVector, ciphertext,
       authenticationTag, additionalAuthenticatedData)
 
   def apply(header: JoseHeader, `protected`: Base64UrlNoPad, sharedHeader: Option[JoseHeader],
             recipients: NonEmptyList[Recipient], initializationVector: Base64UrlNoPad, ciphertext: Base64UrlNoPad,
             authenticationTag: Base64UrlNoPad, additionalAuthenticatedData: Option[Base64UrlNoPad]
            ): JsonWebEncryptions =
-    JsonWebEncryptions(Right((header, `protected`)), sharedHeader, recipients, initializationVector, ciphertext,
+    JsonWebEncryptions(Ior.Both(header, `protected`), sharedHeader, recipients, initializationVector, ciphertext,
       authenticationTag, additionalAuthenticatedData)
 
   private[jwe] val memberNameMap: Map[String, String] = Recipient.memberNameMap ++ Map(
-    "headerEither" -> "protected",
+    "headerIor" -> "protected",
     "sharedHeader" -> "unprotected",
     "initializationVector" -> "iv",
     "authenticationTag" -> "tag",
