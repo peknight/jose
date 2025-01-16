@@ -3,7 +3,6 @@ package com.peknight.jose.jwe
 import cats.Monad
 import cats.data.Ior
 import cats.parse.{Parser, Parser0}
-import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
@@ -16,7 +15,6 @@ import com.peknight.commons.string.syntax.cases.to
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwx.HeaderIor.given
-import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure}
 import io.circe.{Json, JsonObject}
 

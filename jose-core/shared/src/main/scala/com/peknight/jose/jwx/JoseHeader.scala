@@ -6,7 +6,6 @@ import cats.syntax.eq.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
 import cats.{Id, Monad}
-import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec

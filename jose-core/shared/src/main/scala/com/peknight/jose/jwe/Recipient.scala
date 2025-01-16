@@ -1,7 +1,6 @@
 package com.peknight.jose.jwe
 
 import cats.Monad
-import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
@@ -12,7 +11,6 @@ import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwx.JoseHeader
-import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import io.circe.{Json, JsonObject}
 
 trait Recipient:

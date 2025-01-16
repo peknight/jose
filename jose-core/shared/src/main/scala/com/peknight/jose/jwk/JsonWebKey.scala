@@ -2,7 +2,6 @@ package com.peknight.jose.jwk
 
 import cats.data.NonEmptyList
 import cats.{Applicative, Monad}
-import com.peknight.codec.Decoder.decodeOptionAOU
 import com.peknight.codec.base.{Base64, Base64UrlNoPad}
 import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
@@ -148,14 +147,6 @@ object JsonWebKey extends JsonWebKeyCompanion:
       s"""{"k":"${keyValue.value}","kty":"${keyType.name}"}"""
   end OctetSequenceJsonWebKey
 
-  given stringCodecNamedParameterSpecName[F[_]: Applicative]: Codec[F, String, String, NamedParameterSpecName] =
-    Codec.mapOption[F, String, String, NamedParameterSpecName](_.parameterSpecName)(
-      t => List(X25519, X448, Ed25519, Ed448).find(_.parameterSpecName == t)
-    )
-
-  given codecNamedParameterSpecName[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], NamedParameterSpecName] =
-    Codec.codecS[F, S, NamedParameterSpecName]
-
   case class OctetKeyPairJsonWebKey(
     curve: NamedParameterSpecName,
     xCoordinate: Base64UrlNoPad,
@@ -213,6 +204,14 @@ object JsonWebKey extends JsonWebKeyCompanion:
     codecRSAJsonWebKey[F, Json]
 
   given circeCodecRSAJsonWebKey: io.circe.Codec[RSAJsonWebKey] = codec[RSAJsonWebKey]
+
+  given stringCodecNamedParameterSpecName[F[_] : Applicative]: Codec[F, String, String, NamedParameterSpecName] =
+    Codec.mapOption[F, String, String, NamedParameterSpecName](_.parameterSpecName)(
+      t => List(X25519, X448, Ed25519, Ed448).find(_.parameterSpecName == t)
+    )
+
+  given codecNamedParameterSpecName[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], NamedParameterSpecName] =
+    Codec.codecS[F, S, NamedParameterSpecName]
 
   given codecOctetKeyPairJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])

@@ -2,8 +2,6 @@ package com.peknight.jose.jwe
 
 import cats.Monad
 import cats.data.{Ior, NonEmptyList}
-import com.peknight.codec.Decoder.decodeOptionAOU
-import com.peknight.codec.Encoder.encodeNonEmptyListA
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
@@ -14,9 +12,7 @@ import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.commons.string.cases.SnakeCase
 import com.peknight.commons.string.syntax.cases.to
 import com.peknight.jose.jwe.Recipient.Recipient
-import com.peknight.jose.jwe.Recipient.Recipient.codecRecipient
 import com.peknight.jose.jwx.HeaderIor.codecProtectedHeaderIor
-import com.peknight.jose.jwx.JoseHeader.codecJoseHeader
 import com.peknight.jose.jwx.{HeaderIor, JoseHeader}
 import io.circe.{Json, JsonObject}
 

@@ -2,7 +2,6 @@ package com.peknight.jose.jws
 
 import cats.Monad
 import cats.data.NonEmptyList
-import com.peknight.codec.Encoder.encodeNonEmptyListA
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.configuration.given

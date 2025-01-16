@@ -1,18 +1,20 @@
 package com.peknight.jose.jwt
 
 import cats.Id
-import cats.effect.{Clock, IO}
 import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.effect.{Clock, IO}
 import cats.syntax.eq.*
 import cats.syntax.order.*
 import com.peknight.cats.instances.time.instant.given
+import com.peknight.codec.Decoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.codec.circe.sum.jsonType.given
+import com.peknight.codec.cursor.Cursor
 import com.peknight.commons.time.syntax.temporal.{minus, plus}
 import com.peknight.jose.jwa.encryption.randomBytes
 import com.peknight.jose.jwx.encodeToJson
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.time.Instant
@@ -199,6 +201,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     case class Claims(`string`: String, array: List[String])
     import com.peknight.codec.circe.sum.jsonType.given
     import com.peknight.codec.configuration.given
+    given Decoder[Id, Cursor[Json], Claims] = Decoder.derived[Id, Json, Claims]
     val json = """{"string":"a value","array":["one","two","three"]}"""
     assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => jwtClaims.decodeExt[Id, Claims])
       .exists(claims => claims.`string` == "a value" && claims.array === List("one", "two", "three")))
