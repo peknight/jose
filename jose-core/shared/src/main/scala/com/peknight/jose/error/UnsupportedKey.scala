@@ -8,7 +8,7 @@ trait UnsupportedKey extends JoseError:
   def algorithm: String
   def keyType: Class[?]
   override protected def lowPriorityMessage: Option[String] =
-    Some(s"Unsupported key (alg=$algorithm) ${Error.errorClass(keyType)}")
+    Some(s"Unsupported key (alg=$algorithm) ${Error.showClass(keyType)}")
 end UnsupportedKey
 object UnsupportedKey:
   private case class UnsupportedKey(algorithm: String, keyType: Class[?])
