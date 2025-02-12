@@ -8,7 +8,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
-import com.peknight.jose.error.{CanNotHaveKey, InvalidKeyAlgorithm, InvalidKeyLength}
+import com.peknight.jose.error.{CanNotHaveKey, InvalidKeyLength, UnsupportedKeyAlgorithm}
 import com.peknight.security.Security
 import com.peknight.security.cipher.AES
 import com.peknight.security.key.factory.{KeyFactory, KeyFactoryAlgorithm}
@@ -34,7 +34,7 @@ package object encryption:
   : Either[Error, Unit] =
     for
       key <- nonEmptyKey(key)
-      _ <- isTrue(AES.algorithm == key.getAlgorithm, InvalidKeyAlgorithm(key.getAlgorithm))
+      _ <- isTrue(AES.algorithm == key.getAlgorithm, UnsupportedKeyAlgorithm(key.getAlgorithm))
       _ <- validateKeyLength(key, identifier, keyByteLength)
     yield
       ()
