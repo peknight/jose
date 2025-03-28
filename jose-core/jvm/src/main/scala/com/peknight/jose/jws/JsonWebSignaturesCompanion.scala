@@ -36,11 +36,11 @@ trait JsonWebSignaturesCompanion:
   def sign[F[_]: Sync](primitives: NonEmptyList[SigningPrimitive], payload: String): F[Either[Error, JsonWebSignatures]] =
     handleSignSequenceFunc[F](primitives, payload)(_.sequence)
 
-  def parSignBytes[F[_]: Sync: Parallel](primitives: NonEmptyList[SigningPrimitive], payload: ByteVector)
+  def parSignBytes[F[_]: {Sync, Parallel}](primitives: NonEmptyList[SigningPrimitive], payload: ByteVector)
   : F[Either[Error, JsonWebSignatures]] =
     handleSignPayloadFunc[F](primitives)(encodePayload(payload, _, _))(_.parSequence)
 
-  def parSignString[F[_]: Sync: Parallel](primitives: NonEmptyList[SigningPrimitive], payload: String)
+  def parSignString[F[_]: {Sync, Parallel}](primitives: NonEmptyList[SigningPrimitive], payload: String)
   : F[Either[Error, JsonWebSignatures]] =
     handleSignPayloadFunc[F](primitives)(encodePayloadString(payload, _, _))(_.parSequence)
 
@@ -48,7 +48,7 @@ trait JsonWebSignaturesCompanion:
                           (using Sync[F], Parallel[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebSignatures]] =
     handleSignPayloadFunc[F](primitives)(encodePayloadJson(payload, _, _))(_.parSequence)
 
-  def parSign[F[_]: Sync: Parallel](primitives: NonEmptyList[SigningPrimitive], payload: String)
+  def parSign[F[_]: {Sync, Parallel}](primitives: NonEmptyList[SigningPrimitive], payload: String)
   : F[Either[Error, JsonWebSignatures]] =
     handleSignSequenceFunc[F](primitives, payload)(_.parSequence)
 

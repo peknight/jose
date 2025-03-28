@@ -28,12 +28,12 @@ import scodec.bits.ByteVector
 
 trait JsonWebEncryptionsCompanion:
 
-  def encryptString[F[_]: Async: Compression](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
-                                              plaintextString: String, cekOverride: Option[ByteVector] = None,
-                                              ivOverride: Option[ByteVector] = None,
-                                              aadOverride: Option[ByteVector] = None,
-                                              sharedHeader: Option[JoseHeader] = None,
-                                              configuration: JoseConfiguration = JoseConfiguration.default)
+  def encryptString[F[_]: {Async, Compression}](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
+                                                plaintextString: String, cekOverride: Option[ByteVector] = None,
+                                                ivOverride: Option[ByteVector] = None,
+                                                aadOverride: Option[ByteVector] = None,
+                                                sharedHeader: Option[JoseHeader] = None,
+                                                configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryptions]] =
     handleEncryptPlaintext[F](primitives, header, stringEncodeToBytes(plaintextString, configuration.charset), cekOverride,
       ivOverride, aadOverride, sharedHeader, configuration)(_.sequence)((_, _).tupled)
@@ -48,13 +48,13 @@ trait JsonWebEncryptionsCompanion:
     handleEncryptPlaintext[F](primitives, header, encodeToJsonBytes(plaintextValue, configuration.charset), cekOverride,
       ivOverride, aadOverride, sharedHeader, configuration)(_.sequence)((_, _).tupled)
 
-  def parEncryptString[F[_]: Async : Compression: Parallel](primitives: NonEmptyList[EncryptionPrimitive],
-                                                            header: JoseHeader, plaintextString: String,
-                                                            cekOverride: Option[ByteVector] = None,
-                                                            ivOverride: Option[ByteVector] = None,
-                                                            aadOverride: Option[ByteVector] = None,
-                                                            sharedHeader: Option[JoseHeader] = None,
-                                                            configuration: JoseConfiguration = JoseConfiguration.default)
+  def parEncryptString[F[_]: {Async, Compression, Parallel}](primitives: NonEmptyList[EncryptionPrimitive],
+                                                             header: JoseHeader, plaintextString: String,
+                                                             cekOverride: Option[ByteVector] = None,
+                                                             ivOverride: Option[ByteVector] = None,
+                                                             aadOverride: Option[ByteVector] = None,
+                                                             sharedHeader: Option[JoseHeader] = None,
+                                                             configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryptions]] =
     handleEncryptPlaintext[F](primitives, header, stringEncodeToBytes(plaintextString, configuration.charset), cekOverride,
       ivOverride, aadOverride, sharedHeader, configuration)(_.parSequence)((_, _).parTupled)
@@ -69,50 +69,50 @@ trait JsonWebEncryptionsCompanion:
     handleEncryptPlaintext[F](primitives, header, encodeToJsonBytes(plaintextValue, configuration.charset), cekOverride,
       ivOverride, aadOverride, sharedHeader, configuration)(_.parSequence)((_, _).parTupled)
 
-  private def handleEncryptPlaintext[F[_]: Async: Compression](primitives: NonEmptyList[EncryptionPrimitive],
-                                                               header: JoseHeader,
-                                                               plaintextEither: Either[Error, ByteVector],
-                                                               cekOverride: Option[ByteVector],
-                                                               ivOverride: Option[ByteVector],
-                                                               aadOverride: Option[ByteVector],
-                                                               sharedHeader: Option[JoseHeader],
-                                                               configuration: JoseConfiguration)
-                                                              (sequence: List[F[Either[Error, (Recipient, Int)]]] => F[List[Either[Error, (Recipient, Int)]]])
-                                                              (tupled: (F[Either[Error, List[Recipient]]], F[Either[Error, (ContentEncryptionParts, Base64UrlNoPad)]]) => F[(Either[Error, List[Recipient]], Either[Error, (ContentEncryptionParts, Base64UrlNoPad)])])
+  private def handleEncryptPlaintext[F[_]: {Async, Compression}](primitives: NonEmptyList[EncryptionPrimitive],
+                                                                 header: JoseHeader,
+                                                                 plaintextEither: Either[Error, ByteVector],
+                                                                 cekOverride: Option[ByteVector],
+                                                                 ivOverride: Option[ByteVector],
+                                                                 aadOverride: Option[ByteVector],
+                                                                 sharedHeader: Option[JoseHeader],
+                                                                 configuration: JoseConfiguration)
+                                                                (sequence: List[F[Either[Error, (Recipient, Int)]]] => F[List[Either[Error, (Recipient, Int)]]])
+                                                                (tupled: (F[Either[Error, List[Recipient]]], F[Either[Error, (ContentEncryptionParts, Base64UrlNoPad)]]) => F[(Either[Error, List[Recipient]], Either[Error, (ContentEncryptionParts, Base64UrlNoPad)])])
   : F[Either[Error, JsonWebEncryptions]] =
     plaintextEither match
       case Left(error) => error.asLeft[JsonWebEncryptions].pure[F]
       case Right(plaintext) => handleEncrypt[F](primitives, header, plaintext, cekOverride, ivOverride, aadOverride,
         sharedHeader, configuration)(sequence)(tupled)
 
-  def encrypt[F[_]: Async: Compression](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
-                                        plaintext: ByteVector, cekOverride: Option[ByteVector] = None,
-                                        ivOverride: Option[ByteVector] = None,
-                                        aadOverride: Option[ByteVector] = None,
-                                        sharedHeader: Option[JoseHeader] = None,
-                                        configuration: JoseConfiguration = JoseConfiguration.default)
+  def encrypt[F[_]: {Async, Compression}](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
+                                          plaintext: ByteVector, cekOverride: Option[ByteVector] = None,
+                                          ivOverride: Option[ByteVector] = None,
+                                          aadOverride: Option[ByteVector] = None,
+                                          sharedHeader: Option[JoseHeader] = None,
+                                          configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryptions]] =
     handleEncrypt[F](
       primitives, header, plaintext, cekOverride, ivOverride, aadOverride, sharedHeader, configuration
     )(_.sequence)((_, _).tupled)
 
-  def parEncrypt[F[_]: Async: Compression: Parallel](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
-                                                     plaintext: ByteVector, cekOverride: Option[ByteVector] = None,
-                                                     ivOverride: Option[ByteVector] = None,
-                                                     aadOverride: Option[ByteVector] = None,
-                                                     sharedHeader: Option[JoseHeader] = None,
-                                                     configuration: JoseConfiguration = JoseConfiguration.default)
+  def parEncrypt[F[_]: {Async, Compression, Parallel}](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
+                                                       plaintext: ByteVector, cekOverride: Option[ByteVector] = None,
+                                                       ivOverride: Option[ByteVector] = None,
+                                                       aadOverride: Option[ByteVector] = None,
+                                                       sharedHeader: Option[JoseHeader] = None,
+                                                       configuration: JoseConfiguration = JoseConfiguration.default)
   : F[Either[Error, JsonWebEncryptions]] =
     handleEncrypt[F](
       primitives, header, plaintext, cekOverride, ivOverride, aadOverride, sharedHeader, configuration
     )(_.parSequence)((_, _).parTupled)
 
-  private def handleEncrypt[F[_]: Async: Compression](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
-                                                      plaintext: ByteVector, cekOverride: Option[ByteVector],
-                                                      ivOverride: Option[ByteVector], aadOverride: Option[ByteVector],
-                                                      sharedHeader: Option[JoseHeader], configuration: JoseConfiguration)
-                                                     (sequence: List[F[Either[Error, (Recipient, Int)]]] => F[List[Either[Error, (Recipient, Int)]]])
-                                                     (tupled: (F[Either[Error, List[Recipient]]], F[Either[Error, (ContentEncryptionParts, Base64UrlNoPad)]]) => F[(Either[Error, List[Recipient]], Either[Error, (ContentEncryptionParts, Base64UrlNoPad)])])
+  private def handleEncrypt[F[_]: {Async, Compression}](primitives: NonEmptyList[EncryptionPrimitive], header: JoseHeader,
+                                                        plaintext: ByteVector, cekOverride: Option[ByteVector],
+                                                        ivOverride: Option[ByteVector], aadOverride: Option[ByteVector],
+                                                        sharedHeader: Option[JoseHeader], configuration: JoseConfiguration)
+                                                       (sequence: List[F[Either[Error, (Recipient, Int)]]] => F[List[Either[Error, (Recipient, Int)]]])
+                                                       (tupled: (F[Either[Error, List[Recipient]]], F[Either[Error, (ContentEncryptionParts, Base64UrlNoPad)]]) => F[(Either[Error, List[Recipient]], Either[Error, (ContentEncryptionParts, Base64UrlNoPad)])])
   : F[Either[Error, JsonWebEncryptions]] =
     val commonHeader = mergedCommonHeader(header, sharedHeader)
     val eitherT =

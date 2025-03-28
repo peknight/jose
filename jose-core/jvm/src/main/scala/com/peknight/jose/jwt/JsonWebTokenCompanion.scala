@@ -16,9 +16,9 @@ import fs2.compression.Compression
 
 trait JsonWebTokenCompanion:
 
-  def getClaims[F[_]: Async: Compression](jwt: String, configuration: JoseConfiguration = JoseConfiguration.default)
-                                         (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                                         (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getClaims[F[_]: {Async, Compression}](jwt: String, configuration: JoseConfiguration = JoseConfiguration.default)
+                                           (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                           (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, (JsonWebTokenClaims, NonEmptyList[JsonWebStructure])]] =
     case class State(
                       hasSignature: Boolean = false,

@@ -11,14 +11,14 @@ import scodec.bits.ByteVector
 
 trait DeflateCompanion extends CompressionAlgorithmPlatform:
 
-  def compress[F[_]: Concurrent: Compression](data: ByteVector): F[ByteVector] =
+  def compress[F[_]: {Concurrent, Compression}](data: ByteVector): F[ByteVector] =
     Stream.chunk(Chunk.byteVector(data))
       .through(Compression[F].deflate(DeflateParams(level = DeflateParams.Level.EIGHT, header = ZLibParams.Header.GZIP)))
       .compile
       .toVector
       .map(ByteVector.apply)
 
-  def decompress[F[_]: Concurrent: Compression](compressedData: ByteVector): F[Either[Error, ByteVector]] =
+  def decompress[F[_]: {Concurrent, Compression}](compressedData: ByteVector): F[Either[Error, ByteVector]] =
     Stream.chunk(Chunk.byteVector(compressedData))
       .through(Compression[F].inflate(InflateParams(header = ZLibParams.Header.GZIP)))
       .compile

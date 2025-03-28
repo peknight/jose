@@ -74,15 +74,15 @@ trait JsonWebSignaturePlatform { self: JsonWebSignature =>
                                             (using Sync[F]): F[Either[Error, A]] =
     check[F](key, configuration).map(_.flatMap(_ => decodePayload(configuration.charset)))
 
-  def getPayloadBytes[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
-                                               (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                                               (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getPayloadBytes[F[_]: {Async, Compression}](configuration: JoseConfiguration = JoseConfiguration.default)
+                                                 (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                                 (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, ByteVector]] =
     handleGetPayload[F, ByteVector](configuration)(verificationPrimitivesF)(decodePayload)
 
-  def getPayloadString[F[_]: Async: Compression](configuration: JoseConfiguration = JoseConfiguration.default)
-                                                (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                                                (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getPayloadString[F[_]: {Async, Compression}](configuration: JoseConfiguration = JoseConfiguration.default)
+                                                  (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                                  (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, String]] =
     handleGetPayload[F, String](configuration)(verificationPrimitivesF)(decodePayloadString)
 
