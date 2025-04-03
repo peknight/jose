@@ -42,7 +42,7 @@ object OtherPrimesInfo:
     NullType[S],
     StringType[S]
   ): Codec[F, S, Cursor[S], OtherPrimesInfo] =
-    Codec.derived[F, S, OtherPrimesInfo](using CodecConfiguration.default.withTransformMemberNames(memberName =>
+    Codec.derived[F, S, OtherPrimesInfo](using CodecConfiguration.default.withTransformMemberName(memberName =>
       memberNameMap.getOrElse(memberName, memberName.to(SnakeCase))
     ))
 end OtherPrimesInfo

@@ -27,7 +27,7 @@ object Recipient:
                                   Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
                                  ): Codec[F, S, Cursor[S], Recipient] =
       given CodecConfiguration = CodecConfiguration.default
-        .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
+        .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
 
       Codec.derived[F, S, Recipient]
     given jsonCodecRecipient[F[_] : Monad]: Codec[F, Json, Cursor[Json], Recipient] = codecRecipient[F, Json]

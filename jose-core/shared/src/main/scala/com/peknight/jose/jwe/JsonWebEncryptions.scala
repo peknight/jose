@@ -70,7 +70,7 @@ object JsonWebEncryptions extends JsonWebEncryptionsCompanion:
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebEncryptions] =
     given CodecConfiguration = CodecConfiguration.default
-      .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
+      .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
     Codec.derived[F, S, JsonWebEncryptions]
 
   given jsonCodecJsonWebEncryptions[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebEncryptions] =

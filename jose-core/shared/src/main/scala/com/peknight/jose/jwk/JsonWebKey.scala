@@ -178,8 +178,8 @@ object JsonWebKey extends JsonWebKeyCompanion:
 
   private[jwk] val jsonWebKeyCodecConfiguration: CodecConfiguration =
     CodecConfiguration.default
-      .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
-      .withTransformConstructorNames(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
+      .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
+      .withTransformConstructorName(constructorNames => constructorNameMap.getOrElse(constructorNames, constructorNames))
       .withDiscriminator("kty")
       .withExtField("ext")
 

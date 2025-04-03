@@ -170,7 +170,7 @@ object JoseHeader:
     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JoseHeader] =
     given CodecConfiguration = CodecConfiguration.default
-      .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
+      .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withExtField("ext")
     Codec.derived[F, S, JoseHeader]
 

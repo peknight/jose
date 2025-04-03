@@ -56,7 +56,7 @@ object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
     given CodecConfiguration = CodecConfiguration.default
-      .withTransformMemberNames(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
+      .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withExtField("ext")
     given Codec[F, S, Cursor[S], Instant] = codecInstantOfEpochSecondNS[F, S]
     given Codec[F, S, Cursor[S], Set[String]] =
