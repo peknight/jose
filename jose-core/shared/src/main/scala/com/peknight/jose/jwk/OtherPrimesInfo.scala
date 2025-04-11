@@ -6,8 +6,8 @@ import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.{NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
-import com.peknight.commons.string.cases.SnakeCase
-import com.peknight.commons.string.syntax.cases.to
+import com.peknight.commons.text.cases.SnakeCase
+import com.peknight.commons.text.syntax.cases.to
 
 case class OtherPrimesInfo(
                             /**

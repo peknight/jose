@@ -11,8 +11,8 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.instances.time.instant.codecInstantOfEpochSecondNS
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
-import com.peknight.commons.string.cases.SnakeCase
-import com.peknight.commons.string.syntax.cases.to
+import com.peknight.commons.text.cases.SnakeCase
+import com.peknight.commons.text.syntax.cases.to
 import com.peknight.commons.time.syntax.temporal.{minus, plus}
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label

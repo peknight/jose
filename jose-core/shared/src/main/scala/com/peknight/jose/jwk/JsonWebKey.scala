@@ -12,8 +12,8 @@ import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
-import com.peknight.commons.string.cases.SnakeCase
-import com.peknight.commons.string.syntax.cases.to
+import com.peknight.commons.text.cases.SnakeCase
+import com.peknight.commons.text.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}

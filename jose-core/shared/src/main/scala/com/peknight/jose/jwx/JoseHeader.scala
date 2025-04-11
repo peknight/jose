@@ -16,8 +16,8 @@ import com.peknight.codec.http4s.instances.uri.given
 import com.peknight.codec.sum.*
 import com.peknight.codec.syntax.encoder.asS
 import com.peknight.codec.{Codec, Decoder, Encoder}
-import com.peknight.commons.string.cases.SnakeCase
-import com.peknight.commons.string.syntax.cases.to
+import com.peknight.commons.text.cases.SnakeCase
+import com.peknight.commons.text.syntax.cases.to
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.either.{asError, label}
