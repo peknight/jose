@@ -83,6 +83,8 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   given circeCodecJsonWebSignature: io.circe.Codec[JsonWebSignature] = codec[JsonWebSignature]
 
+  given showJsonWebSignature: Show[JsonWebSignature] = Show.show[JsonWebSignature](encodeToJson)
+
   def concat(header: Base64UrlNoPad, payload: String): String = s"${header.value}.$payload"
 
   def toBytes(header: Base64UrlNoPad, payload: String, charset: Charset = StandardCharsets.UTF_8)

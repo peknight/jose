@@ -7,6 +7,7 @@ import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
+import com.peknight.jose.jwx.encodeToJson
 import io.circe.{Json, JsonObject}
 
 case class JsonWebKeySet(keys: List[JsonWebKey]) extends JsonWebKeySetPlatform
@@ -22,4 +23,5 @@ object JsonWebKeySet:
   given jsonCodecJsonWebKeySet[F[_]: Monad]: Codec[F, Json, Cursor[Json], JsonWebKeySet] =
     codecJsonWebKeySet[F, Json]
   given circeCodecJsonWebKeySet: io.circe.Codec[JsonWebKeySet] = codec[JsonWebKeySet]
+  given showJsonWebKeySet: Show[JsonWebKeySet] = Show.show[JsonWebKeySet](encodeToJson)
 end JsonWebKeySet

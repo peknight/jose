@@ -17,6 +17,7 @@ import com.peknight.commons.text.syntax.cases.to
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair, OctetSequence, RSA}
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.key.agreement.{X25519, X448}
 import com.peknight.security.signature.{Ed25519, Ed448}
 import com.peknight.security.spec.NamedParameterSpecName
@@ -256,4 +257,6 @@ object JsonWebKey extends JsonWebKeyCompanion:
     codecJsonWebKey[F, Json]
 
   given circeCodecJsonWebKey: io.circe.Codec[JsonWebKey] = codec[JsonWebKey]
+
+  given showJsonWebKey: Show[JsonWebKey] = Show.show[JsonWebKey](encodeToJson)
 end JsonWebKey

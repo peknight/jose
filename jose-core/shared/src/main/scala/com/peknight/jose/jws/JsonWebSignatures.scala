@@ -1,7 +1,7 @@
 package com.peknight.jose.jws
 
-import cats.{Monad, Show}
 import cats.data.NonEmptyList
+import cats.{Monad, Show}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.config.given
@@ -10,6 +10,7 @@ import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.jose.jws.Signature.Signature
 import com.peknight.jose.jws.Signature.Signature.codecSignature
+import com.peknight.jose.jwx.encodeToJson
 import io.circe.{Json, JsonObject}
 
 case class JsonWebSignatures(payload: String, signatures: NonEmptyList[Signature]):
@@ -27,4 +28,6 @@ object JsonWebSignatures extends JsonWebSignaturesCompanion:
     codecJsonWebSignatures[F, Json]
 
   given circeCodecJsonWebSignatures: io.circe.Codec[JsonWebSignatures] = codec[JsonWebSignatures]
+
+  given showJsonWebSignatures: Show[JsonWebSignatures] = Show.show[JsonWebSignatures](encodeToJson)
 end JsonWebSignatures

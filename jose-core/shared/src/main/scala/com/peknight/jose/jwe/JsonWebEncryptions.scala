@@ -13,7 +13,7 @@ import com.peknight.commons.text.cases.SnakeCase
 import com.peknight.commons.text.syntax.cases.to
 import com.peknight.jose.jwe.Recipient.Recipient
 import com.peknight.jose.jwx.HeaderIor.codecProtectedHeaderIor
-import com.peknight.jose.jwx.{HeaderIor, JoseHeader}
+import com.peknight.jose.jwx.{HeaderIor, JoseHeader, encodeToJson}
 import io.circe.{Json, JsonObject}
 
 case class JsonWebEncryptions private[jwe] (
@@ -78,4 +78,6 @@ object JsonWebEncryptions extends JsonWebEncryptionsCompanion:
     codecJsonWebEncryptions[F, Json]
 
   given circeCodecJsonWebEncryptions: io.circe.Codec[JsonWebEncryptions] = codec[JsonWebEncryptions]
+
+  given showJsonWebEncryptions: Show[JsonWebEncryptions] = Show.show[JsonWebEncryptions](encodeToJson)
 end JsonWebEncryptions

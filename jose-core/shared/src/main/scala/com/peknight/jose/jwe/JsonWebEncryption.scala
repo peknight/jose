@@ -15,7 +15,7 @@ import com.peknight.commons.text.syntax.cases.to
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwx.HeaderIor.given
-import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure}
+import com.peknight.jose.jwx.{JoseHeader, JsonWebStructure, encodeToJson}
 import io.circe.{Json, JsonObject}
 
 case class JsonWebEncryption private[jwe] (
@@ -84,4 +84,6 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     codecJsonWebEncryption[F, Json]
 
   given circeCodecJsonWebEncryption: io.circe.Codec[JsonWebEncryption] = codec[JsonWebEncryption]
+
+  given showJsonWebEncryption: Show[JsonWebEncryption] = Show.show[JsonWebEncryption](encodeToJson)
 end JsonWebEncryption
