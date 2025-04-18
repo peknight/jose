@@ -13,7 +13,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.DecryptionPrimitive
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.VerificationPrimitive
-import com.peknight.jose.jwx.JoseConfiguration
+import com.peknight.jose.jwx.JoseConfig
 import com.peknight.jose.syntax.x509Certificate.{sha1Thumbprint, sha256Thumbprint}
 import com.peknight.validation.std.either.isTrue
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -131,7 +131,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     val run =
       for
         certs <- initKeyList
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF)(
           DecryptionPrimitive.defaultDecryptionPrimitivesF))
@@ -156,7 +156,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     val run =
       for
         certs <- initKeyList
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF)(
           DecryptionPrimitive.defaultDecryptionPrimitivesF))
@@ -181,7 +181,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     val run =
       for
         certs <- initKeyList
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF)(
           DecryptionPrimitive.defaultDecryptionPrimitivesF))
@@ -209,7 +209,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     val run =
       for
         certs <- initKeyList
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF)(
           DecryptionPrimitive.defaultDecryptionPrimitivesF))

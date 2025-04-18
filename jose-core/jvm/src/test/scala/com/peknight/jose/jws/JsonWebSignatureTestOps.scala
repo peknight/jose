@@ -6,7 +6,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.JWSAlgorithm
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import com.peknight.security.provider.Provider
 import com.peknight.validation.std.either.isTrue
 
@@ -19,9 +19,9 @@ object JsonWebSignatureTestOps:
                          provider: Option[Provider | JProvider] = None): EitherT[IO, Error, Unit] =
     for
       jwsWithKey1 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(jwsAlgo)), payload, Some(signingKey1),
-        JoseConfiguration(signatureProvider = provider)))
+        JoseConfig(signatureProvider = provider)))
       jwsWithKey2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(jwsAlgo)), payload, Some(signingKey2),
-        JoseConfiguration(signatureProvider = provider)))
+        JoseConfig(signatureProvider = provider)))
       serializationWithKey1 <- jwsWithKey1.compact.eLiftET[IO]
       serializationWithKey2 <- jwsWithKey2.compact.eLiftET[IO]
       parsedJwsWithKey1 <- JsonWebSignature.parse(serializationWithKey1).eLiftET[IO]
@@ -31,11 +31,11 @@ object JsonWebSignatureTestOps:
       parsedJwsWithKey1Payload <- parsedJwsWithKey1.decodePayloadString().eLiftET[IO]
       parsedJwsWithKey2Payload <- parsedJwsWithKey2.decodePayloadString().eLiftET[IO]
       _ <- isTrue(serializationWithKey1 != serializationWithKey2, Error("compact cannot equal")).eLiftET[IO]
-      _ <- EitherT(parsedJwsWithKey1.check[IO](Some(verificationKey1), JoseConfiguration(signatureProvider = provider)))
-      _ <- EitherT(parsedJwsWithKey2.check[IO](Some(verificationKey2), JoseConfiguration(signatureProvider = provider)))
-      _ <- EitherT(parsedJwsWithKey1.check[IO](Some(verificationKey2), JoseConfiguration(signatureProvider = provider))
+      _ <- EitherT(parsedJwsWithKey1.check[IO](Some(verificationKey1), JoseConfig(signatureProvider = provider)))
+      _ <- EitherT(parsedJwsWithKey2.check[IO](Some(verificationKey2), JoseConfig(signatureProvider = provider)))
+      _ <- EitherT(parsedJwsWithKey1.check[IO](Some(verificationKey2), JoseConfig(signatureProvider = provider))
         .map(_.swap.asError))
-      _ <- EitherT(parsedJwsWithKey2.check[IO](Some(verificationKey1), JoseConfiguration(signatureProvider = provider))
+      _ <- EitherT(parsedJwsWithKey2.check[IO](Some(verificationKey1), JoseConfig(signatureProvider = provider))
         .map(_.swap.asError))
       _ <- isTrue(jwsWithKey1Payload == payload, Error("payload1 must equal")).eLiftET[IO]
       _ <- isTrue(jwsWithKey2Payload == payload, Error("payload2 must equal")).eLiftET[IO]
@@ -52,7 +52,7 @@ object JsonWebSignatureTestOps:
   : EitherT[IO, Error, Unit] =
     for
       jws <- JsonWebSignature.parse(compact).eLiftET[IO]
-      _ <- EitherT(jws.check[IO](key, JoseConfiguration(signatureProvider = provider)).map(_.swap.asError))
+      _ <- EitherT(jws.check[IO](key, JoseConfig(signatureProvider = provider)).map(_.swap.asError))
     yield
       ()
 end JsonWebSignatureTestOps

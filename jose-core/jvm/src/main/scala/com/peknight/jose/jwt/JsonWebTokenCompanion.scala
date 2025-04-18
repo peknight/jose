@@ -11,14 +11,14 @@ import com.peknight.error.Error
 import com.peknight.jose.error.{InvalidJsonWebToken, MissingEncryption, MissingIntegrity, MissingSignature}
 import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, JsonWebStructure}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader, JsonWebStructure}
 import fs2.compression.Compression
 
 trait JsonWebTokenCompanion:
 
-  def getClaims[F[_]: {Async, Compression}](jwt: String, configuration: JoseConfiguration = JoseConfiguration.default)
-                                           (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                                           (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getClaims[F[_]: {Async, Compression}](jwt: String, config: JoseConfig = JoseConfig.default)
+                                           (verificationPrimitivesF: (JsonWebSignature, JoseConfig) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                           (decryptionPrimitivesF: (JsonWebEncryption, JoseConfig) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, (JsonWebTokenClaims, NonEmptyList[JsonWebStructure])]] =
     case class State(
                       hasSignature: Boolean = false,
@@ -47,7 +47,7 @@ trait JsonWebTokenCompanion:
         case (jwt, nested, state) =>
           for
             structure <- JsonWebStructure.parse(jwt).eLiftET[F].invalid(jwt, nested)
-            payload <- EitherT(structure.getPayloadString[F](configuration)(verificationPrimitivesF)(decryptionPrimitivesF))
+            payload <- EitherT(structure.getPayloadString[F](config)(verificationPrimitivesF)(decryptionPrimitivesF))
               .invalid(jwt, nested)
             header <- structure.getUnprotectedHeader.eLiftET[F].invalid(jwt, nested)
             nextNested = structure :: nested
@@ -57,7 +57,7 @@ trait JsonWebTokenCompanion:
               else
                 decode[Id, JsonWebTokenClaims](payload) match
                   case Left(error) =>
-                    if configuration.liberalContentTypeHandling then (payload, nextNested, nextState).asLeft.rLiftET
+                    if config.liberalContentTypeHandling then (payload, nextNested, nextState).asLeft.rLiftET
                     else error.lLiftET.invalid(jwt, nested)
                   case Right(jwtClaims) => (jwtClaims, NonEmptyList(structure, nested), jwt, nextState).asRight.rLiftET
           yield
@@ -65,11 +65,11 @@ trait JsonWebTokenCompanion:
       }
       .value
       .map(_.flatMap { case (claims, nested, jwt, State(hasSignature, hasEncryption, hasSymmetricEncryption)) =>
-        if configuration.requireSignature && !hasSignature then
+        if config.requireSignature && !hasSignature then
           InvalidJsonWebToken(jwt, nested.toList, Some(MissingSignature)).asLeft
-        else if configuration.requireEncryption && !hasEncryption then
+        else if config.requireEncryption && !hasEncryption then
           InvalidJsonWebToken(jwt, nested.toList, Some(MissingEncryption)).asLeft
-        else if configuration.requireIntegrity && !hasSignature && !hasSymmetricEncryption then
+        else if config.requireIntegrity && !hasSignature && !hasSymmetricEncryption then
           InvalidJsonWebToken(jwt, nested.toList, Some(MissingIntegrity)).asLeft
         else
           (claims, nested).asRight

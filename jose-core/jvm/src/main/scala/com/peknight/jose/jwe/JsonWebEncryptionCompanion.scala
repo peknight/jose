@@ -37,10 +37,10 @@ trait JsonWebEncryptionCompanion:
                                                 aadOverride: Option[ByteVector] = None,
                                                 sharedHeader: Option[JoseHeader] = None,
                                                 recipientHeader: Option[JoseHeader] = None,
-                                                configuration: JoseConfiguration = JoseConfiguration.default)
+                                                config: JoseConfig = JoseConfig.default)
   : F[Either[Error, JsonWebEncryption]] =
-    handleEncryptPlaintext[F](header, stringEncodeToBytes(plaintextString, configuration.charset), key, cekOverride,
-      ivOverride, aadOverride, sharedHeader, recipientHeader, configuration)
+    handleEncryptPlaintext[F](header, stringEncodeToBytes(plaintextString, config.charset), key, cekOverride,
+      ivOverride, aadOverride, sharedHeader, recipientHeader, config)
 
   def encryptJson[F[_], A](header: JoseHeader, plaintextValue: A, key: Key,
                            cekOverride: Option[ByteVector] = None,
@@ -48,10 +48,10 @@ trait JsonWebEncryptionCompanion:
                            aadOverride: Option[ByteVector] = None,
                            sharedHeader: Option[JoseHeader] = None,
                            recipientHeader: Option[JoseHeader] = None,
-                           configuration: JoseConfiguration = JoseConfiguration.default)
+                           config: JoseConfig = JoseConfig.default)
                           (using Async[F], Compression[F], Encoder[Id, Json, A]): F[Either[Error, JsonWebEncryption]] =
     handleEncryptPlaintext[F](header, encodeToJsonBytes(plaintextValue), key, cekOverride, ivOverride, aadOverride,
-      sharedHeader, recipientHeader, configuration)
+      sharedHeader, recipientHeader, config)
 
   private def handleEncryptPlaintext[F[_]: {Async, Compression}](header: JoseHeader,
                                                                  plaintextEither: Either[Error, ByteVector],
@@ -61,12 +61,12 @@ trait JsonWebEncryptionCompanion:
                                                                  aadOverride: Option[ByteVector] = None,
                                                                  sharedHeader: Option[JoseHeader] = None,
                                                                  recipientHeader: Option[JoseHeader] = None,
-                                                                 configuration: JoseConfiguration = JoseConfiguration.default)
+                                                                 config: JoseConfig = JoseConfig.default)
   : F[Either[Error, JsonWebEncryption]] =
     plaintextEither match
       case Left(error) => error.asLeft[JsonWebEncryption].pure[F]
       case Right(plaintext) => encrypt[F](header, plaintext, key, cekOverride, ivOverride, aadOverride, sharedHeader,
-        recipientHeader, configuration)
+        recipientHeader, config)
 
   def encrypt[F[_]: {Async, Compression}](header: JoseHeader, plaintext: ByteVector, key: Key,
                                           cekOverride: Option[ByteVector] = None,
@@ -74,17 +74,17 @@ trait JsonWebEncryptionCompanion:
                                           aadOverride: Option[ByteVector] = None,
                                           sharedHeader: Option[JoseHeader] = None,
                                           recipientHeader: Option[JoseHeader] = None,
-                                          configuration: JoseConfiguration = JoseConfiguration.default)
+                                          config: JoseConfig = JoseConfig.default)
   : F[Either[Error, JsonWebEncryption]] =
     val h = mergedHeader(header, sharedHeader, recipientHeader)
     val eitherT =
       for
         encryptionAlgorithm <- h.encryptionAlgorithm.toRight(OptionEmpty.label(encryptionAlgorithmLabel)).eLiftET[F]
-        contentEncryptionKeys <- handleEncryptKey[F](h, encryptionAlgorithm, key, cekOverride, configuration)
+        contentEncryptionKeys <- handleEncryptKey[F](h, encryptionAlgorithm, key, cekOverride, config)
         (nextHeader, nextRecipientHeader) = updateHeader(header, recipientHeader, contentEncryptionKeys,
-          configuration.writeCekHeadersToRecipientHeader)
+          config.writeCekHeadersToRecipientHeader)
         (contentEncryptionParts, aad) <- handleEncrypt[F](nextHeader, encryptionAlgorithm, h.compressionAlgorithm,
-          plaintext, contentEncryptionKeys.contentEncryptionKey, ivOverride, aadOverride, configuration)
+          plaintext, contentEncryptionKeys.contentEncryptionKey, ivOverride, aadOverride, config)
       yield
         JsonWebEncryption(nextHeader, sharedHeader, nextRecipientHeader,
           Base64UrlNoPad.fromByteVector(contentEncryptionKeys.encryptedKey),
@@ -98,7 +98,7 @@ trait JsonWebEncryptionCompanion:
   def handleDecrypt[F[_]: {Async, Compression}](header: JoseHeader, key: Key, encryptedKey: ByteVector,
                                                 initializationVector: ByteVector, ciphertext: ByteVector,
                                                 authenticationTag: ByteVector, additionalAuthenticatedData: ByteVector,
-                                                configuration: JoseConfiguration = JoseConfiguration.default
+                                                config: JoseConfig = JoseConfig.default
                                                ): F[Either[Error, ByteVector]] =
     val eitherT =
       for
@@ -106,37 +106,37 @@ trait JsonWebEncryptionCompanion:
         algorithm <- typed[KeyManagementAlgorithm](algorithm).eLiftET
         encryptionAlgorithm <- header.encryptionAlgorithm.toRight(OptionEmpty.label(encryptionAlgorithmLabel)).eLiftET
         _ <-
-          if configuration.doKeyValidation then
+          if config.doKeyValidation then
             algorithm.validateDecryptionKey(key, encryptionAlgorithm.cekByteLength).eLiftET
           else ().rLiftET
-        ephemeralPublicKey <- publicKey[F](header.ephemeralPublicKey, configuration.keyFactoryProvider)
+        ephemeralPublicKey <- publicKey[F](header.ephemeralPublicKey, config.keyFactoryProvider)
         agreementPartyUInfo <- decodeOption(header.agreementPartyUInfo).eLiftET[F]
         agreementPartyVInfo <- decodeOption(header.agreementPartyVInfo).eLiftET[F]
         initializationVectorH <- decodeOption(header.initializationVector).eLiftET[F]
         authenticationTagH <- decodeOption(header.authenticationTag).eLiftET[F]
         pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[F]
         cek <- EitherT(algorithm.decryptKey[F](key, encryptedKey, encryptionAlgorithm.cekByteLength,
-          encryptionAlgorithm.cekAlgorithm, configuration.keyDecipherModeOverride, Some(encryptionAlgorithm),
+          encryptionAlgorithm.cekAlgorithm, config.keyDecipherModeOverride, Some(encryptionAlgorithm),
           ephemeralPublicKey, agreementPartyUInfo, agreementPartyVInfo, initializationVectorH, authenticationTagH,
-          pbes2SaltInput, header.pbes2Count, configuration.random, configuration.cipherProvider, configuration.keyAgreementProvider,
-          configuration.macProvider, configuration.messageDigestProvider))
+          pbes2SaltInput, header.pbes2Count, config.random, config.cipherProvider, config.keyAgreementProvider,
+          config.macProvider, config.messageDigestProvider))
         rawCek = ByteVector(cek.getEncoded)
         _ <- checkCek[F](encryptionAlgorithm, rawCek)
         decrypted <- EitherT(encryptionAlgorithm.decrypt[F](rawCek, initializationVector, ciphertext, authenticationTag,
-          additionalAuthenticatedData, configuration.cipherProvider, configuration.macProvider))
+          additionalAuthenticatedData, config.cipherProvider, config.macProvider))
         res <- decompress[F](header.compressionAlgorithm, decrypted)
       yield
         res
     eitherT.value
 
   private[jwe] def handleEncryptKey[F[_]: Sync](header: JoseHeader, encryptionAlgorithm: EncryptionAlgorithm, key: Key,
-                                                cekOverride: Option[ByteVector], configuration: JoseConfiguration)
+                                                cekOverride: Option[ByteVector], config: JoseConfig)
   : EitherT[F, Error, ContentEncryptionKeys] =
     for
       algorithm <- header.algorithm.toRight(OptionEmpty.label(algorithmLabel)).eLiftET[F]
       algorithm <- typed[KeyManagementAlgorithm](algorithm).label(algorithmLabel).eLiftET[F]
       _ <-
-        if configuration.doKeyValidation then
+        if config.doKeyValidation then
           algorithm.validateEncryptionKey(key, encryptionAlgorithm.cekByteLength).eLiftET
         else ().rLiftET
       agreementPartyUInfo <- decodeOption(header.agreementPartyUInfo).eLiftET[F]
@@ -145,9 +145,9 @@ trait JsonWebEncryptionCompanion:
       pbes2SaltInput <- decodeOption(header.pbes2SaltInput).eLiftET[F]
       contentEncryptionKeys <- EitherT(algorithm.encryptKey[F](key, encryptionAlgorithm.cekByteLength,
         encryptionAlgorithm.cekAlgorithm, cekOverride, Some(encryptionAlgorithm), agreementPartyUInfo,
-        agreementPartyVInfo, initializationVector, pbes2SaltInput, header.pbes2Count, configuration.random,
-        configuration.cipherProvider, configuration.keyAgreementProvider, configuration.keyPairGeneratorProvider,
-        configuration.macProvider, configuration.messageDigestProvider))
+        agreementPartyVInfo, initializationVector, pbes2SaltInput, header.pbes2Count, config.random,
+        config.cipherProvider, config.keyAgreementProvider, config.keyPairGeneratorProvider,
+        config.macProvider, config.messageDigestProvider))
       _ <- checkCek(encryptionAlgorithm, contentEncryptionKeys.contentEncryptionKey)
     yield
       contentEncryptionKeys
@@ -166,13 +166,13 @@ trait JsonWebEncryptionCompanion:
                                                              contentEncryptionKey: ByteVector,
                                                              ivOverride: Option[ByteVector] = None,
                                                              aadOverride: Option[ByteVector] = None,
-                                                             configuration: JoseConfiguration = JoseConfiguration.default
+                                                             config: JoseConfig = JoseConfig.default
                                                             ): EitherT[F, Error, (ContentEncryptionParts, Base64UrlNoPad)] =
     for
       aad <- getAdditionalAuthenticatedData(aadOverride, header).eLiftET
       plaintextBytes <- compress[F](compressionAlgorithm, plaintext)
       contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes, aad,
-        ivOverride, configuration.random, configuration.cipherProvider, configuration.macProvider).asError)
+        ivOverride, config.random, config.cipherProvider, config.macProvider).asError)
     yield
       (contentEncryptionParts, Base64UrlNoPad.fromByteVector(aad))
 

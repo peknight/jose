@@ -200,7 +200,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebTokenClaims" should "succeed with decodeExt" in {
     case class Claims(`string`: String, array: List[String])
     import com.peknight.codec.circe.sum.jsonType.given
-    import com.peknight.codec.configuration.given
+    import com.peknight.codec.config.given
     given Decoder[Id, Cursor[Json], Claims] = Decoder.derived[Id, Json, Claims]
     val json = """{"string":"a value","array":["one","two","three"]}"""
     assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => jwtClaims.decodeExt[Id, Claims])

@@ -1,5 +1,5 @@
 package com.peknight.jose.jwx
 
 trait JosePrimitive:
-  def configuration: JoseConfiguration
+  def config: JoseConfig
 end JosePrimitive

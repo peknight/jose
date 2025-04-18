@@ -17,7 +17,7 @@ import com.peknight.jose.jwa.signature.ES256
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jwk.{JsonWebKey, JsonWebKeySet, KeyId}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import com.peknight.security.cipher.AES
 import com.peknight.security.key.agreement.X25519
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -71,18 +71,18 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jsonWebKeySet1 <- decode[Id, JsonWebKeySet](json1).eLiftET[IO]
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireSignature = false))(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireSignature = false))(
           jsonWebKeySet1.verificationPrimitives
         )(jsonWebKeySet1.decryptionPrimitives))
         _ <- jwtClaims1.checkTime(Instant.ofEpochSecond(1424015558L)).eLiftET[IO]
         _ <- jwtClaims1.requireExpirationTime.eLiftET[IO]
         _ <- jwtClaims1.expectedIssuers("from").eLiftET[IO]
         _ <- jwtClaims1.expectedAudiences("to").eLiftET[IO]
-        _ <- EitherT(JsonWebToken.getClaims[IO](badJwt, JoseConfiguration(requireSignature = false))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](badJwt, JoseConfig(requireSignature = false))(
           jsonWebKeySet1.verificationPrimitives
         )(jsonWebKeySet1.decryptionPrimitives).map(_.swap.asError))
         jsonWebKeySet2 <- decode[Id, JsonWebKeySet](json2).eLiftET[IO]
-        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireSignature = false))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireSignature = false))(
           jsonWebKeySet2.verificationPrimitives
         )(jsonWebKeySet2.decryptionPrimitives).map(_.swap.asError))
       yield
@@ -100,7 +100,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jsonWebKeySet <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireSignature = false))(
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireSignature = false))(
           jsonWebKeySet.verificationPrimitives
         )(jsonWebKeySet.decryptionPrimitives))
         _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1424026062L)).eLiftET[IO]
@@ -134,7 +134,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         verificationJwks <- decode[Id, JsonWebKeySet](octKeysJson).eLiftET[IO]
         decryptionJwks <- decode[Id, JsonWebKeySet](decryptionKeysJson).eLiftET[IO]
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireSignature = false))(
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireSignature = false))(
           verificationJwks.verificationPrimitives
         )(decryptionJwks.decryptionPrimitives))
         _ <- jwtClaims.checkTime(Instant.ofEpochSecond(1424266660L)).eLiftET[IO]
@@ -282,14 +282,14 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwes <- EitherT(random.shuffleList(List(jwee1, jwee2, jwer1, jwer2, jwer3, jwer4)).asError)
         _ <- jwes.traverse { jwe =>
           for
-            (jwtClaims, _) <- EitherT(JsonWebToken.getClaims[IO](jwe, JoseConfiguration(requireSignature = false))(
+            (jwtClaims, _) <- EitherT(JsonWebToken.getClaims[IO](jwe, JoseConfig(requireSignature = false))(
               jsonWebKeySet.verificationPrimitives
             )(jsonWebKeySet.decryptionPrimitives))
             _ <- jwtClaims.requireIssuer.eLiftET[IO]
           yield
             ()
         }
-        _ <- EitherT(JsonWebToken.getClaims[IO](jwer4bad, JoseConfiguration(requireSignature = false))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwer4bad, JoseConfig(requireSignature = false))(
           jsonWebKeySet.verificationPrimitives
         )(jsonWebKeySet.decryptionPrimitives).map(_.swap.asError))
       yield
@@ -311,7 +311,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwks = JsonWebKeySet(keyCompactPairs.map(_._1))
         _ <- keyCompactPairs.traverse { (_, jwe) =>
           for
-            (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwe, JoseConfiguration(requireSignature = false))(
+            (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwe, JoseConfig(requireSignature = false))(
               jwks.verificationPrimitives
             )(jwks.decryptionPrimitives))
             _ <- jwtClaims.requireIssuer.eLiftET[IO]
@@ -321,7 +321,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         key <- EitherT(AES.keySizeGenerateKey[IO](256).asError)
         jwk <- JsonWebKey.fromOctetSequenceKey(key, keyID = Some(KeyId("nope"))).rLiftET[IO, Error]
         compact <- makeSimpleSymmetricJwe(jwk)
-        _ <- EitherT(JsonWebToken.getClaims[IO](compact, JoseConfiguration(requireSignature = false))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](compact, JoseConfig(requireSignature = false))(
           jwks.verificationPrimitives
         )(jwks.decryptionPrimitives).map(_.swap.asError))
       yield

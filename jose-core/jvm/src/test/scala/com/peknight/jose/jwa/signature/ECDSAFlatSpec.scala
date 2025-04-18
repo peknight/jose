@@ -17,7 +17,7 @@ import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.JsonWebSignature
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnVerify, testBasicRoundTrip}
-import com.peknight.jose.jwx.JoseConfiguration
+import com.peknight.jose.jwx.JoseConfig
 import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.Security
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
@@ -676,7 +676,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jws <- JsonWebSignature.parse(jwsCs).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO](provider = Some(provider)))
         payload <- EitherT(jws.verifiedPayloadString[IO](Some(key),
-          JoseConfiguration(signatureProvider = Some(provider))))
+          JoseConfig(signatureProvider = Some(provider))))
         _ <- isTrue(payload == """{"sub":"meh"}""", Error("payload must equal")).eLiftET[IO]
       yield
         ()

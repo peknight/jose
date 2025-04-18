@@ -10,7 +10,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwk.JsonWebKey
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnSign, testBadKeyOnVerify}
 import com.peknight.jose.jws.{JsonWebSignature, JsonWebSignatureTestOps}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import com.peknight.security.mac.Hmac
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -105,7 +105,7 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key),
-          JoseConfiguration(doKeyValidation = false)))
+          JoseConfig(doKeyValidation = false)))
         cs <- jws.compact.eLiftET[IO]
         _ <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)), "whatever", Some(key)).map(_.swap.asError))
       yield

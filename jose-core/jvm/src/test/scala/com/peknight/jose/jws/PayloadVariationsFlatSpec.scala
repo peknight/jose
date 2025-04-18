@@ -12,7 +12,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.{ES256, RS256}
 import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -67,12 +67,12 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "pronounced as'-key", Some(privateKey),
-          JoseConfiguration(charset = StandardCharsets.US_ASCII)))
+          JoseConfig(charset = StandardCharsets.US_ASCII)))
         compact <- jws.compact.eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
         payload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(publicKey),
-          JoseConfiguration(charset = StandardCharsets.US_ASCII)))
+          JoseConfig(charset = StandardCharsets.US_ASCII)))
       yield
         payload == "pronounced as'-key"
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -84,7 +84,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         charset <- Try(Charset.forName("ISO8859_15")).tryAsError.eLiftET[IO]
         privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "€Ÿ", Some(privateKey),
-          JoseConfiguration(charset = charset)))
+          JoseConfig(charset = charset)))
         compact <- jws.compact.eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
         publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)

@@ -13,18 +13,18 @@ import io.circe.Json
 import scodec.bits.ByteVector
 
 trait JsonWebStructurePlatform { self: JsonWebStructure =>
-  def getPayloadBytes[F[_]: {Async, Compression}](configuration: JoseConfiguration = JoseConfiguration.default)
-                                                 (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                                                 (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getPayloadBytes[F[_]: {Async, Compression}](config: JoseConfig = JoseConfig.default)
+                                                 (verificationPrimitivesF: (JsonWebSignature, JoseConfig) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                                 (decryptionPrimitivesF: (JsonWebEncryption, JoseConfig) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, ByteVector]]
 
-  def getPayloadString[F[_]: {Async, Compression}](configuration: JoseConfiguration = JoseConfiguration.default)
-                                                  (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                                                  (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getPayloadString[F[_]: {Async, Compression}](config: JoseConfig = JoseConfig.default)
+                                                  (verificationPrimitivesF: (JsonWebSignature, JoseConfig) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                                                  (decryptionPrimitivesF: (JsonWebEncryption, JoseConfig) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
   : F[Either[Error, String]]
 
-  def getPayloadJson[F[_], A](configuration: JoseConfiguration = JoseConfiguration.default)
-                             (verificationPrimitivesF: (JsonWebSignature, JoseConfiguration) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
-                             (decryptionPrimitivesF: (JsonWebEncryption, JoseConfiguration) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
+  def getPayloadJson[F[_], A](config: JoseConfig = JoseConfig.default)
+                             (verificationPrimitivesF: (JsonWebSignature, JoseConfig) => F[Either[Error, NonEmptyList[VerificationPrimitive]]])
+                             (decryptionPrimitivesF: (JsonWebEncryption, JoseConfig) => F[Either[Error, NonEmptyList[DecryptionPrimitive]]])
                              (using Async[F], Compression[F], Decoder[Id, Cursor[Json], A]): F[Either[Error, A]]
 }

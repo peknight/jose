@@ -6,7 +6,7 @@ import cats.parse.{Parser, Parser0}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
-import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.*
 import com.peknight.codec.{Codec, Decoder, Encoder}
@@ -75,7 +75,7 @@ object JsonWebEncryption extends JsonWebEncryptionCompanion:
     jsonObjectEncoder: Encoder[F, S, JsonObject],
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebEncryption] =
-    given CodecConfiguration = CodecConfiguration.default
+    given CodecConfig = CodecConfig.default
       .withTransformMemberName(memberName => JsonWebEncryptions.memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
     Codec.derived[F, S, JsonWebEncryption]
 

@@ -12,7 +12,7 @@ import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.{HS256, RS256}
 import com.peknight.jose.jwk.{JsonWebKey, d, e, n}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, bytesDecodeToString, stringEncodeToBytes}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader, bytesDecodeToString, stringEncodeToBytes}
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -43,7 +43,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         parsedPayload <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
         // reconstruct the example with unencoded and detached payload from https://tools.ietf.org/html/rfc7797#section-4.2
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)).base64UrlEncodePayload(false), payload,
-          Some(key), JoseConfiguration(charset = StandardCharsets.US_ASCII)))
+          Some(key), JoseConfig(charset = StandardCharsets.US_ASCII)))
         detachedContentCompactSerialization <- jws.detachedContentCompact.eLiftET[IO]
         decodedPayload <- jws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
       yield
@@ -71,12 +71,12 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO]())
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(HS256)).base64UrlEncodePayload(false), payload,
-          Some(key), JoseConfiguration(charset = StandardCharsets.US_ASCII)))
+          Some(key), JoseConfig(charset = StandardCharsets.US_ASCII)))
         detachedContentCompactSerialization <- jws.detachedContentCompact.eLiftET[IO]
         decodedPayload <- jws.decodePayloadString(StandardCharsets.US_ASCII).eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(detachedUnencoded, payload).eLiftET[IO]
         parsedPayload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(key),
-          JoseConfiguration(charset = StandardCharsets.US_ASCII)))
+          JoseConfig(charset = StandardCharsets.US_ASCII)))
         b64 <- parsedJws.isBase64UrlEncodePayload.eLiftET[IO]
       yield
         decodedPayload == payload && parsedPayload == payload && !b64

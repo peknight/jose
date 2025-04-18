@@ -60,7 +60,7 @@ trait JsonWebSignaturesCompanion:
       for
         base64UrlEncodePayload <- elementConsistent(primitives)(_.header.isBase64UrlEncodePayload)
           .label(base64UrlEncodePayloadLabel)
-        charset <- elementConsistent(primitives)(_.configuration.charset)(using Eq.fromUniversalEquals).label("charset")
+        charset <- elementConsistent(primitives)(_.config.charset)(using Eq.fromUniversalEquals).label("charset")
         payload <- encodePayload(base64UrlEncodePayload, charset)
       yield
         payload
@@ -70,7 +70,7 @@ trait JsonWebSignaturesCompanion:
                                                 (sequence: NonEmptyList[F[Either[Error, Signature]]] => F[NonEmptyList[Either[Error, Signature]]])
   : F[Either[Error, JsonWebSignatures]] =
     val signatures = primitives.map(primitive => JsonWebSignature.handleSignSignatureFunc[F, Signature](
-      primitive.header, payload, primitive.key, primitive.configuration
+      primitive.header, payload, primitive.key, primitive.config
     )((headerBase, signature) => Signature(primitive.header, headerBase, signature)))
     sequence(signatures).map(_.sequence.map(signatures => JsonWebSignatures(payload, signatures)))
 end JsonWebSignaturesCompanion

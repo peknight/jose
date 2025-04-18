@@ -8,7 +8,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwk.JsonWebKeySet
-import com.peknight.jose.jwx.JoseConfiguration
+import com.peknight.jose.jwx.JoseConfig
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.time.Instant
@@ -66,7 +66,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](idToken, JoseConfiguration(doKeyValidation = false))(
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](idToken, JoseConfig(doKeyValidation = false))(
           jwks.verificationPrimitives
         )(jwks.decryptionPrimitives))
         _ <- jwtClaims.requireExpirationTime.eLiftET[IO]
@@ -80,7 +80,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   }
 
   "Googles Too Small Key" should "succeed after they moved to 2048" in {
-    // endpoints mentioned were found at https://accounts.google.com/.well-known/openid-configuration
+    // endpoints mentioned were found at https://accounts.google.com/.well-known/openid-config
     // JWKS content from https://www.googleapis.com/oauth2/v3/certs on July 8, 2015
     val jwksJson = "{\"keys\":[{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"e53139984bd36d2c23055244" +
       "1608cc0b5179487a\",\"n\":\"w5F_3au2fyRLapW4K1g0zT6hjF-co8hjHJWniH3aBOKP45xuSRYXnPrpBHkXM6jFkVHs2pCFAOg6o0tl65" +

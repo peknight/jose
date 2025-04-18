@@ -10,7 +10,7 @@ import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.signature.ES256
 import com.peknight.jose.jwk.{d256, x256, y256}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
@@ -28,7 +28,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
           _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
           payload <- EitherT(jws.verifiedPayloadString[IO](Some(publicKey),
-            JoseConfiguration(knownCriticalHeaders = List(headerName))))
+            JoseConfig(knownCriticalHeaders = List(headerName))))
           payload <- jws.decodePayloadString().eLiftET[IO]
         yield
           payload == "how critical really?"
@@ -48,7 +48,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- EitherT(jws.verify[IO]().map(_.swap.asError))
         // -> in the actual encoded example even thought the text says http://example.invalid/UNDEFINED
         payload <- EitherT(jws.verifiedPayloadString[IO](None,
-          JoseConfiguration(knownCriticalHeaders = List("http://example.com/UNDEFINED"))))
+          JoseConfig(knownCriticalHeaders = List("http://example.com/UNDEFINED"))))
       yield
         payload == "FAIL"
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -82,7 +82,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
         _ <- EitherT(jws.verify[IO](Some(publicKey)).map(_.swap.asError))
         parsedPayload <- EitherT(jws.verifiedPayloadString[IO](Some(publicKey),
-          JoseConfiguration(knownCriticalHeaders = List("nope"))))
+          JoseConfig(knownCriticalHeaders = List("nope"))))
       yield
         parsedPayload == payload
     run.value.asserting(value => assert(value.getOrElse(false)))

@@ -18,7 +18,7 @@ import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, EllipticCurveJson
 import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair}
 import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader, JosePrimitive, JsonWebStructure}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader, JosePrimitive, JsonWebStructure}
 import com.peknight.security.provider.Provider
 import com.peknight.security.signature.EdDSA
 import com.peknight.validation.collection.list.either.nonEmpty
@@ -28,7 +28,7 @@ import java.security.{Key, Provider as JProvider}
 
 trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
 
-  private def handleFilter[F[_]: Sync](structure: JsonWebStructure, configuration: JoseConfiguration)
+  private def handleFilter[F[_]: Sync](structure: JsonWebStructure, config: JoseConfig)
                                       (filter: (JoseHeader, JsonWebKey) => Boolean)
   : F[Either[Error, List[JsonWebKey]]] =
     val eitherT =
@@ -49,10 +49,10 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
                   .flatMap(_ => header.ephemeralPublicKey).map(_.keyType)
                   .fold(true)(_ == jwk.keyType) &&
                 filter(header, jwk)).rLiftET[F, Error] &&
-                filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA1Thumbprint, configuration)(
+                filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA1Thumbprint, config)(
                   jwk.getX509CertificateSHA1Thumbprint
                 ) &&
-                filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA256Thumbprint, configuration)(
+                filterX509CertificateSHAThumbprint[F](header.x509CertificateSHA256Thumbprint, config)(
                   jwk.getX509CertificateSHA256Thumbprint
                 ))
                 .map {
@@ -65,19 +65,19 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
     eitherT.value
 
   private def handlePrimitives[F[_]: Sync, Primitive <: JosePrimitive](structure: JsonWebStructure, privateKey: Boolean,
-                                                                       configuration: JoseConfiguration)
+                                                                       config: JoseConfig)
                                                                       (filter: (JoseHeader, JsonWebKey) => Boolean)
-                                                                      (f: (Key, JoseConfiguration) => Primitive)
+                                                                      (f: (Key, JoseConfig) => Primitive)
   : F[Either[Error, NonEmptyList[Primitive]]] =
     val eitherT =
       for
-        keys <- EitherT(handleFilter[F](structure, configuration)(filter))
+        keys <- EitherT(handleFilter[F](structure, config)(filter))
         primitives <- keys.traverse[[X] =>> EitherT[F, Error, X], Key] {
           case jwk: AsymmetricJsonWebKey =>
-            if privateKey then EitherT(jwk.toPrivateKey[F](configuration.keyFactoryProvider)).map(_.asInstanceOf)
-            else EitherT(jwk.toPublicKey[F](configuration.keyFactoryProvider)).map(_.asInstanceOf)
-          case jwk => EitherT(jwk.toKey[F](configuration.keyFactoryProvider))
-        }.map(_.map(key => f(key, configuration)))
+            if privateKey then EitherT(jwk.toPrivateKey[F](config.keyFactoryProvider)).map(_.asInstanceOf)
+            else EitherT(jwk.toPublicKey[F](config.keyFactoryProvider)).map(_.asInstanceOf)
+          case jwk => EitherT(jwk.toKey[F](config.keyFactoryProvider))
+        }.map(_.map(key => f(key, config)))
         primitives <- nonEmpty(primitives).label("primitives").eLiftET[F]
       yield
         primitives
@@ -99,12 +99,12 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
       case _ => true
 
   private def filterX509CertificateSHAThumbprint[F[_]: Applicative](x509CertificateSHAThumbprint: Option[Base64UrlNoPad],
-                                                                    configuration: JoseConfiguration)
+                                                                    config: JoseConfig)
                                                                    (getX509CertificateSHAThumbprint: (Option[Provider | JProvider], Option[Provider | JProvider]) => F[Either[Error, Option[Base64UrlNoPad]]])
   : EitherT[F, Error, Boolean] =
     x509CertificateSHAThumbprint.fold(true.rLiftET[F, Error])(x5t =>
-      EitherT(getX509CertificateSHAThumbprint(configuration.certificateFactoryProvider,
-        configuration.messageDigestProvider))
+      EitherT(getX509CertificateSHAThumbprint(config.certificateFactoryProvider,
+        config.messageDigestProvider))
         .map(_.forall(_ === x5t))
     )
 
@@ -112,18 +112,18 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
     jwk.publicKeyUse.forall(_ == Signature) && jwk.keyOperations.forall(_.exists(KeyOperationType.verifyOps.contains))
 
   def filterForVerification[F[_]: Sync](jws: JsonWebSignature,
-                                        configuration: JoseConfiguration = JoseConfiguration.default)
+                                        config: JoseConfig = JoseConfig.default)
   : F[Either[Error, List[JsonWebKey]]] =
-    VerificationPrimitive.handleFilterForVerification[F](jws, configuration)(
-      handleFilter[F](jws, configuration)(verificationPredict)
+    VerificationPrimitive.handleFilterForVerification[F](jws, config)(
+      handleFilter[F](jws, config)(verificationPredict)
     )
 
   def verificationPrimitives[F[_]: Sync](jws: JsonWebSignature,
-                                         configuration: JoseConfiguration = JoseConfiguration.default)
+                                         config: JoseConfig = JoseConfig.default)
   : F[Either[Error, NonEmptyList[VerificationPrimitive]]] =
-    VerificationPrimitive.handleVerificationPrimitivesF[F](jws, configuration)(
-      handlePrimitives(jws, false, configuration)(verificationPredict)((key, configuration) =>
-        VerificationPrimitive(Some(key), configuration)
+    VerificationPrimitive.handleVerificationPrimitivesF[F](jws, config)(
+      handlePrimitives(jws, false, config)(verificationPredict)((key, config) =>
+        VerificationPrimitive(Some(key), config)
       )
     )
 
@@ -131,13 +131,13 @@ trait JsonWebKeySetPlatform { self: JsonWebKeySet =>
     jwk.publicKeyUse.forall(_ == Encryption) && jwk.keyOperations.forall(_.exists(KeyOperationType.decryptOps.contains))
 
   def filterForDecryption[F[_]: Sync](jwe: JsonWebEncryption,
-                                      configuration: JoseConfiguration = JoseConfiguration.default)
+                                      config: JoseConfig = JoseConfig.default)
   : F[Either[Error, List[JsonWebKey]]] =
-    handleFilter[F](jwe, configuration)(decryptionPredict)
+    handleFilter[F](jwe, config)(decryptionPredict)
 
   def decryptionPrimitives[F[_]: Sync](jwe: JsonWebEncryption,
-                                       configuration: JoseConfiguration = JoseConfiguration.default)
+                                       config: JoseConfig = JoseConfig.default)
   : F[Either[Error, NonEmptyList[DecryptionPrimitive]]] =
-    handlePrimitives(jwe, true, configuration)(decryptionPredict)(DecryptionPrimitive.apply)
+    handlePrimitives(jwe, true, config)(decryptionPredict)(DecryptionPrimitive.apply)
 }
 

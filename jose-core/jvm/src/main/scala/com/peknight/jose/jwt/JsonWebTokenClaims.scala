@@ -6,7 +6,7 @@ import com.peknight.cats.instances.time.instant.given
 import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
-import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.instances.time.instant.codecInstantOfEpochSecondNS
 import com.peknight.codec.sum.*
@@ -55,7 +55,7 @@ object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
     jsonObjectEncoder: Encoder[F, S, JsonObject],
     jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
-    given CodecConfiguration = CodecConfiguration.default
+    given CodecConfig = CodecConfig.default
       .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))
       .withExtField("ext")
     given Codec[F, S, Cursor[S], Instant] = codecInstantOfEpochSecondNS[F, S]

@@ -14,7 +14,7 @@ import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
 import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 
@@ -28,11 +28,11 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "290Ijp0cnVlfQ."
     val run =
       for
-        (jwtClaims, _) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireSignature = false,
+        (jwtClaims, _) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireSignature = false,
           skipSignatureVerification = true))(VerificationPrimitive.defaultVerificationPrimitivesF)(
           DecryptionPrimitive.defaultDecryptionPrimitivesF))
         _ <- jwtClaims.expectedIssuers("joe").eLiftET[IO]
-        (jwtClaims2, _) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireSignature = false))(
+        (jwtClaims2, _) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireSignature = false))(
           VerificationPrimitive.verificationKey[IO]()
         )(DecryptionPrimitive.defaultDecryptionPrimitivesF))
         _ <- jwtClaims2.expectedIssuers("joe").eLiftET[IO]
@@ -68,7 +68,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         key <- EitherT(appendixA2.toPrivateKey[IO]())
         (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt,
-          JoseConfiguration(skipSignatureVerification = true, requireSignature = false))(
+          JoseConfig(skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF
         )(DecryptionPrimitive.decryptionKey[IO](key)))
         _ <- jwtClaims.expectedIssuers("joe").eLiftET[IO]
@@ -98,23 +98,23 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         verificationKey <- EitherT(RSA.publicKey[IO](n, e).asError)
         rsaPublicKey <- EitherT(appendixA1.toPublicKey[IO]())
         (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt,
-          JoseConfiguration(skipSignatureVerification = true, requireSignature = false))(
+          JoseConfig(skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF
         )(DecryptionPrimitive.decryptionKey[IO](decryptionKey)))
-        (jwtClaims2, nested2) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireEncryption = true))(
+        (jwtClaims2, nested2) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireEncryption = true))(
           VerificationPrimitive.verificationKey(Some(verificationKey))
         )(DecryptionPrimitive.decryptionKey(decryptionKey)))
         _ <- jwtClaims2.requireExpirationTime.eLiftET[IO]
         _ <- jwtClaims2.checkTime(Instant.ofEpochSecond(1300819300L), 30.seconds).eLiftET[IO]
         _ <- jwtClaims2.expectedIssuers("joe").eLiftET[IO]
         // then some negative tests w/ null or wrong keys
-        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireEncryption = true))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireEncryption = true))(
           VerificationPrimitive.verificationKey(Some(verificationKey))
         )(DecryptionPrimitive.defaultDecryptionPrimitivesF).map(_.swap.asError))
-        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireEncryption = true))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireEncryption = true))(
           VerificationPrimitive.verificationKey[IO](None)
         )(DecryptionPrimitive.decryptionKey(decryptionKey)).map(_.swap.asError))
-        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireEncryption = true))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireEncryption = true))(
           VerificationPrimitive.verificationKey[IO](Some(rsaPublicKey))
         )(DecryptionPrimitive.decryptionKey(decryptionKey)).map(_.swap.asError))
       yield
@@ -134,7 +134,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "zZr1Z9CAow\"}"
     val run =
       for
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF
         )(DecryptionPrimitive.defaultDecryptionPrimitivesF))
@@ -146,7 +146,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         _ <- jwtClaims2.expectedIssuers("joe").eLiftET[IO]
         _ <- jwtClaims2.requireExpirationTime.eLiftET[IO]
         verificationKey <- EitherT(jsonWebKey.toKey[IO]())
-        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(requireEncryption = true))(
+        _ <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(requireEncryption = true))(
           VerificationPrimitive.verificationKey(Some(verificationKey))
         )(DecryptionPrimitive.defaultDecryptionPrimitivesF).map(_.swap.asError))
       yield
@@ -160,7 +160,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "eGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
     val run =
       for
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true))(
           VerificationPrimitive.defaultVerificationPrimitivesF
         )(DecryptionPrimitive.defaultDecryptionPrimitivesF))
@@ -201,7 +201,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         wrapKey <- decode[Id, JsonWebKey]("{\"kty\":\"oct\",\"k\":\"sUMs42PKNsKn9jeGJ2szKA\"}").eLiftET[IO]
         decryptionKey <- EitherT(wrapKey.toKey[IO]())
-        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.defaultVerificationPrimitivesF
         )(DecryptionPrimitive.decryptionKey(decryptionKey)))
@@ -253,7 +253,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jsonWebKey <- decode[Id, JsonWebKey]("{\"kty\":\"oct\",\"k\":\"IWlxz1h43wKzyigIXNn-dTRBu89M9L8wmJK4zZmUXrQ\"}")
           .eLiftET[IO]
         verificationKey <- EitherT(jsonWebKey.toKey[IO]())
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, requireSignature = false))(
           VerificationPrimitive.verificationKey(Some(verificationKey))
         )(DecryptionPrimitive.defaultDecryptionPrimitivesF))
@@ -304,7 +304,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           "LBPw5S9lbn4JF2WWY1OTupic\"}").eLiftET[IO]
         sigKey <- EitherT(sigJwk.toPublicKey[IO]())
         encKey <- EitherT(encJwk.toPrivateKey[IO]())
-        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfiguration(
+        (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](jwt, JoseConfig(
           skipSignatureVerification = true, liberalContentTypeHandling = true, requireSignature = false))(
           VerificationPrimitive.verificationKey(Some(sigKey))
         )(DecryptionPrimitive.decryptionKey(encKey)))

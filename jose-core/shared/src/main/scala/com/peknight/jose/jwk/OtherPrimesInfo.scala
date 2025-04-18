@@ -2,7 +2,7 @@ package com.peknight.jose.jwk
 
 import cats.Monad
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.{NullType, ObjectType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
@@ -42,7 +42,7 @@ object OtherPrimesInfo:
     NullType[S],
     StringType[S]
   ): Codec[F, S, Cursor[S], OtherPrimesInfo] =
-    Codec.derived[F, S, OtherPrimesInfo](using CodecConfiguration.default.withTransformMemberName(memberName =>
+    Codec.derived[F, S, OtherPrimesInfo](using CodecConfig.default.withTransformMemberName(memberName =>
       memberNameMap.getOrElse(memberName, memberName.to(SnakeCase))
     ))
 end OtherPrimesInfo

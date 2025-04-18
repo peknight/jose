@@ -439,7 +439,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
         jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
         jws <- JsonWebSignature.parse(cs).eLiftET[IO]
         keys <- EitherT(jwks.verificationPrimitives[IO](jws))
-        _ <- EitherT(jws.check[IO](keys.head.key, keys.head.configuration))
+        _ <- EitherT(jws.check[IO](keys.head.key, keys.head.config))
       yield
         keys.length == 1
     run.value.asserting(value => assert(value.getOrElse(false)))
@@ -639,11 +639,11 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
         jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
         jws1 <- JsonWebSignature.parse(jwtCs1).eLiftET[IO]
         primitives1 <- EitherT(jwks.verificationPrimitives[IO](jws1))
-        _ <- EitherT(jws1.check[IO](primitives1.head.key, primitives1.head.configuration))
+        _ <- EitherT(jws1.check[IO](primitives1.head.key, primitives1.head.config))
         _ <- EitherT(JsonWebToken.getClaims[IO](jwtCs1)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
         jws2 <- JsonWebSignature.parse(jwtCs2).eLiftET[IO]
         primitives2 <- EitherT(jwks.verificationPrimitives[IO](jws2))
-        _ <- EitherT(jws2.check[IO](primitives2.head.key, primitives2.head.configuration))
+        _ <- EitherT(jws2.check[IO](primitives2.head.key, primitives2.head.config))
         _ <- EitherT(JsonWebToken.getClaims[IO](jwtCs2)(jwks.verificationPrimitives)(jwks.decryptionPrimitives))
       yield
         primitives1.length == 1 && primitives2.length == 1

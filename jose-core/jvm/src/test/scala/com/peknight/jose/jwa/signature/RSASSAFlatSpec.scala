@@ -16,7 +16,7 @@ import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.jose.jws.JsonWebSignature
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnVerify, testBasicRoundTrip}
-import com.peknight.jose.jwx.{JoseConfiguration, JoseHeader}
+import com.peknight.jose.jwx.{JoseConfig, JoseHeader}
 import com.peknight.scodec.bits.ext.syntax.bigInt.toUnsignedBytes
 import com.peknight.security.Security
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
@@ -111,11 +111,11 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
       publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
       jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(alg)), payload, Some(privateKey),
-        JoseConfiguration(useLegacyName = useLegacyName, signatureProvider = provider)))
+        JoseConfig(useLegacyName = useLegacyName, signatureProvider = provider)))
       compact <- jws.compact.eLiftET[IO]
       parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
       parsedPayload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(publicKey),
-        JoseConfiguration(useLegacyName = useLegacyName, signatureProvider = provider)))
+        JoseConfig(useLegacyName = useLegacyName, signatureProvider = provider)))
       _ <- isTrue(parsedPayload == payload, Error("payload must equal")).eLiftET[IO]
     yield
       ()
@@ -192,7 +192,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
       jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
       parsedPayload <- EitherT(jws.verifiedPayloadString[IO](Some(publicKey),
-        JoseConfiguration(useLegacyName = useLegacyName, signatureProvider = provider)))
+        JoseConfig(useLegacyName = useLegacyName, signatureProvider = provider)))
       _ <- isTrue(parsedPayload == payload, Error("payload must equal")).eLiftET[IO]
     yield
       ()

@@ -157,9 +157,9 @@ class OpenIdConnectFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
             jws <- JsonWebSignature.parse(idToken).eLiftET[IO]
             _ <- EitherT(jws.check[IO](Some(key)))
             (jwtClaims, nested) <- EitherT(JsonWebToken.getClaims[IO](idToken)(
-              (jws, configuration) => jws.getUnprotectedHeader
+              (jws, config) => jws.getUnprotectedHeader
                 .flatMap(header => header.keyID.filter(jwk.keyID.contains).toRight(CollectionEmpty.label("primitives")))
-                .map(_ => NonEmptyList.one(VerificationPrimitive(Some(key), configuration)))
+                .map(_ => NonEmptyList.one(VerificationPrimitive(Some(key), config)))
                 .pure[IO]
             )(
               DecryptionPrimitive.defaultDecryptionPrimitivesF
