@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.compression
 
-import cats.{Applicative, Eq}
+import cats.{Applicative, Eq, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -17,6 +17,7 @@ object CompressionAlgorithm:
   given Eq[CompressionAlgorithm] = Eq.fromUniversalEquals
   given stringCodecJWECompressionAlgorithm[F[_]: Applicative]: Codec[F, String, String, CompressionAlgorithm] =
     stringCodecAlgorithmIdentifier[F, CompressionAlgorithm](values)
-  given codecJWECompressionAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], CompressionAlgorithm] =
+  given codecJWECompressionAlgorithm[F[_]: Applicative, S: {StringType, Show}]
+  : Codec[F, S, Cursor[S], CompressionAlgorithm] =
     Codec.codecS[F, S, CompressionAlgorithm]
 end CompressionAlgorithm

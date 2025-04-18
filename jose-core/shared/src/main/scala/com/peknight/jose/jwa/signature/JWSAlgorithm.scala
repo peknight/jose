@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.signature
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -20,6 +20,6 @@ object JWSAlgorithm:
   given stringCodecJWSAlgorithm[F[_]: Applicative]: Codec[F, String, String, JWSAlgorithm] =
     stringCodecAlgorithmIdentifier[F, JWSAlgorithm](values)
 
-  given codecJWSAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], JWSAlgorithm] =
+  given codecJWSAlgorithm[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], JWSAlgorithm] =
     Codec.codecS[F, S, JWSAlgorithm]
 end JWSAlgorithm

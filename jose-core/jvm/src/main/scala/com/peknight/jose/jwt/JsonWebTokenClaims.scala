@@ -41,7 +41,6 @@ case class JsonWebTokenClaims(
       case (None, Some(notBefore)) => Interval.atOrAbove(notBefore.minus(allowedClockSkew))
       case _ => Interval.all
   def checkTime(evaluationTime: Instant, allowedClockSkew: FiniteDuration = Duration.Zero): Either[Error, Unit] =
-    given Show[Instant] = Show.fromToString[Instant]
     intervalContains(evaluationTime, toInterval(allowedClockSkew)).label("evaluationTime").as(())
 end JsonWebTokenClaims
 object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
@@ -53,7 +52,8 @@ object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
     numberType: NumberType[S],
     stringType: StringType[S],
     jsonObjectEncoder: Encoder[F, S, JsonObject],
-    jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
+    jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject],
+    show: Show[S]
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
     given CodecConfig = CodecConfig.default
       .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))

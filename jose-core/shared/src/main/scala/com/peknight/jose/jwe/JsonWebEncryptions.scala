@@ -1,6 +1,6 @@
 package com.peknight.jose.jwe
 
-import cats.Monad
+import cats.{Monad, Show}
 import cats.data.{Ior, NonEmptyList}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
@@ -67,7 +67,8 @@ object JsonWebEncryptions extends JsonWebEncryptionsCompanion:
     numberType: NumberType[S],
     stringType: StringType[S],
     jsonObjectEncoder: Encoder[F, S, JsonObject],
-    jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
+    jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject],
+    show: Show[S]
   ): Codec[F, S, Cursor[S], JsonWebEncryptions] =
     given CodecConfig = CodecConfig.default
       .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))

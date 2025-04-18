@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.signature
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -18,6 +18,6 @@ object HmacSHA:
   val values: List[HmacSHA] = List(HS256, HS384, HS512)
   given stringCodecHmacSHA[F[_]: Applicative]: Codec[F, String, String, HmacSHA] =
     stringCodecAlgorithmIdentifier[F, HmacSHA](values)
-  given codecHmacSHA[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], HmacSHA] =
+  given codecHmacSHA[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], HmacSHA] =
     Codec.codecS[F, S, HmacSHA]
 end HmacSHA

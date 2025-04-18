@@ -1,6 +1,6 @@
 package com.peknight.jose.jwe
 
-import cats.Monad
+import cats.{Monad, Show}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
@@ -23,8 +23,8 @@ object Recipient:
   object Recipient:
     private[jwe] val memberNameMap: Map[String, String] = Map("recipientHeader" -> "header")
     given codecRecipient[F[_], S](using
-                                  Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
-                                  Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
+                                  Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S],
+                                  StringType[S], Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S]
                                  ): Codec[F, S, Cursor[S], Recipient] =
       given CodecConfig = CodecConfig.default
         .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))

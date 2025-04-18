@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -12,6 +12,7 @@ object KeyEncryptionAlgorithm:
     RSAESAlgorithm.values ::: AESGCMKWAlgorithm.values ::: PBES2Algorithm.values
   given stringCodecKeyEncryptionAlgorithm[F[_]: Applicative]: Codec[F, String, String, KeyEncryptionAlgorithm] =
     stringCodecAlgorithmIdentifier[F, KeyEncryptionAlgorithm](values)
-  given codecKeyEncryptionAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], KeyEncryptionAlgorithm] =
+  given codecKeyEncryptionAlgorithm[F[_]: Applicative, S: {StringType, Show}]
+  : Codec[F, S, Cursor[S], KeyEncryptionAlgorithm] =
     Codec.codecS[F, S, KeyEncryptionAlgorithm]
 end KeyEncryptionAlgorithm

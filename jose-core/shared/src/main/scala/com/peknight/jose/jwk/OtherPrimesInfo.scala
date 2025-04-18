@@ -1,6 +1,6 @@
 package com.peknight.jose.jwk
 
-import cats.Monad
+import cats.{Monad, Show}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.cursor.Cursor
@@ -36,12 +36,8 @@ object OtherPrimesInfo:
       "factorCRTExponent" -> "d",
       "factorCRTCoefficient" -> "k"
     )
-  given codecOtherPrimesInfo[F[_], S](using
-    Monad[F],
-    ObjectType[S],
-    NullType[S],
-    StringType[S]
-  ): Codec[F, S, Cursor[S], OtherPrimesInfo] =
+  given codecOtherPrimesInfo[F[_]: Monad, S: {ObjectType, NullType, StringType, Show}]
+  : Codec[F, S, Cursor[S], OtherPrimesInfo] =
     Codec.derived[F, S, OtherPrimesInfo](using CodecConfig.default.withTransformMemberName(memberName =>
       memberNameMap.getOrElse(memberName, memberName.to(SnakeCase))
     ))

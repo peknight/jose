@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -22,7 +22,7 @@ object DirectEncryptionAlgorithm:
   val values: List[DirectEncryptionAlgorithm] = List(dir)
   given stringCodecDirectEncryptionAlgorithm[F[_]: Applicative]: Codec[F, String, String, DirectEncryptionAlgorithm] =
     stringCodecAlgorithmIdentifier[F, DirectEncryptionAlgorithm](values)
-  given codecDirectEncryptionAlgorithm[F[_]: Applicative, S: StringType]
+  given codecDirectEncryptionAlgorithm[F[_]: Applicative, S: {StringType, Show}]
   : Codec[F, S, Cursor[S], DirectEncryptionAlgorithm] =
     Codec.codecS[F, S, DirectEncryptionAlgorithm]
 end DirectEncryptionAlgorithm

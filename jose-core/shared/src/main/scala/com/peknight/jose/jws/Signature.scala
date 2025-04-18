@@ -1,7 +1,7 @@
 package com.peknight.jose.jws
 
 import cats.data.Ior
-import cats.{Id, Monad}
+import cats.{Id, Monad, Show}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
@@ -51,8 +51,8 @@ object Signature:
       Signature(Ior.Both(header, `protected`), signature)
 
     given codecSignature[F[_], S](using
-     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
-     Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
+      Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
+      Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S]
     ): Codec[F, S, Cursor[S], Signature] =
       Codec.forProduct[F, S, Signature, (Option[JoseHeader], Option[Base64UrlNoPad], Base64UrlNoPad)]
         (("header", "protected", "signature"))(jws => (jws.header, jws.`protected`, jws.signature)) {

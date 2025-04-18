@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -30,6 +30,6 @@ object AESCBCHmacSHA2Algorithm:
   val values: List[AESCBCHmacSHA2Algorithm] = List(`A128CBC-HS256`, `A192CBC-HS384`, `A256CBC-HS512`)
   given stringCodecAESCBCHmacSHA2Algorithm[F[_]: Applicative]: Codec[F, String, String, AESCBCHmacSHA2Algorithm] =
     stringCodecAlgorithmIdentifier[F, AESCBCHmacSHA2Algorithm](values)
-  given codecAESCBCHmacSHA2Algorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], AESCBCHmacSHA2Algorithm] =
+  given codecAESCBCHmacSHA2Algorithm[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], AESCBCHmacSHA2Algorithm] =
     Codec.codecS[F, S, AESCBCHmacSHA2Algorithm]
 end AESCBCHmacSHA2Algorithm

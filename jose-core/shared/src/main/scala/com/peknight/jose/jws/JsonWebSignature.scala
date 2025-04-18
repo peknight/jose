@@ -3,7 +3,7 @@ package com.peknight.jose.jws
 import cats.data.Ior
 import cats.parse.{Parser, Parser0}
 import cats.syntax.either.*
-import cats.{Id, Monad}
+import cats.{Id, Monad, Show}
 import com.peknight.cats.parse.ext.syntax.parser.flatMapE0
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
@@ -68,7 +68,7 @@ object JsonWebSignature extends JsonWebSignatureCompanion:
 
   given codecJsonWebSignature[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
-    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
+    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S]
   ): Codec[F, S, Cursor[S], JsonWebSignature] =
     Codec.forProduct[F, S, JsonWebSignature, (Option[JoseHeader], Option[Base64UrlNoPad], String, Base64UrlNoPad)]
       (("header", "protected", "payload", "signature"))(jws => (jws.header, jws.`protected`, jws.payload, jws.signature)) {

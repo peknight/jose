@@ -1,6 +1,6 @@
 package com.peknight.jose.jws
 
-import cats.Monad
+import cats.{Monad, Show}
 import cats.data.NonEmptyList
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
@@ -19,7 +19,7 @@ end JsonWebSignatures
 object JsonWebSignatures extends JsonWebSignaturesCompanion:
   given codecJsonWebSignatures[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
-    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
+    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S]
   ): Codec[F, S, Cursor[S], JsonWebSignatures] =
     Codec.derived[F, S, JsonWebSignatures]
 

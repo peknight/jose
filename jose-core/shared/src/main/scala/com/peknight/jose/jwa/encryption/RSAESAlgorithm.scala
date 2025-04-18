@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -20,6 +20,6 @@ object RSAESAlgorithm:
   val values: List[RSAESAlgorithm] = RSA1_5 :: `RSA-OAEPAlgorithm`.values
   given stringCodecRSAESAlgorithm[F[_]: Applicative]: Codec[F, String, String, RSAESAlgorithm] =
     stringCodecAlgorithmIdentifier[F, RSAESAlgorithm](values)
-  given codecRSAESAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], RSAESAlgorithm] =
+  given codecRSAESAlgorithm[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], RSAESAlgorithm] =
     Codec.codecS[F, S, RSAESAlgorithm]
 end RSAESAlgorithm

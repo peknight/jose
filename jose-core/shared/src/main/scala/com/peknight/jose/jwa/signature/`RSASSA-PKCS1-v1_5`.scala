@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.signature
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -14,6 +14,6 @@ object `RSASSA-PKCS1-v1_5`:
   val values: List[`RSASSA-PKCS1-v1_5`] = List(RS256, RS384, RS512)
   given `stringCodecRSASSA-PKCS1-v1_5`[F[_]: Applicative]: Codec[F, String, String, `RSASSA-PKCS1-v1_5`] =
     stringCodecAlgorithmIdentifier[F, `RSASSA-PKCS1-v1_5`](values)
-  given `codecRSASSA-PKCS1-v1_5`[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], `RSASSA-PKCS1-v1_5`] =
+  given `codecRSASSA-PKCS1-v1_5`[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], `RSASSA-PKCS1-v1_5`] =
     Codec.codecS[F, S, `RSASSA-PKCS1-v1_5`]
 end `RSASSA-PKCS1-v1_5`

@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.ecc
 
-import cats.{Applicative, Eq}
+import cats.{Applicative, Eq, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
@@ -21,6 +21,6 @@ object Curve extends CurveCompanion:
         .orElse(if prime256v1.name == name then Some(prime256v1) else None)
         .toRight(DecodingFailure(UnknownAlgorithm(name)))
     )
-  given codecCurve[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Curve] =
+  given codecCurve[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], Curve] =
     Codec.codecS[F, S, Curve]
 end Curve

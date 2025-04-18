@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.signature
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -18,6 +18,6 @@ object ECDSA:
   val values: List[ECDSA] = List(ES256, ES384, ES512, ES256K)
   given stringCodecECDSA[F[_]: Applicative]: Codec[F, String, String, ECDSA] =
     stringCodecAlgorithmIdentifier[F, ECDSA](values)
-  given codecECDSA[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], ECDSA] =
+  given codecECDSA[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], ECDSA] =
     Codec.codecS[F, S, ECDSA]
 end ECDSA

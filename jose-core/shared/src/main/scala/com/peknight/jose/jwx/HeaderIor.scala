@@ -1,6 +1,6 @@
 package com.peknight.jose.jwx
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import cats.data.Ior
 import cats.syntax.either.*
 import com.peknight.codec.Codec
@@ -51,6 +51,7 @@ private[jose] object HeaderIor:
   private def unsafeGetProtectedHeader(headerIor: JoseHeader Ior Base64UrlNoPad): Base64UrlNoPad =
     getProtectedHeader(headerIor).fold(throw _, identity)
 
-  given codecProtectedHeaderIor[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], JoseHeader Ior Base64UrlNoPad] =
+  given codecProtectedHeaderIor[F[_] : Applicative, S: {StringType, Show}]
+  : Codec[F, S, Cursor[S], JoseHeader Ior Base64UrlNoPad] =
     Base64UrlNoPad.codecBaseS[F, S].imap(p => Ior.Right(p))(unsafeGetProtectedHeader)
 end HeaderIor

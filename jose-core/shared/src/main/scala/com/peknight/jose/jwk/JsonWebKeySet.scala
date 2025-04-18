@@ -1,6 +1,6 @@
 package com.peknight.jose.jwk
 
-import cats.Monad
+import cats.{Monad, Show}
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
 import com.peknight.codec.config.CodecConfig
@@ -13,7 +13,7 @@ case class JsonWebKeySet(keys: List[JsonWebKey]) extends JsonWebKeySetPlatform
 object JsonWebKeySet:
   def apply(keys: JsonWebKey*): JsonWebKeySet = JsonWebKeySet(keys.toList)
   given codecJsonWebKeySet[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], JsonWebKeySet] =
     given CodecConfig = JsonWebKey.jsonWebKeyCodecConfig
     given Encoder[F, S, List[JsonWebKey]] = Encoder.encodeListA[F, S, JsonWebKey]

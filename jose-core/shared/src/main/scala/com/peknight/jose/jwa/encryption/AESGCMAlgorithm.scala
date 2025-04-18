@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -22,6 +22,6 @@ object AESGCMAlgorithm:
   val values: List[AESGCMAlgorithm] = List(A128GCM, A192GCM, A256GCM)
   given stringCodecAESGCMAlgorithm[F[_]: Applicative]: Codec[F, String, String, AESGCMAlgorithm] =
     stringCodecAlgorithmIdentifier[F, AESGCMAlgorithm](values)
-  given codecAESGCMAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], AESGCMAlgorithm] =
+  given codecAESGCMAlgorithm[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], AESGCMAlgorithm] =
     Codec.codecS[F, S, AESGCMAlgorithm]
 end AESGCMAlgorithm

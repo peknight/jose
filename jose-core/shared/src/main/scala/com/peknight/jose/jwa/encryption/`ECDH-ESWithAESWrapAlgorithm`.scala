@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -23,7 +23,7 @@ object `ECDH-ESWithAESWrapAlgorithm`:
   given `stringCodecECDH-ESWithAESWrap`[F[_]: Applicative]
   : Codec[F, String, String, `ECDH-ESWithAESWrapAlgorithm`] =
     stringCodecAlgorithmIdentifier[F, `ECDH-ESWithAESWrapAlgorithm`](values)
-  given `codecECDH-ESWithAESWrap`[F[_]: Applicative, S: StringType]
+  given `codecECDH-ESWithAESWrap`[F[_]: Applicative, S: {StringType, Show}]
   : Codec[F, S, Cursor[S], `ECDH-ESWithAESWrapAlgorithm`] =
     Codec.codecS[F, S, `ECDH-ESWithAESWrapAlgorithm`]
 end `ECDH-ESWithAESWrapAlgorithm`

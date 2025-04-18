@@ -5,7 +5,7 @@ import cats.syntax.either.*
 import cats.syntax.eq.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
-import cats.{Id, Monad}
+import cats.{Id, Monad, Show}
 import com.peknight.codec.base.{Base64NoPad, Base64UrlNoPad}
 import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
@@ -167,7 +167,7 @@ object JoseHeader:
 
   given codecJoseHeader[F[_], S](using
     Monad[F], ObjectType[S], NullType[S], ArrayType[S], BooleanType[S], NumberType[S], StringType[S],
-    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject]
+    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S]
   ): Codec[F, S, Cursor[S], JoseHeader] =
     given CodecConfig = CodecConfig.default
       .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))

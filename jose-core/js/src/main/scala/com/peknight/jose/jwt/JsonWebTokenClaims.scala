@@ -48,7 +48,8 @@ object JsonWebTokenClaims extends JsonWebTokenClaimsCompanion:
     numberType: NumberType[S],
     stringType: StringType[S],
     jsonObjectEncoder: Encoder[F, S, JsonObject],
-    jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject]
+    jsonObjectDecoder: Decoder[F, Cursor[S], JsonObject],
+    show: Show[S]
   ): Codec[F, S, Cursor[S], JsonWebTokenClaims] =
     given CodecConfig = CodecConfig.default
       .withTransformMemberName(memberName => memberNameMap.getOrElse(memberName, memberName.to(SnakeCase)))

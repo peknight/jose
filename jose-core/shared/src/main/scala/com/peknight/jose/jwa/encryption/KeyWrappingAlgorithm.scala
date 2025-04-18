@@ -1,6 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -11,6 +11,6 @@ object KeyWrappingAlgorithm:
   val values: List[KeyWrappingAlgorithm] = AESWrapAlgorithm.values
   given stringCodecKeyWrappingAlgorithm[F[_]: Applicative]: Codec[F, String, String, KeyWrappingAlgorithm] =
     stringCodecAlgorithmIdentifier[F, KeyWrappingAlgorithm](values)
-  given codecKeyWrappingAlgorithm[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], KeyWrappingAlgorithm] =
+  given codecKeyWrappingAlgorithm[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], KeyWrappingAlgorithm] =
     Codec.codecS[F, S, KeyWrappingAlgorithm]
 end KeyWrappingAlgorithm

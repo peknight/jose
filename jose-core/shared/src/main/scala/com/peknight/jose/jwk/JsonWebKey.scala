@@ -1,7 +1,7 @@
 package com.peknight.jose.jwk
 
 import cats.data.NonEmptyList
-import cats.{Applicative, Monad}
+import cats.{Applicative, Monad, Show}
 import com.peknight.codec.base.{Base64, Base64UrlNoPad}
 import com.peknight.codec.circe.Ext
 import com.peknight.codec.circe.iso.codec
@@ -173,7 +173,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
         .left.map(DecodingFailure.apply)
     )
 
-  given decodeBase64UrlNoPad[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Base64UrlNoPad] =
+  given decodeBase64UrlNoPad[F[_]: Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], Base64UrlNoPad] =
     Decoder.decodeS[F, S, Base64UrlNoPad]
 
   private[jwk] val jsonWebKeyCodecConfig: CodecConfig =
@@ -184,7 +184,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
       .withExtField("ext")
 
   given codecEllipticCurveJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], EllipticCurveJsonWebKey] =
     given CodecConfig = jsonWebKeyCodecConfig
     Codec.derived[F, S, EllipticCurveJsonWebKey]
@@ -195,7 +195,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
   given circeCodecEllipticCurveJsonWebKey: io.circe.Codec[EllipticCurveJsonWebKey] = codec[EllipticCurveJsonWebKey]
 
   given codecRSAJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                    Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], RSAJsonWebKey] =
     given CodecConfig = jsonWebKeyCodecConfig
     Codec.derived[F, S, RSAJsonWebKey]
@@ -210,11 +210,11 @@ object JsonWebKey extends JsonWebKeyCompanion:
       t => List(X25519, X448, Ed25519, Ed448).find(_.parameterSpecName == t)
     )
 
-  given codecNamedParameterSpecName[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], NamedParameterSpecName] =
+  given codecNamedParameterSpecName[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], NamedParameterSpecName] =
     Codec.codecS[F, S, NamedParameterSpecName]
 
   given codecOctetKeyPairJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                             Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                             Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], OctetKeyPairJsonWebKey] =
     given CodecConfig = jsonWebKeyCodecConfig
     Codec.derived[F, S, OctetKeyPairJsonWebKey]
@@ -225,7 +225,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
   given circeCodecOctetKeyPairJsonWebKey: io.circe.Codec[OctetKeyPairJsonWebKey] = codec[OctetKeyPairJsonWebKey]
 
   given codecAsymmetricJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                           Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                           Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], AsymmetricJsonWebKey] =
     given CodecConfig = jsonWebKeyCodecConfig
     Codec.derived[F, S, AsymmetricJsonWebKey]
@@ -236,7 +236,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
   given circeCodecAsymmetricJsonWebKey: io.circe.Codec[AsymmetricJsonWebKey] = codec[AsymmetricJsonWebKey]
 
   given codecOctetSequenceJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                              Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], OctetSequenceJsonWebKey] =
     given CodecConfig = jsonWebKeyCodecConfig
     Codec.derived[F, S, OctetSequenceJsonWebKey]
@@ -247,7 +247,7 @@ object JsonWebKey extends JsonWebKeyCompanion:
   given circeCodecOctetSequenceJsonWebKey: io.circe.Codec[OctetSequenceJsonWebKey] = codec[OctetSequenceJsonWebKey]
 
   given codecJsonWebKey[F[_], S](using Monad[F], ObjectType[S], NullType[S], ArrayType[S], StringType[S],
-                                 Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject])
+                                 Encoder[F, S, JsonObject], Decoder[F, Cursor[S], JsonObject], Show[S])
   : Codec[F, S, Cursor[S], JsonWebKey] =
     given CodecConfig = jsonWebKeyCodecConfig
     Codec.derived[F, S, JsonWebKey]
