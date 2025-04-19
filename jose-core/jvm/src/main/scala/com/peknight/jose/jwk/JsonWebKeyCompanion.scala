@@ -1,5 +1,6 @@
 package com.peknight.jose.jwk
 
+import cats.Show
 import cats.data.NonEmptyList
 import cats.syntax.either.*
 import cats.syntax.option.*
@@ -9,6 +10,7 @@ import com.peknight.jose.error.{NoSuchCurve, UnsupportedKey}
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.ecc.Curve
 import com.peknight.jose.jwk.JsonWebKey.*
+import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.key.agreement.{X25519, X448, XDH}
 import com.peknight.security.signature.{Ed25519, Ed448, EdDSA}
 import com.peknight.security.spec.NamedParameterSpecName
@@ -260,4 +262,6 @@ trait JsonWebKeyCompanion:
   private def typedPrivateKey[K: ClassTag](privateKeyOption: Option[PrivateKey]): Either[Error, Option[K]] =
     privateKeyOption.fold(none[K].asRight[Error])(privateKey => typed[K](privateKey).map(Some.apply))
 
+  def showKeyPair: Show[KeyPair] =
+    Show.show(keyPair => JsonWebKey.fromKeyPair(keyPair).map(encodeToJson[JsonWebKey]).getOrElse(keyPair.toString))
 end JsonWebKeyCompanion
