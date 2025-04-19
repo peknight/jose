@@ -262,6 +262,6 @@ trait JsonWebKeyCompanion:
   private def typedPrivateKey[K: ClassTag](privateKeyOption: Option[PrivateKey]): Either[Error, Option[K]] =
     privateKeyOption.fold(none[K].asRight[Error])(privateKey => typed[K](privateKey).map(Some.apply))
 
-  def showKeyPair: Show[KeyPair] =
+  def showKeyPair[K <: KeyPair]: Show[K] =
     Show.show(keyPair => JsonWebKey.fromKeyPair(keyPair).map(encodeToJson[JsonWebKey]).getOrElse(keyPair.toString))
 end JsonWebKeyCompanion
