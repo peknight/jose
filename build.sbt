@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.6.2"
+ThisBuild / scalaVersion := "3.7.0"
 
 ThisBuild / organization := "com.peknight"
 
@@ -62,5 +62,5 @@ val pekValidationVersion = pekVersion
 val scalaTestVersion = "3.2.19"
 val catsEffectTestingScalaTestVersion = "1.6.0"
 
-val logbackVersion = "1.5.16"
+val logbackVersion = "1.5.18"
 val logbackClassic = "ch.qos.logback" % "logback-classic" % logbackVersion

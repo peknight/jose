@@ -23,7 +23,7 @@ package object jwx:
   def encodeToJson[A](a: A)(using Encoder[Id, Json, A]): String = jsonEncodeToString(a.asS[Id, Json])
   // String => ByteVector
   def stringEncodeToBytes(value: String, charset: Charset = StandardCharsets.UTF_8): Either[Error, ByteVector] =
-    ByteVector.encodeString(value)(charset).asError
+    ByteVector.encodeString(value)(using charset).asError
   // String => ByteVector => Base
   def stringEncodeToBase[B <: Base](value: String, base: BaseAlphabetPlatform[?, B],
                                     charset: Charset = StandardCharsets.UTF_8): Either[Error, B] =
@@ -40,7 +40,7 @@ package object jwx:
     
   // Bytes => String
   def bytesDecodeToString(bytes: ByteVector, charset: Charset = StandardCharsets.UTF_8): Either[Error, String] =
-    bytes.decodeString(charset).asError
+    bytes.decodeString(using charset).asError
   // ByteVector => String => Json => A
   def bytesDecodeToJson[A](bytes: ByteVector, charset: Charset = StandardCharsets.UTF_8)
                           (using Decoder[Id, Cursor[Json], A]): Either[Error, A] =
