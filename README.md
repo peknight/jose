@@ -12,9 +12,9 @@
 
 java倒是有一些功能齐全的jose库如jose4j，但是它不是函数式的我浑身难受。  
 
-所以自己动手照着jose规范RFC8555和jose4j库手撸了一套基于cats-effect的函数式jose库。  
+所以自己动手照着jose的RFC规范和jose4j库手撸了一套基于cats-effect的函数式jose库。  
 
-基本实现了RFC8555规范内的所有功能。  
+基本实现了RFC规范内的所有功能：jwa, jwk, jws, jwe, jwt。  
 
 测试用例也都是照着jose4j的单测完全写了一遍，基本测试都通过了。
 
