@@ -11,7 +11,7 @@ import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.label
 import com.peknight.jose.error.InvalidKeyLength
 import com.peknight.jose.jwa.compression.CompressionAlgorithm
@@ -171,8 +171,8 @@ trait JsonWebEncryptionCompanion:
     for
       aad <- getAdditionalAuthenticatedData(aadOverride, header).eLiftET
       plaintextBytes <- compress[F](compressionAlgorithm, plaintext)
-      contentEncryptionParts <- EitherT(encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes, aad,
-        ivOverride, config.random, config.cipherProvider, config.macProvider).asError)
+      contentEncryptionParts <- encryptionAlgorithm.encrypt[F](contentEncryptionKey, plaintextBytes, aad,
+        ivOverride, config.random, config.cipherProvider, config.macProvider).asET
     yield
       (contentEncryptionParts, Base64UrlNoPad.fromByteVector(aad))
 
@@ -190,7 +190,7 @@ trait JsonWebEncryptionCompanion:
   private def compress[F[_]: {Concurrent, Compression}](compressionAlgorithm: Option[CompressionAlgorithm],
                                                         plaintextBytes: ByteVector): EitherT[F, Error, ByteVector] =
     compressionAlgorithm match
-      case Some(compressionAlgorithm) => EitherT(compressionAlgorithm.compress[F](plaintextBytes).asError)
+      case Some(compressionAlgorithm) => compressionAlgorithm.compress[F](plaintextBytes).asET
       case None => plaintextBytes.rLiftET
 
   private def decompress[F[_]: {Concurrent, Compression}](compressionAlgorithm: Option[CompressionAlgorithm],

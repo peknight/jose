@@ -9,8 +9,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.{`P-256`, `P-521`}
 import com.peknight.jose.jwk.*
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
@@ -39,7 +38,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "RSASSA" should "succeed with verify example" in {
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
         _ <- EitherT(jws.check[IO](Some(publicKey)))
       yield
@@ -50,7 +49,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "RSASSA" should "succeed with sign example" in {
     val run =
       for
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        privateKey <- RSA.privateKey[IO](n, d).asET
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)),
           "{\"iss\":\"joe\",\r\n \"exp\":1300819380,\r\n \"http://example.com/is_root\":true}", Some(privateKey)))
         compact <- jws.compact.eLiftET[IO]
@@ -75,7 +74,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         jsonWebKey <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         key <- EitherT(jsonWebKey.toKey[IO]())
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         rsaJsonWebKey <- typed[RSAJsonWebKey](jsonWebKey).eLiftET[IO]
         privateExponent <- rsaJsonWebKey.privateExponent.toRight(OptionEmpty).eLiftET[IO]
         privateExponentBytes <- privateExponent.decode[Id].eLiftET[IO]
@@ -87,9 +86,9 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "RSASSA" should "succeed with PSS round trips" in {
     val run =
       for
-        provider <- EitherT(BouncyCastleProvider[IO].asError)
-        _ <- EitherT(Security.addProvider[IO](provider).asError)
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        provider <- BouncyCastleProvider[IO].asET
+        _ <- Security.addProvider[IO](provider).asET
+        privateKey <- RSA.privateKey[IO](n, d).asET
         _ <-
           val tests =
             for
@@ -108,8 +107,8 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
                                   provider: Option[Provider | JProvider] = None): EitherT[IO, Error, Unit] =
     val payload = "stuff here"
     for
-      privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
-      publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+      privateKey <- RSA.privateKey[IO](n, d).asET
+      publicKey <- RSA.publicKey[IO](n, e).asET
       jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(alg)), payload, Some(privateKey),
         JoseConfig(useLegacyName = useLegacyName, signatureProvider = provider)))
       compact <- jws.compact.eLiftET[IO]
@@ -169,8 +168,8 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     )
     val run =
       for
-        provider <- EitherT(BouncyCastleProvider[IO].asError)
-        _ <- EitherT(Security.addProvider[IO](provider).asError)
+        provider <- BouncyCastleProvider[IO].asET
+        _ <- Security.addProvider[IO](provider).asET
         _ <-
           val tests =
             for
@@ -189,7 +188,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
                              provider: Option[Provider | JProvider] = None): EitherT[IO, Error, Unit] =
     val payload = "stuff here"
     for
-      publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+      publicKey <- RSA.publicKey[IO](n, e).asET
       jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
       parsedPayload <- EitherT(jws.verifiedPayloadString[IO](Some(publicKey),
         JoseConfig(useLegacyName = useLegacyName, signatureProvider = provider)))
@@ -200,9 +199,9 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "RSASSA" should "succeed with RSASSA-PKCS1-v1_5 round trips" in {
     val run =
       for
-        pair <- EitherT(RSA.keySizeGenerateKeyPair[IO](2048).asError)
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        pair <- RSA.keySizeGenerateKeyPair[IO](2048).asET
+        privateKey <- RSA.privateKey[IO](n, d).asET
+        publicKey <- RSA.publicKey[IO](n, e).asET
         _ <- List("PAYLOAD!!!", "PAYLOAD!!", "PAYLOAD!").zip(`RSASSA-PKCS1-v1_5`.values).traverse {
           case (payload, alg) => testBasicRoundTrip(payload, alg, pair.getPrivate, pair.getPublic, privateKey, publicKey)
         }
@@ -226,13 +225,13 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "_8b7CNlFw2NdIf0G3whEnrZgIYofKjZ3QkrIMRGzEF4H3u3KxVwdgpc1OhVSQ"
     val run =
       for
-        pair <- EitherT(RSA.keySizeGenerateKeyPair[IO](1024).asError)
-        rsaPrivateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
-        rsaPublicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        ec256PublicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
-        ec521PublicKey <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
-        ec256PrivateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
-        ec521PrivateKey <- EitherT(`P-521`.privateKey[IO](d521).asError)
+        pair <- RSA.keySizeGenerateKeyPair[IO](1024).asET
+        rsaPrivateKey <- RSA.privateKey[IO](n, d).asET
+        rsaPublicKey <- RSA.publicKey[IO](n, e).asET
+        ec256PublicKey <- `P-256`.publicKey[IO](x256, y256).asET
+        ec521PublicKey <- `P-521`.publicKey[IO](x521, y521).asET
+        ec256PrivateKey <- `P-256`.privateKey[IO](d256).asET
+        ec521PrivateKey <- `P-521`.privateKey[IO](d521).asET
         _ <-
           val tests =
             for

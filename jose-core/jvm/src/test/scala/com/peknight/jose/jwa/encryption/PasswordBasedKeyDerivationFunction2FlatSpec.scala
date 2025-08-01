@@ -8,8 +8,7 @@ import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.key.secret.PBKDF2
 import com.peknight.security.mac.*
@@ -49,8 +48,8 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
       saltBytes <- stringEncodeToBytes(salt, StandardCharsets.US_ASCII).eLiftET[IO]
       derived <- PasswordBasedKeyDerivationFunction2.derive[IO](HmacSHA1, passwordBytes, saltBytes, iterationCount,
         dkLen, None)
-      secretKey <- EitherT(PBKDF2.withPRF(HmacSHA1).generateSecret[IO](PBEKeySpec(password, saltBytes, iterationCount,
-        dkLen * 8)).asError)
+      secretKey <- PBKDF2.withPRF(HmacSHA1).generateSecret[IO](PBEKeySpec(password, saltBytes, iterationCount,
+        dkLen * 8)).asET
       _ <- isTrue(derived === ByteVector(secretKey.getEncoded), Error("Derived key not match")).eLiftET[IO]
     yield
       ()

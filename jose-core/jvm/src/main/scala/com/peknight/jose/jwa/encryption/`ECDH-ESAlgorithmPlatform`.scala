@@ -8,7 +8,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.error.*
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwa.ecc.Curve
@@ -71,8 +71,8 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
       for
         partyVPublicKey <- typed[PublicKey](key).eLiftET
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(ephemeralPrivateKey)
-        z <- EitherT(keyAgreementAlgorithm.generateSecret[F](ephemeralPrivateKey, partyVPublicKey,
-          provider = keyAgreementProvider).asError)
+        z <- keyAgreementAlgorithm.generateSecret[F](ephemeralPrivateKey, partyVPublicKey,
+          provider = keyAgreementProvider).asET
         derivedKey <- EitherT(ConcatKeyDerivationFunction.kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm,
           agreementPartyUInfo, agreementPartyVInfo, messageDigestProvider))
         ephemeralPublicKey <- JsonWebKey.fromPublicKey(ephemeralPublicKey).eLiftET
@@ -107,8 +107,8 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
           case Some(publicKey) => publicKey.rLiftET
           case _ => MissingPublicKey.lLiftET
         keyAgreementAlgorithm = getKeyAgreementAlgorithm(privateKey)
-        z <- EitherT(keyAgreementAlgorithm.generateSecret[F](privateKey, ephemeralPublicKey,
-          provider = keyAgreementProvider).asError)
+        z <- keyAgreementAlgorithm.generateSecret[F](privateKey, ephemeralPublicKey,
+          provider = keyAgreementProvider).asET
         derivedKey <- EitherT(ConcatKeyDerivationFunction.kdf[F](`SHA-256`, z, cekLength, encryptionAlgorithm,
           agreementPartyUInfo, agreementPartyVInfo, messageDigestProvider))
       yield
@@ -143,14 +143,14 @@ trait `ECDH-ESAlgorithmPlatform` { self: `ECDH-ESAlgorithm` =>
                                             provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
     for
       _ <- checkCurveAllowed(receiverKey).eLiftET
-      keyPair <- EitherT(receiverKey.getParams.ecGenerateKeyPair[F](random, provider).asError)
+      keyPair <- receiverKey.getParams.ecGenerateKeyPair[F](random, provider).asET
     yield keyPair
 
   private def generateXECKeyPair[F[_]: Sync](receiverKey: XECPublicKey, random: Option[SecureRandom] = None,
                                              provider: Option[Provider | JProvider] = None): EitherT[F, Error, KeyPair] =
     for
       params <- typed[NamedParameterSpec](receiverKey.getParams).eLiftET
-      keyPair <- EitherT(params.paramsGenerateKeyPair[F](XDH, random, provider).asError)
+      keyPair <- params.paramsGenerateKeyPair[F](XDH, random, provider).asET
     yield keyPair
 
   private def checkCurveAllowed(receiverKey: ECKey): Either[JoseError, Curve] =

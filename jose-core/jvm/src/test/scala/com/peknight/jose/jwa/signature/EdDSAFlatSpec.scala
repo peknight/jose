@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.JsonWebSignature
@@ -71,8 +71,8 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "EdDSA" should "succeed with Ed25519 round trip gen keys" in {
     val run =
       for
-        keyPair1 <- EitherT(Ed25519.generateKeyPair[IO]().asError)
-        keyPair2 <- EitherT(Ed25519.generateKeyPair[IO]().asError)
+        keyPair1 <- Ed25519.generateKeyPair[IO]().asET
+        keyPair2 <- Ed25519.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("Little Ed", EdDSA, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
           keyPair2.getPublic)
       yield
@@ -83,8 +83,8 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "EdDSA" should "succeed with Ed448 round trip gen keys" in {
     val run =
       for
-        keyPair1 <- EitherT(Ed448.generateKeyPair[IO]().asError)
-        keyPair2 <- EitherT(Ed448.generateKeyPair[IO]().asError)
+        keyPair1 <- Ed448.generateKeyPair[IO]().asET
+        keyPair2 <- Ed448.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("Big Ed", EdDSA, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
           keyPair2.getPublic)
       yield
@@ -95,8 +95,8 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "EdDSA" should "succeed with Ed mixed round trip gen keys" in {
     val run =
       for
-        keyPair1 <- EitherT(Ed25519.generateKeyPair[IO]().asError)
-        keyPair2 <- EitherT(Ed448.generateKeyPair[IO]().asError)
+        keyPair1 <- Ed25519.generateKeyPair[IO]().asET
+        keyPair2 <- Ed448.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("Cousin Eddie", EdDSA, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
           keyPair2.getPublic)
       yield

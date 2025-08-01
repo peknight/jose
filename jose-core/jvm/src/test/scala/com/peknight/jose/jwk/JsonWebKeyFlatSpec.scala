@@ -7,7 +7,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwk.JsonWebKey.*
 import com.peknight.jose.jwk.KeyOperationType.*
@@ -71,7 +71,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKey" should "succeed with factory with RSA public key" in {
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         jwk <- JsonWebKey.fromKey(publicKey).eLiftET[IO]
         _ <- isRSA(jwk)
       yield
@@ -86,7 +86,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKey" should "succeed with factory with EC public key" in {
     val run =
       for
-        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        publicKey <- `P-256`.publicKey[IO](x256, y256).asET
         jwk <- JsonWebKey.fromKey(publicKey).eLiftET[IO]
         _ <- isEllipticCurve(jwk)
       yield

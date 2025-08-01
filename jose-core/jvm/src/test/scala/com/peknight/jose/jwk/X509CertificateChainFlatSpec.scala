@@ -8,7 +8,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.certificate.factory.X509
@@ -111,14 +111,14 @@ class X509CertificateChainFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         x5c <- map.get("x5c").toRight(OptionEmpty).eLiftET[IO]
         x5Base = x5c.head
         x5Bytes <- x5Base.decode[Id].eLiftET[IO]
-        x509Certificate <- EitherT(X509.generateCertificateFromBytes[IO](x5Bytes).asError)
+        x509Certificate <- X509.generateCertificateFromBytes[IO](x5Bytes).asET
         publicKey = x509Certificate.getPublicKey
         jwk <- JsonWebKey.fromPublicKey(publicKey, x509CertificateChain = Some(x5c)).eLiftET[IO]
         json = encodeToJson(jwk)
         parsedJwk <- decode[Id, AsymmetricJsonWebKey](json).eLiftET[IO]
         parsedPublicKey <- EitherT(parsedJwk.toPublicKey[IO]())
         leafCertificate <- EitherT(parsedJwk.getLeafCertificate[IO]())
-        x5Bytes <- EitherT(x509Certificate.getEncodedF[IO].asError)
+        x5Bytes <- x509Certificate.getEncodedF[IO].asET
         x5Base = Base64.fromByteVector(x5Bytes)
         jwkJustOneCert <- JsonWebKey.fromPublicKey(publicKey, x509CertificateChain = Some(NonEmptyList.one(x5Base)))
           .eLiftET[IO]

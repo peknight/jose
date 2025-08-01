@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.{`P-256`, `P-384`, `P-521`}
 import com.peknight.validation.std.either.typed
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -16,7 +16,7 @@ class EllipticCurveJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "EllipticCurveJsonWebKey" should "succeed with gen test" in {
     List(`P-256`, `P-384`, `P-521`).map { curve =>
       for
-        keyPair <- EitherT(curve.generateKeyPair[IO]().asError)
+        keyPair <- curve.generateKeyPair[IO]().asET
         jwk <- JsonWebKey.fromKeyPair(keyPair).eLiftET[IO]
         publicKey <- EitherT(jwk.toPublicKey[IO]())
         _ <- typed[ECPublicKey](publicKey).eLiftET[IO]

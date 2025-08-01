@@ -9,7 +9,7 @@ import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.encryption.{`A128CBC-HS256`, `ECDH-ES+A128KW`, dir}
@@ -29,19 +29,19 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val claims = JsonWebTokenClaims(subject = Some("example with OKP encryption key"))
     val run =
       for
-        ec256KeyPair <- EitherT(`P-256`.generateKeyPair[IO]().asError)
-        ec256UUID <- EitherT(UUIDGen.randomString[IO].asError)
+        ec256KeyPair <- `P-256`.generateKeyPair[IO]().asET
+        ec256UUID <- UUIDGen.randomString[IO].asET
         signingKey <- JsonWebKey.fromKeyPair(ec256KeyPair, keyID = Some(KeyId(ec256UUID))).eLiftET[IO]
         jws <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader(Some(ES256),
           keyID = signingKey.keyID), claims, Some(ec256KeyPair.getPrivate)))
         signed <- jws.compact.eLiftET[IO]
-        x25519KeyPair1 <- EitherT(X25519.generateKeyPair[IO]().asError)
-        x25519UUID1 <- EitherT(UUIDGen.randomString[IO].asError)
+        x25519KeyPair1 <- X25519.generateKeyPair[IO]().asET
+        x25519UUID1 <- UUIDGen.randomString[IO].asET
         encryptionKey1 <- JsonWebKey.fromKeyPair(x25519KeyPair1, keyID = Some(KeyId(x25519UUID1))).eLiftET[IO]
-        x25519KeyPair2 <- EitherT(X25519.generateKeyPair[IO]().asError)
+        x25519KeyPair2 <- X25519.generateKeyPair[IO]().asET
         encryptionKey2 <- JsonWebKey.fromKeyPair(x25519KeyPair2).eLiftET[IO]
-        x25519KeyPair3 <- EitherT(X25519.generateKeyPair[IO]().asError)
-        x25519UUID3 <- EitherT(UUIDGen.randomString[IO].asError)
+        x25519KeyPair3 <- X25519.generateKeyPair[IO]().asET
+        x25519UUID3 <- UUIDGen.randomString[IO].asET
         encryptionKey3 <- JsonWebKey.fromKeyPair(x25519KeyPair3, keyID = Some(KeyId(x25519UUID3))).eLiftET[IO]
         dhKeys = List(encryptionKey1, encryptionKey2, encryptionKey3)
         jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(`ECDH-ES+A128KW`), Some(`A128CBC-HS256`),
@@ -276,10 +276,10 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
-        random <- EitherT(Random.scalaUtilRandom[IO].asError)
-        keys <- EitherT(random.shuffleList(jwks.keys).asError)
+        random <- Random.scalaUtilRandom[IO].asET
+        keys <- random.shuffleList(jwks.keys).asET
         jsonWebKeySet = JsonWebKeySet(keys)
-        jwes <- EitherT(random.shuffleList(List(jwee1, jwee2, jwer1, jwer2, jwer3, jwer4)).asError)
+        jwes <- random.shuffleList(List(jwee1, jwee2, jwer1, jwer2, jwer3, jwer4)).asET
         _ <- jwes.traverse { jwe =>
           for
             (jwtClaims, _) <- EitherT(JsonWebToken.getClaims[IO](jwe, JoseConfig(requireSignature = false))(
@@ -302,7 +302,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyCompactPairs <- (1 to 6).toList.traverse { i =>
           for
-            key <- EitherT(AES.keySizeGenerateKey[IO](256).asError)
+            key <- AES.keySizeGenerateKey[IO](256).asET
             jwk <- JsonWebKey.fromOctetSequenceKey(key, keyID = Some(KeyId(s"$i"))).rLiftET[IO, Error]
             compact <- makeSimpleSymmetricJwe(jwk)
           yield
@@ -318,7 +318,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           yield
             ()
         }
-        key <- EitherT(AES.keySizeGenerateKey[IO](256).asError)
+        key <- AES.keySizeGenerateKey[IO](256).asET
         jwk <- JsonWebKey.fromOctetSequenceKey(key, keyID = Some(KeyId("nope"))).rLiftET[IO, Error]
         compact <- makeSimpleSymmetricJwe(jwk)
         _ <- EitherT(JsonWebToken.getClaims[IO](compact, JoseConfig(requireSignature = false))(

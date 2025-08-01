@@ -7,7 +7,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.`try`.asError as tryAsError
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.{ES256, RS256}
 import com.peknight.jose.jwk.*
@@ -29,11 +29,11 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       -16, -74, 119, 59, -68, -4, -119, -118, -101, -76)
     val run =
       for
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        privateKey <- RSA.privateKey[IO](n, d).asET
         jws <- EitherT(JsonWebSignature.signBytes[IO](JoseHeader(Some(RS256)), bytesIn, Some(privateKey)))
         compact <- jws.compact.eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         bytesOut <- EitherT(parsedJws.verifiedPayloadBytes[IO](Some(publicKey)))
       yield
         bytesIn === bytesOut
@@ -49,7 +49,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "i6vlAPhYpk2G9xXtE9-78z76lR2T0YtULN7xDRwHSq1ub_T3Y4whxp4jYbVWRuOkqifz3TuQ\"}"
     val run =
       for
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        privateKey <- RSA.privateKey[IO](n, d).asET
         jws <- EitherT(JsonWebSignature.signBytes[IO](JoseHeader(Some(RS256)), bytesIn, Some(privateKey)))
         compact <- jws.compact.eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
@@ -65,12 +65,12 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "PayloadVariations" should "succeed with payload char encoding ASCII" in {
     val run =
       for
-        privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
+        privateKey <- ES256.curve.privateKey[IO](d256).asET
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "pronounced as'-key", Some(privateKey),
           JoseConfig(charset = StandardCharsets.US_ASCII)))
         compact <- jws.compact.eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
-        publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
+        publicKey <- ES256.curve.publicKey[IO](x256, y256).asET
         payload <- EitherT(parsedJws.verifiedPayloadString[IO](Some(publicKey),
           JoseConfig(charset = StandardCharsets.US_ASCII)))
       yield
@@ -82,12 +82,12 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         charset <- Try(Charset.forName("ISO8859_15")).tryAsError.eLiftET[IO]
-        privateKey <- EitherT(ES256.curve.privateKey[IO](d256).asError)
+        privateKey <- ES256.curve.privateKey[IO](d256).asET
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(ES256)), "€Ÿ", Some(privateKey),
           JoseConfig(charset = charset)))
         compact <- jws.compact.eLiftET[IO]
         parsedJws <- JsonWebSignature.parse(compact).eLiftET[IO]
-        publicKey <- EitherT(ES256.curve.publicKey[IO](x256, y256).asError)
+        publicKey <- ES256.curve.publicKey[IO](x256, y256).asET
         payload <- parsedJws.decodePayloadString(charset).eLiftET[IO]
         _ <- parsedJws.decodePayloadString(StandardCharsets.US_ASCII).swap.asError.eLiftET[IO]
         _ <- EitherT(parsedJws.check[IO](Some(publicKey)))

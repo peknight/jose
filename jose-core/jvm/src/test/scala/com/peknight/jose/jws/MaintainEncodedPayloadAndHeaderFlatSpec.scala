@@ -4,8 +4,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.{e, n}
 import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
@@ -21,7 +20,7 @@ class MaintainEncodedPayloadAndHeaderFlatSpec extends AsyncFlatSpec with AsyncIO
       "ntS85CPF4RcUaepQJ2pz-8gfCrv2qKHKU36FbmqOwKoQZL1dLXH1wp33k7ESt5zivLVPli3tPDVfBa5BmWAMO1mydqGgw"
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         jws <- JsonWebSignature.parse(funkyToken).eLiftET[IO]
         _ <- EitherT(jws.check[IO](Some(publicKey)))
         // payload <- jws.decodePayloadString().eLiftET[IO]

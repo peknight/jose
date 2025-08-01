@@ -3,10 +3,8 @@ package com.peknight.jose.jwa.encryption
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.applicative.*
-import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
 import com.peknight.jose.error.JoseError
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwe.ContentEncryptionKeys

@@ -10,7 +10,7 @@ import cats.{Foldable, Monad}
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.cats.instances.scodec.bits.byteVector.given
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.label
 import com.peknight.security.mac.{Hmac, MACAlgorithm}
 import com.peknight.security.provider.Provider
@@ -29,9 +29,9 @@ object PasswordBasedKeyDerivationFunction2:
                                              iterationCount: Int, dkLen: Int, provider: Option[Provider | JProvider]
                                             ): EitherT[F, Error, ByteVector] =
     for
-      prf <- EitherT(prf.getMAC[F](provider).asError)
-      _ <- EitherT(prf.initF[F](SecretKeySpec(password, Hmac)).asError)
-      hLen <- EitherT(prf.getMacLengthF[F].asError)
+      prf <- prf.getMAC[F](provider).asET
+      _ <- prf.initF[F](SecretKeySpec(password, Hmac)).asET
+      hLen <- prf.getMacLengthF[F].asET
       //  1. If dkLen > (2^32 - 1) * hLen, output "derived key too long" and
       //     stop.
       // value of (Math.pow(2, 32) - 1).toLong
@@ -78,9 +78,9 @@ object PasswordBasedKeyDerivationFunction2:
       //
       //               DK = T_1 || T_2 ||  ...  || T_l<0..r-1>
       //
-      byteVectors <- EitherT(Stream.emits(0 until l).evalMap[F, ByteVector] { i =>
+      byteVectors <- Stream.emits(0 until l).evalMap[F, ByteVector] { i =>
         derive[F](salt, iterationCount, i + 1, prf).map(block => if i == l - 1 then block.take(r) else block)
-      }.compile.toList.asError)
+      }.compile.toList.asET
     yield
       //  5. Output the derived key DK.
       Foldable[List].fold[ByteVector](byteVectors)

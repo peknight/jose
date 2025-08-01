@@ -7,7 +7,7 @@ import cats.effect.{Clock, IO}
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.commons.time.syntax.temporal.minus
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.RS256
 import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
@@ -95,7 +95,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         decryptionKey <- EitherT(appendixA2.toPrivateKey[IO]())
-        verificationKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        verificationKey <- RSA.publicKey[IO](n, e).asET
         rsaPublicKey <- EitherT(appendixA1.toPublicKey[IO]())
         (jwtClaims1, nested1) <- EitherT(JsonWebToken.getClaims[IO](jwt,
           JoseConfig(skipSignatureVerification = true, requireSignature = false))(
@@ -269,14 +269,14 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebToken getClaims" should "succeed with error expired error code validation" in {
     val run =
       for
-        now <- EitherT(Clock[IO].realTimeInstant.asError)
+        now <- Clock[IO].realTimeInstant.asET
         jwtClaims = JsonWebTokenClaims(issuer = Some("ISS"), subject = Some("SUB"), audience = Some(Set("AUD")),
           expirationTime = Some(now.minus(1.minute)))
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        privateKey <- RSA.privateKey[IO](n, d).asET
         jws <- EitherT(JsonWebSignature.signJson[IO, JsonWebTokenClaims](JoseHeader(Some(RS256)), jwtClaims,
           Some(privateKey)))
         jwt <- jws.compact.eLiftET[IO]
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         (claims, _) <- EitherT(JsonWebToken.getClaims[IO](jwt)(VerificationPrimitive.verificationKey(Some(publicKey)))(
           DecryptionPrimitive.defaultDecryptionPrimitivesF))
         _ <- claims.checkTime(now).swap.asError.eLiftET[IO]

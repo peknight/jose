@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.JsonWebKey.{OctetSequenceJsonWebKey, RSAJsonWebKey}
 import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.RSA
@@ -37,7 +37,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     given CanEqual[PublicKey, PublicKey] = CanEqual.derived
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         jwk = JsonWebKey.fromRSAKey(publicKey, ext = JsonObject(name -> Json.fromString(value)))
         json = encodeToJson(jwk)
         decodedJwk <- decode[Id, RSAJsonWebKey](json).eLiftET[IO]

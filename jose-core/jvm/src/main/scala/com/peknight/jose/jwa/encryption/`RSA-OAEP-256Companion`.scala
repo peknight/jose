@@ -5,8 +5,7 @@ import cats.effect.Sync
 import cats.syntax.functor.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.jose.jwk.JsonWebKey
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.security.cipher.AES
 import com.peknight.security.digest.`SHA-256`
@@ -32,7 +31,7 @@ trait `RSA-OAEP-256Companion` extends RSAESAlgorithmPlatform { self: RSAESAlgori
         modulus <- Base64UrlNoPad.fromString(modulus).eLiftET[F]
         exponent <- Base64UrlNoPad.fromString(exponent).eLiftET[F]
         publicKey <- EitherT(RSAJsonWebKey(modulus, exponent).toPublicKey[F]())
-        _ <- EitherT(encryptKey[F](publicKey, 16, AES).asError)
+        _ <- encryptKey[F](publicKey, 16, AES).asET
       yield
         ()
     eitherT.value.map(_.isRight)

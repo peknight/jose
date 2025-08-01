@@ -7,7 +7,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jwx.JoseHeader
@@ -237,9 +237,9 @@ class JsonWebKeySetForDecryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
-        second <- EitherT(IO(jwks.keys(2)).asError)
+        second <- IO(jwks.keys(2)).asET
         secondKey <- EitherT(second.toKey[IO]())
-        third <- EitherT(IO(jwks.keys(3)).asError)
+        third <- IO(jwks.keys(3)).asET
         thirdKey <- EitherT(third.toKey[IO]())
         empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
         keys1 <- EitherT(jwks.filterForDecryption[IO](JsonWebEncryption(JoseHeader(Some(`ECDH-ES+A128KW`)), None, None,
@@ -274,9 +274,9 @@ class JsonWebKeySetForDecryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](json).eLiftET[IO]
-        second <- EitherT(IO(jwks.keys(2)).asError)
+        second <- IO(jwks.keys(2)).asET
         secondKey <- EitherT(second.toKey[IO]())
-        third <- EitherT(IO(jwks.keys(3)).asError)
+        third <- IO(jwks.keys(3)).asET
         thirdKey <- EitherT(third.toKey[IO]())
         empty = Base64UrlNoPad.fromByteVector(ByteVector.empty)
         keys1 <- EitherT(jwks.filterForDecryption[IO](JsonWebEncryption(JoseHeader(Some(`ECDH-ES+A128KW`)), None, None,

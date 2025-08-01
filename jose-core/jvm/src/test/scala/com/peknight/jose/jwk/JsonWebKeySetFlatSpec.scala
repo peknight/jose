@@ -9,7 +9,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.{`P-256`, `P-521`}
 import com.peknight.jose.jwa.encryption.A128KW
 import com.peknight.jose.jwa.signature.RS256
@@ -239,7 +239,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKeySet" should "succeed with from rsa public key and back" in {
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         kid = "my-key-id"
         keyID = KeyId(kid)
         webKey = JsonWebKey.fromRSAKey(publicKey, keyID = Some(keyID), publicKeyUse = Some(Signature))
@@ -261,7 +261,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     List(`P-256`.publicKey[IO](x256, y256), `P-521`.publicKey[IO](x521, y521))
       .map { io =>
         for
-          publicKey <- EitherT(io.asError)
+          publicKey <- io.asET
           kid = "kkiidd"
           keyID = KeyId(kid)
           webKey <- JsonWebKey.fromEllipticCurveKey(publicKey, keyID = Some(keyID), publicKeyUse = Some(Encryption))
@@ -293,8 +293,8 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebKeySet" should "succeed with oct and default to json" in {
     val run =
       for
-        key1 <- EitherT(AES.keySizeGenerateKey[IO](128).asError)
-        key2 <- EitherT(AES.keySizeGenerateKey[IO](128).asError)
+        key1 <- AES.keySizeGenerateKey[IO](128).asET
+        key2 <- AES.keySizeGenerateKey[IO](128).asET
         jwk1 <- JsonWebKey.fromKey(key1).eLiftET[IO]
         jwk2 <- JsonWebKey.fromKey(key2).eLiftET[IO]
         jwks = JsonWebKeySet(jwk1, jwk2)

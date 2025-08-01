@@ -9,7 +9,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.ecc.{`P-256K`, `P-256`, `P-384`, `P-521`}
 import com.peknight.jose.jwa.signature.{ES256, ES256K, ES384, ES512}
@@ -153,7 +153,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     val run =
       for
-        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        publicKey <- `P-256`.publicKey[IO](x256, y256).asET
         _ <- expectInvalidSignature(jws, publicKey)
       yield ()
     run.value.asserting(value => assert(value.isRight))
@@ -165,7 +165,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "________vOb6racXnoTzucrC_GMlUQ"
     val run =
       for
-        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        publicKey <- `P-256`.publicKey[IO](x256, y256).asET
         _ <- expectInvalidSignature(jws, publicKey)
       yield ()
     run.value.asserting(value => assert(value.isRight))
@@ -637,8 +637,8 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ECDSA" should "succeed with P-256 round trip gen keys" in {
     val run =
       for
-        keyPair1 <- EitherT(`P-256`.generateKeyPair[IO]().asError)
-        keyPair2 <- EitherT(`P-256`.generateKeyPair[IO]().asError)
+        keyPair1 <- `P-256`.generateKeyPair[IO]().asET
+        keyPair2 <- `P-256`.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("PAYLOAD!!!", ES256, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
           keyPair2.getPublic)
       yield
@@ -649,13 +649,13 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ECDSA" should "succeed with ES256K round trip gen keys" in {
     val run =
       for
-        provider <- EitherT(BouncyCastleProvider[IO].asError)
-        _ <- EitherT(Security.addProvider[IO](provider).asError)
-        keyPair1 <- EitherT(ES256K.curve.generateKeyPair[IO](provider = Some(provider)).asError)
+        provider <- BouncyCastleProvider[IO].asET
+        _ <- Security.addProvider[IO](provider).asET
+        keyPair1 <- ES256K.curve.generateKeyPair[IO](provider = Some(provider)).asET
         keyPair1Jwk <- JsonWebKey.fromKeyPair(keyPair1).eLiftET[IO]
         keyPair1Jwk <- JsonWebKey.fromKeyPair(keyPair1).eLiftET[IO]
         keyPair1 <- EitherT(keyPair1Jwk.toKeyPair[IO](provider = Some(provider)))
-        keyPair2 <- EitherT(`P-256K`.generateKeyPair[IO](provider = Some(provider)).asError)
+        keyPair2 <- `P-256K`.generateKeyPair[IO](provider = Some(provider)).asET
         _ <- testBasicRoundTrip("k", ES256K, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
           keyPair2.getPublic, Some(provider))
       yield
@@ -670,8 +670,8 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "cNIIouiM7GrdO_gWV47e837I\",\"y\":\"N2vLlH7f_2Y54zKfbUSSQyQxb5oozybb2SsM-eRYpMU\"}"
     val run =
       for
-        provider <- EitherT(BouncyCastleProvider[IO].asError)
-        _ <- EitherT(Security.addProvider[IO](provider).asError)
+        provider <- BouncyCastleProvider[IO].asET
+        _ <- Security.addProvider[IO](provider).asET
         jwk <- decode[Id, JsonWebKey](jwkJson).eLiftET[IO]
         jws <- JsonWebSignature.parse(jwsCs).eLiftET[IO]
         key <- EitherT(jwk.toKey[IO](provider = Some(provider)))
@@ -686,8 +686,8 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ECDSA" should "succeed with P-384 round trip gen keys" in {
     val run =
       for
-        keyPair1 <- EitherT(`P-384`.generateKeyPair[IO]().asError)
-        keyPair2 <- EitherT(`P-384`.generateKeyPair[IO]().asError)
+        keyPair1 <- `P-384`.generateKeyPair[IO]().asET
+        keyPair2 <- `P-384`.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("The umlaut (/\u02C8\u028Amla\u028At/ UUM-lowt) refers to a sound shift.", ES384,
           keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate, keyPair2.getPublic)
       yield
@@ -698,8 +698,8 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ECDSA" should "succeed with P-521 round trip gen keys" in {
     val run =
       for
-        keyPair1 <- EitherT(`P-521`.generateKeyPair[IO]().asError)
-        keyPair2 <- EitherT(`P-521`.generateKeyPair[IO]().asError)
+        keyPair1 <- `P-521`.generateKeyPair[IO]().asET
+        keyPair2 <- `P-521`.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("?????", ES512, keyPair1.getPrivate, keyPair1.getPublic, keyPair2.getPrivate,
           keyPair2.getPublic)
       yield
@@ -710,9 +710,9 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ECDSA" should "succeed with P-256 round trip example keys and gen keys" in {
     val run =
       for
-        priv1 <- EitherT(`P-256`.privateKey[IO](d256).asError)
-        pub1 <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
-        keyPair <- EitherT(`P-256`.generateKeyPair[IO]().asError)
+        priv1 <- `P-256`.privateKey[IO](d256).asET
+        pub1 <- `P-256`.publicKey[IO](x256, y256).asET
+        keyPair <- `P-256`.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("something here", ES256, priv1, pub1, keyPair.getPrivate, keyPair.getPublic)
       yield
         ()
@@ -722,9 +722,9 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "ECDSA" should "succeed with P-521 round trip example keys and gen keys" in {
     val run =
       for
-        priv1 <- EitherT(`P-521`.privateKey[IO](d521).asError)
-        pub1 <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
-        keyPair <- EitherT(`P-521`.generateKeyPair[IO]().asError)
+        priv1 <- `P-521`.privateKey[IO](d521).asET
+        pub1 <- `P-521`.publicKey[IO](x521, y521).asET
+        keyPair <- `P-521`.generateKeyPair[IO]().asET
         _ <- testBasicRoundTrip("touch\u00df", ES512, priv1, pub1, keyPair.getPrivate, keyPair.getPublic)
       yield
         ()
@@ -741,13 +741,13 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "d9PNjzlzrgwfJqF2KyASmO6Hz7dZr9EYPIX6rrEpWjsp1tDJ0_Hq45Rk2eJ5z3cFTIpVu6V7CGXwVWvVCDQzcGpmZIFR939aI49Z_HWT7b"
     val run =
       for
-        rsaPrivateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        rsaPrivateKey <- RSA.privateKey[IO](n, d).asET
         hmacKey = Hmac.secretKeySpec(ByteVector.fill(2048)(0))
-        rsaPublicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        ec256PrivateKey <- EitherT(`P-256`.privateKey[IO](d256).asError)
-        ec521PrivateKey <- EitherT(`P-521`.privateKey[IO](d521).asError)
-        ec256PublicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
-        ec521PublicKey <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
+        rsaPublicKey <- RSA.publicKey[IO](n, e).asET
+        ec256PrivateKey <- `P-256`.privateKey[IO](d256).asET
+        ec521PrivateKey <- `P-521`.privateKey[IO](d521).asET
+        ec256PublicKey <- `P-256`.publicKey[IO](x256, y256).asET
+        ec521PublicKey <- `P-521`.publicKey[IO](x521, y521).asET
         test1 =
           for
             cs <- List(cs256, cs384, cs512)
@@ -774,7 +774,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jws <- JsonWebSignature.parse(compact).eLiftET[IO]
-        publicKey <- EitherT(`P-256`.publicKey[IO](x256, y256).asError)
+        publicKey <- `P-256`.publicKey[IO](x256, y256).asET
         _ <- EitherT(jws.check[IO](Some(publicKey)))
       yield
         ()
@@ -788,7 +788,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val run =
       for
         jws <- JsonWebSignature.parse(compact).eLiftET[IO]
-        publicKey <- EitherT(`P-521`.publicKey[IO](x521, y521).asError)
+        publicKey <- `P-521`.publicKey[IO](x521, y521).asET
         _ <- EitherT(jws.check[IO](Some(publicKey)))
       yield
         ()

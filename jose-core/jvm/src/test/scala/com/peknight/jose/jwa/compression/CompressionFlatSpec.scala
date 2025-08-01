@@ -4,8 +4,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.encryption.{`A128CBC-HS256`, dir, randomBytes}
 import com.peknight.jose.jwe.JsonWebEncryption
 import com.peknight.jose.jwx.JoseHeader
@@ -19,7 +18,7 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       "good it should pretty good it should pretty good it should pretty good."
     val run =
       for
-        keyBytes <- EitherT(randomBytes[IO](32).asError)
+        keyBytes <- randomBytes[IO](32).asET
         key = AES.secretKeySpec(keyBytes)
         jweWithZip <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(dir), Some(`A128CBC-HS256`),
           Some(Deflate)), plaintext, key))

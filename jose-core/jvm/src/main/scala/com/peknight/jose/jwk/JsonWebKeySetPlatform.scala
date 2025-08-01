@@ -12,17 +12,15 @@ import com.peknight.error.Error
 import com.peknight.error.syntax.either.label
 import com.peknight.jose.jwa.JsonWebAlgorithm
 import com.peknight.jose.jwa.encryption.{`ECDH-ESAlgorithm`, `ECDH-ESWithAESWrapAlgorithm`}
-import com.peknight.jose.jwa.signature.{ECDSA, JWSAlgorithm}
+import com.peknight.jose.jwa.signature.ECDSA
 import com.peknight.jose.jwe.{DecryptionPrimitive, JsonWebEncryption}
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, EllipticCurveJsonWebKey, OctetKeyPairJsonWebKey}
-import com.peknight.jose.jwk.KeyType.{EllipticCurve, OctetKeyPair}
 import com.peknight.jose.jwk.PublicKeyUseType.{Encryption, Signature}
 import com.peknight.jose.jws.{JsonWebSignature, VerificationPrimitive}
 import com.peknight.jose.jwx.{JoseConfig, JoseHeader, JosePrimitive, JsonWebStructure}
 import com.peknight.security.provider.Provider
 import com.peknight.security.signature.EdDSA
 import com.peknight.validation.collection.list.either.nonEmpty
-import com.peknight.validation.std.option.typed
 
 import java.security.{Key, Provider as JProvider}
 

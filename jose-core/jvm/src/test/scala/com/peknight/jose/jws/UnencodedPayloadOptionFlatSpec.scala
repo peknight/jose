@@ -8,8 +8,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.signature.{HS256, RS256}
 import com.peknight.jose.jwk.{JsonWebKey, d, e, n}
 import com.peknight.jose.jwx.{JoseConfig, JoseHeader, bytesDecodeToString, stringEncodeToBytes}
@@ -127,12 +126,12 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val payload2 = "I want a hamburger. No, a cheeseburger. I want a hotdog. I want a milkshake."
     val run =
       for
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        privateKey <- RSA.privateKey[IO](n, d).asET
         signerJws1 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload1, Some(privateKey)))
         compact1 <- signerJws1.compact.eLiftET[IO]
         verifierJws <- JsonWebSignature.parse(compact1).eLiftET[IO]
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         verifierPayload <- EitherT(verifierJws.verifiedPayloadString[IO](Some(publicKey)))
         signerJws2 <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(RS256)).base64UrlEncodePayload(false),
           payload2, Some(privateKey)))

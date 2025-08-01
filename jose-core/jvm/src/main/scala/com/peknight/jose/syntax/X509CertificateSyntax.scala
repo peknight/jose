@@ -4,7 +4,7 @@ import cats.data.EitherT
 import cats.effect.Sync
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.security.digest.{MessageDigestAlgorithm, `SHA-1`, `SHA-256`}
 import com.peknight.security.provider.Provider
 import com.peknight.security.syntax.certificate.getEncodedF
@@ -22,8 +22,8 @@ trait X509CertificateSyntax:
     : F[Either[Error, Base64UrlNoPad]] =
       val eitherT =
         for
-          encoded <- EitherT(certificate.getEncodedF[F].asError)
-          digest <- EitherT(hashAlg.digest[F](encoded, provider).asError)
+          encoded <- certificate.getEncodedF[F].asET
+          digest <- hashAlg.digest[F](encoded, provider).asET
         yield
           Base64UrlNoPad.fromByteVector(digest)
       eitherT.value

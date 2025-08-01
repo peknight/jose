@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.encryption.*
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
 import com.peknight.jose.jwk.{JsonWebKey, appendixA1, appendixA2}
@@ -102,7 +102,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val plaintext = "Some sensitive info"
     val run =
       for
-        key <- EitherT(`A128CBC-HS256`.cekAlgorithm.keySizeGenerateKey[IO](`A128CBC-HS256`.cekByteLength * 8).asError)
+        key <- `A128CBC-HS256`.cekAlgorithm.keySizeGenerateKey[IO](`A128CBC-HS256`.cekByteLength * 8).asET
         jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(dir), Some(`A128CBC-HS256`)), plaintext, key))
         compact <- jwe.compact.eLiftET[IO]
         jwe <- JsonWebEncryption.parse(compact).eLiftET[IO]

@@ -1,7 +1,6 @@
 package com.peknight.jose.jwa.encryption
 
 import cats.Foldable
-import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.either.*
 import cats.syntax.flatMap.*
@@ -10,7 +9,7 @@ import cats.syntax.option.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.cats.instances.scodec.bits.byteVector.given
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.AlgorithmIdentifier
 import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.digest.MessageDigestAlgorithm
@@ -30,8 +29,8 @@ object ConcatKeyDerivationFunction:
       for
         algorithmId <- algorithm.fold(none[ByteVector].asRight[Error])(enc => stringEncodeToBytes(enc.identifier).map(_.some))
           .eLiftET[F]
-        derivedKey <- EitherT(kdf[F](messageDigestAlgorithm, sharedSecret,
-          otherInfo(cekLength, algorithmId, agreementPartyUInfo, agreementPartyVInfo), cekLength, provider).asError)
+        derivedKey <- kdf[F](messageDigestAlgorithm, sharedSecret,
+          otherInfo(cekLength, algorithmId, agreementPartyUInfo, agreementPartyVInfo), cekLength, provider).asET
       yield derivedKey
     eitherT.value
 

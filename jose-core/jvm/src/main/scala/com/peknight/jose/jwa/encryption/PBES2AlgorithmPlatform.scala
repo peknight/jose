@@ -6,7 +6,7 @@ import cats.syntax.functor.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.{label, message}
 import com.peknight.jose.error.MissingKey
 import com.peknight.jose.jwa.AlgorithmIdentifier
@@ -105,7 +105,7 @@ trait PBES2AlgorithmPlatform { self: PBES2Algorithm =>
                                           ): EitherT[F, Error, (Key, ByteVector, Long)] =
     for
       iterationCount <- atOrAbove(pbes2Count.getOrElse(defaultIterationCount), 1000L).label("iterationCount").eLiftET
-      saltInput <- EitherT(getBytesOrRandom[F](pbes2SaltInput.toRight(defaultSaltByteLength), random).asError)
+      saltInput <- getBytesOrRandom[F](pbes2SaltInput.toRight(defaultSaltByteLength), random).asET
       _ <- atOrAbove(saltInput.length, 8L).label("saltInput").eLiftET
       derivedKey <- deriveKey[F](identifier, cipher, prf, cekAlgorithm, key, iterationCount.toInt, saltInput,
         macProvider)

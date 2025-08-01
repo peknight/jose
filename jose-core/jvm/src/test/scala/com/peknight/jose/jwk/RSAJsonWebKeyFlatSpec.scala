@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.JsonWebKey.{AsymmetricJsonWebKey, RSAJsonWebKey}
 import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.RSA
@@ -36,8 +36,8 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         jwk <- typed[RSAJsonWebKey](jwk).eLiftET[IO]
         parsedPublicKey <- EitherT(jwk.toPublicKey[IO]())
         parsedPrivateKey <- EitherT(jwk.toPrivateKey[IO]())
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
+        privateKey <- RSA.privateKey[IO](n, d).asET
       yield
         given CanEqual[PublicKey, PublicKey] = CanEqual.derived
         given CanEqual[PrivateKey, PrivateKey] = CanEqual.derived
@@ -48,10 +48,10 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "RSAJsonWebKey" should "succeed with from key with private" in {
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         jwk <- JsonWebKey.fromPublicKey(publicKey).eLiftET[IO]
         jsonNoPrivateKey = encodeToJson(jwk)
-        privateKey <- EitherT(RSA.privateKey[IO](n, d).asError)
+        privateKey <- RSA.privateKey[IO](n, d).asET
         jwk <- JsonWebKey.fromPublicKey(publicKey, Some(privateKey)).eLiftET[IO]
         jsonExcludePrivateKey = encodeToJson(jwk.excludePrivate)
         json = encodeToJson(jwk)
@@ -121,7 +121,7 @@ class RSAJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "RSAJsonWebKey" should "succeed with to json with public key only jwk and include private settings" in {
     val run =
       for
-        publicKey <- EitherT(RSA.publicKey[IO](n, e).asError)
+        publicKey <- RSA.publicKey[IO](n, e).asET
         jwk <- JsonWebKey.fromPublicKey(publicKey).eLiftET[IO]
         jsonExcludePrivate = encodeToJson(jwk.excludePrivate)
         jwk <- decode[Id, AsymmetricJsonWebKey](jsonExcludePrivate).eLiftET[IO]

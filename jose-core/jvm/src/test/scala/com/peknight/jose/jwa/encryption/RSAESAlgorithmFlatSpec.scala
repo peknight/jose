@@ -9,9 +9,7 @@ import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwe.{ContentEncryptionKeys, JsonWebEncryption}
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import com.peknight.jose.jwk.{appendixA1, appendixA2}
@@ -77,7 +75,7 @@ class RSAESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     val plaintext = "stuff"
     val tests = for alg <- RSAESAlgorithm.values yield
       for
-        keyPair <- EitherT(RSA.keySizeGenerateKeyPair[IO](2048).asError)
+        keyPair <- RSA.keySizeGenerateKeyPair[IO](2048).asET
         jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(alg), Some(`A128CBC-HS256`)), plaintext,
           keyPair.getPublic))
         jweCompact <- jwe.compact.eLiftET[IO]

@@ -5,8 +5,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.error.syntax.applicativeError.asError
-import com.peknight.error.syntax.either.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwx.{bytesDecodeToString, stringEncodeToBytes}
 import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
@@ -28,7 +27,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         plaintextBytes <- stringEncodeToBytes(plaintext).eLiftET[IO]
         aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
-        contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asError)
+        contentEncryptionParts <- `A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, Some(iv)).asET
         ciphertext = Base64UrlNoPad.fromByteVector(contentEncryptionParts.ciphertext).value
         authenticationTag = Base64UrlNoPad.fromByteVector(contentEncryptionParts.authenticationTag).value
       yield
@@ -60,8 +59,8 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
         plaintextBytes <- stringEncodeToBytes(text).eLiftET[IO]
-        rawCek <- EitherT(randomBytes[IO](`A128CBC-HS256`.cekByteLength).asError)
-        contentEncryptionParts <- EitherT(`A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, None).asError)
+        rawCek <- randomBytes[IO](`A128CBC-HS256`.cekByteLength).asET
+        contentEncryptionParts <- `A128CBC-HS256`.encrypt[IO](rawCek, plaintextBytes, aad, None).asET
         decrypted <- EitherT(`A128CBC-HS256`.decrypt[IO](rawCek, contentEncryptionParts.initializationVector,
           contentEncryptionParts.ciphertext, contentEncryptionParts.authenticationTag, aad))
         decryptedText <- bytesDecodeToString(decrypted).eLiftET

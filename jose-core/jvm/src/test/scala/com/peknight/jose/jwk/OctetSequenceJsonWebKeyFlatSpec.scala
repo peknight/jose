@@ -7,7 +7,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.JsonWebKey.OctetSequenceJsonWebKey
 import com.peknight.jose.jwx.encodeToJson
 import com.peknight.security.cipher.AES
@@ -53,7 +53,7 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "OctetSequenceJsonWebKey" should "succeed with generator" in {
     List(128, 192, 256, 192, 384, 512).map { size =>
       for
-        key <- EitherT(AES.keySizeGenerateKey[IO](size).asError)
+        key <- AES.keySizeGenerateKey[IO](size).asET
         jwk <- JsonWebKey.fromKey(key).eLiftET[IO]
         jwk <- typed[OctetSequenceJsonWebKey](jwk).eLiftET[IO]
         key <- jwk.toKey.eLiftET[IO]

@@ -9,7 +9,7 @@ import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwe.{ContentEncryptionKeys, ContentEncryptionParts, JsonWebEncryption}
 import com.peknight.jose.jwk.{JsonWebKey, KeyId, KeyType, PublicKeyUseType}
@@ -157,8 +157,8 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
         aad <- stringEncodeToBytes(encodedHeader, StandardCharsets.US_ASCII).eLiftET[IO]
         ivBase <- Base64UrlNoPad.fromString(encodedIv).eLiftET[IO]
         iv <- ivBase.decode[Id].eLiftET[IO]
-        ContentEncryptionParts(_, ciphertext, authenticationTag) <- EitherT(`A128CBC-HS256`.encrypt[IO](
-          contentEncryptionKey, plaintextBytes, aad, Some(iv)).asError)
+        ContentEncryptionParts(_, ciphertext, authenticationTag) <- `A128CBC-HS256`.encrypt[IO](
+          contentEncryptionKey, plaintextBytes, aad, Some(iv)).asET
         jweCompact <- JsonWebEncryption(headerBase, None, None, Base64UrlNoPad.fromByteVector(encryptedKey), ivBase,
           Base64UrlNoPad.fromByteVector(ciphertext), Base64UrlNoPad.fromByteVector(authenticationTag), None)
           .compact.eLiftET
@@ -217,7 +217,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       for
         keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
         key = PBKDF2.secretKeySpec(keyBytes)
-        pbes2SaltInput <- EitherT(randomBytes[IO](saltByteLength).asError)
+        pbes2SaltInput <- randomBytes[IO](saltByteLength).asET
         jwe <- EitherT(JsonWebEncryption.encryptString[IO](JoseHeader(Some(`PBES2-HS384+A192KW`), Some(`A192CBC-HS384`),
           pbes2SaltInput = Some(Base64UrlNoPad.fromByteVector(pbes2SaltInput)), pbes2Count = Some(iterationCount)),
           plaintext, key))

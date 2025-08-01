@@ -1,7 +1,7 @@
 package com.peknight.jose.jwk
 
 import cats.Id
-import cats.data.{EitherT, NonEmptyList}
+import cats.data.NonEmptyList
 import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.either.*
@@ -14,7 +14,7 @@ import com.peknight.cats.ext.instances.eitherT.given
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.{Base, Base64UrlNoPad}
 import com.peknight.error.Error
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.error.syntax.applicativeError.{asET, asError}
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.error.{BareKeyCertMismatch, JoseError, ThumbprintMismatch}
 import com.peknight.jose.jwx.stringEncodeToBytes
@@ -37,7 +37,7 @@ trait JsonWebKeyPlatform { self: JsonWebKey =>
     val eitherT =
       for
         input <- stringEncodeToBytes(self.thumbprintHashInput).eLiftET[F]
-        output <- EitherT(hashAlgorithm.digest[F](input, provider).asError)
+        output <- hashAlgorithm.digest[F](input, provider).asET
       yield
         output
     eitherT.value

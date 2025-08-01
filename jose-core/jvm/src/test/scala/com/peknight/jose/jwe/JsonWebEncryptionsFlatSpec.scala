@@ -3,10 +3,10 @@ package com.peknight.jose.jwe
 import cats.Id
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
-import com.peknight.codec.circe.parser.decode
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
-import com.peknight.error.syntax.applicativeError.asError
+import com.peknight.codec.circe.parser.decode
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.`P-256`
 import com.peknight.jose.jwa.encryption.{A128GCM, `ECDH-ES+A128KW`, `RSA-OAEP`}
 import com.peknight.jose.jwk.*
@@ -18,10 +18,10 @@ class JsonWebEncryptionsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   "JsonWebEncryptions" should "succeed" in {
     val run =
       for
-        rsaKeyPair <- EitherT(RSA.keySizeGenerateKeyPair[IO](2048).asError)
+        rsaKeyPair <- RSA.keySizeGenerateKeyPair[IO](2048).asET
         rsaPublicKey = rsaKeyPair.getPublic
         rsaPrivateKey = rsaKeyPair.getPrivate
-        ec256KeyPair <- EitherT(`P-256`.generateKeyPair[IO]().asError)
+        ec256KeyPair <- `P-256`.generateKeyPair[IO]().asET
         ec256PublicKey = ec256KeyPair.getPublic
         ec256PrivateKey = ec256KeyPair.getPrivate
         rsaJwk <- JsonWebKey.fromKeyPair(rsaKeyPair).eLiftET[IO]
