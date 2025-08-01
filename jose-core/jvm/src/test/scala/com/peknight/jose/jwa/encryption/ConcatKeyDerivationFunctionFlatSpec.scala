@@ -6,6 +6,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.peknight.cats.ext.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
+import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwx.stringEncodeToBytes
 import com.peknight.security.digest.`SHA-256`
 import org.scalatest.Assertion
