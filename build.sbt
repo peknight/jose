@@ -4,12 +4,10 @@ import com.peknight.build.sbt.*
 commonSettings
 
 lazy val jose = (project in file("."))
+  .settings(name := "jose")
   .aggregate(
     joseCore.jvm,
     joseCore.js,
-  )
-  .settings(
-    name := "jose",
   )
 
 lazy val joseCore = (crossProject(JVMPlatform, JSPlatform) in file("jose-core"))
