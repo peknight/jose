@@ -29,8 +29,4 @@ lazy val joseCore = (crossProject(JVMPlatform, JSPlatform) in file("jose-core"))
     typelevel.catsEffect.testingScalaTest,
     peknight.security.bouncyCastle.provider,
   ))
-  .jvmSettings(
-    libraryDependencies ++= Seq(
-      jvmTestDependency(logback.classic)
-    ),
-  )
+  .jvmSettings(libraryDependencies ++= Seq(jvmTestDependency(logback.classic)))
