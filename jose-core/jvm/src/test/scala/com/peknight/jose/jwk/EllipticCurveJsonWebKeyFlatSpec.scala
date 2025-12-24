@@ -4,7 +4,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.{`P-256`, `P-384`, `P-521`}
 import com.peknight.validation.std.either.typed

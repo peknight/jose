@@ -3,7 +3,7 @@ package com.peknight.jose.jwa.encryption
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.functor.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.option.OptionEmpty
 import com.peknight.error.syntax.applicativeError.asET

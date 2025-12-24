@@ -5,8 +5,8 @@ import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import com.peknight.cats.ext.instances.eitherT.given
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.instances.eitherT.given
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.jose.error.MissingPrivateKey
 import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey

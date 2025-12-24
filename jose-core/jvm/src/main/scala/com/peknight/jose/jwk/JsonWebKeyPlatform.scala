@@ -10,8 +10,8 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.instances.eitherT.given
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.instances.eitherT.given
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.base.{Base, Base64UrlNoPad}
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.{asET, asError}

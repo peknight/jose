@@ -7,8 +7,8 @@ import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.{Foldable, Monad}
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
-import com.peknight.cats.instances.scodec.bits.byteVector.given
+import com.peknight.cats.syntax.eitherT.eLiftET
+import com.peknight.cats.scodec.bits.instances.byteVector.given
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.error.syntax.either.label

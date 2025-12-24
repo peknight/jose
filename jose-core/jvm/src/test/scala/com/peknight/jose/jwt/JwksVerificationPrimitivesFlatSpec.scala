@@ -5,7 +5,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError

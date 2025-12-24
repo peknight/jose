@@ -2,7 +2,7 @@ package com.peknight.jose.jws
 
 import cats.data.EitherT
 import cats.effect.IO
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError
 import com.peknight.jose.jwa.signature.JWSAlgorithm

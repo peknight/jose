@@ -7,7 +7,7 @@ import cats.effect.{IO, Sync}
 import cats.syntax.functor.*
 import cats.syntax.option.*
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.asError

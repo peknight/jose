@@ -9,7 +9,7 @@ import cats.syntax.functor.*
 import cats.syntax.parallel.*
 import cats.syntax.traverse.*
 import cats.{Id, Monad, Parallel}
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
+import com.peknight.cats.syntax.eitherT.{eLiftET, rLiftET}
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error

@@ -5,7 +5,7 @@ import cats.effect.Async
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Id, Monad}
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
+import com.peknight.cats.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.jose.error.{InvalidJsonWebToken, MissingEncryption, MissingIntegrity, MissingSignature}

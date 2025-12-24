@@ -7,7 +7,7 @@ import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.{Id, Monad}
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET}
+import com.peknight.cats.syntax.eitherT.{eLiftET, lLiftET}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.error.Error

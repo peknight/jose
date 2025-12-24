@@ -1,7 +1,7 @@
 package com.peknight.jose
 
 import com.peknight.codec.base.Base64UrlNoPad
-import com.peknight.scodec.bits.ext.syntax.byteVector.toUnsignedBigInt
+import com.peknight.scodec.bits.syntax.byteVector.toUnsignedBigInt
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey
 import scodec.bits.ByteVector
 

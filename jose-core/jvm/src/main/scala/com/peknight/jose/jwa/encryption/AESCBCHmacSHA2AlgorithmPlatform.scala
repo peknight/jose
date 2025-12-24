@@ -4,11 +4,11 @@ import cats.effect.Sync
 import cats.syntax.applicativeError.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwe.ContentEncryptionParts
-import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
+import com.peknight.scodec.bits.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.cipher.{AES, Cipher}
 import com.peknight.security.error.IntegrityError
 import com.peknight.security.mac.Hmac

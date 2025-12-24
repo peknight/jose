@@ -4,7 +4,7 @@ import cats.Id
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.ecc.`P-256`

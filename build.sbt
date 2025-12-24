@@ -17,10 +17,9 @@ lazy val joseCore = (crossProject(JVMPlatform, JSPlatform) in file("jose-core"))
     peknight.codec.circe.parser,
     peknight.codec.base,
     peknight.codec.http4s,
-    peknight.ext.catsParse,
-    peknight.instances.cats.scodec.bits,
-    peknight.instances.cats.time,
-    peknight.commons.text,
+    peknight.cats,
+    peknight.cats.scodec.bits,
+    peknight.catsParse,
     peknight.commons.time,
     peknight.validation.spire,
   ))

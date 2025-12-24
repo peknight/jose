@@ -6,7 +6,7 @@ import cats.syntax.either.*
 import cats.syntax.eq.*
 import cats.syntax.traverse.*
 import cats.{Applicative, Monad}
-import com.peknight.cats.ext.syntax.eitherT.{&&, eLiftET, rLiftET}
+import com.peknight.cats.syntax.eitherT.{&&, eLiftET, rLiftET}
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
 import com.peknight.error.syntax.either.label

@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.effect.std.{Random, UUIDGen}
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
+import com.peknight.cats.syntax.eitherT.{eLiftET, rLiftET}
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asET

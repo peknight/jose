@@ -5,7 +5,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{Clock, IO}
 import cats.syntax.eq.*
 import cats.syntax.order.*
-import com.peknight.cats.instances.time.instant.given
+import com.peknight.cats.instances.instant.given
 import com.peknight.codec.Decoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode

@@ -3,7 +3,7 @@ package com.peknight.jose.jwa.encryption
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.functor.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.JsonWebKey.RSAJsonWebKey

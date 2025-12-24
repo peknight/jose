@@ -3,7 +3,7 @@ package com.peknight.jose.jwa.compression
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwa.encryption.{`A128CBC-HS256`, dir, randomBytes}
 import com.peknight.jose.jwe.JsonWebEncryption

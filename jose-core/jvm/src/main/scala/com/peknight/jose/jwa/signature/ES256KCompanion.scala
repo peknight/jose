@@ -5,7 +5,7 @@ import cats.effect.Sync
 import cats.syntax.applicative.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.jose.jwa.ecc.`P-256K`
 import com.peknight.jose.jwk.JsonWebKey.EllipticCurveJsonWebKey

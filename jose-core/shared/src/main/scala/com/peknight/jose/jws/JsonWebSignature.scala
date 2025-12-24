@@ -4,7 +4,7 @@ import cats.data.Ior
 import cats.parse.{Parser, Parser0}
 import cats.syntax.either.*
 import cats.{Id, Monad, Show}
-import com.peknight.cats.parse.ext.syntax.parser.flatMapE0
+import com.peknight.cats.parse.syntax.parser.flatMapE0
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.parser.decode

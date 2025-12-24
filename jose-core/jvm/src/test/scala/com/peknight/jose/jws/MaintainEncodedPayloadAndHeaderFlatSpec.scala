@@ -3,7 +3,7 @@ package com.peknight.jose.jws
 import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.jwk.{e, n}
 import com.peknight.security.cipher.RSA

@@ -5,7 +5,7 @@ import cats.data.EitherT
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.traverse.*
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.codec.circe.parser.decode
 import com.peknight.error.Error
@@ -18,7 +18,7 @@ import com.peknight.jose.jwk.JsonWebKey.AsymmetricJsonWebKey
 import com.peknight.jose.jws.JsonWebSignature
 import com.peknight.jose.jws.JsonWebSignatureTestOps.{testBadKeyOnVerify, testBasicRoundTrip}
 import com.peknight.jose.jwx.JoseConfig
-import com.peknight.scodec.bits.ext.syntax.byteVector.{leftHalf, rightHalf}
+import com.peknight.scodec.bits.syntax.byteVector.{leftHalf, rightHalf}
 import com.peknight.security.Security
 import com.peknight.security.bouncycastle.jce.provider.BouncyCastleProvider
 import com.peknight.security.cipher.RSA

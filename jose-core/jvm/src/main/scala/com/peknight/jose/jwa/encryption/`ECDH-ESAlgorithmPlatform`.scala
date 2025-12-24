@@ -6,7 +6,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
+import com.peknight.cats.syntax.eitherT.{eLiftET, lLiftET, rLiftET}
 import com.peknight.error.Error
 import com.peknight.error.syntax.applicativeError.asET
 import com.peknight.jose.error.*

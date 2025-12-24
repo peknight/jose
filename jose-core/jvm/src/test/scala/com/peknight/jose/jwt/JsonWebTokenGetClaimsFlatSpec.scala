@@ -4,7 +4,7 @@ import cats.Id
 import cats.data.EitherT
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{Clock, IO}
-import com.peknight.cats.ext.syntax.eitherT.eLiftET
+import com.peknight.cats.syntax.eitherT.eLiftET
 import com.peknight.codec.circe.parser.decode
 import com.peknight.commons.time.syntax.temporal.minus
 import com.peknight.error.syntax.applicativeError.asET

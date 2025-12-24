@@ -6,7 +6,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.option.*
 import cats.{Applicative, Id}
-import com.peknight.cats.ext.syntax.eitherT.{eLiftET, rLiftET}
+import com.peknight.cats.syntax.eitherT.{eLiftET, rLiftET}
 import com.peknight.codec.Encoder
 import com.peknight.codec.base.Base64UrlNoPad
 import com.peknight.error.Error
