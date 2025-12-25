@@ -15,7 +15,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.time.Instant
 
 class JwksVerificationPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JwksVerificationPrimitives" should "succeed with id token from pf" in {
+  "JwksVerificationPrimitives" should "pass for id token from pf" in {
     // JWKS from a PingFederate JWKS endpoint along with a couple ID Tokens (JWTs) it issued
     val jwt = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBrIn0.eyJzdWIiOiJoYWlsaWUiLCJhdWQiOiJhIiwianRpIjoiUXhSYjF2Z2tpSE90M" +
       "lZoNVdST0pQUiIsImlzcyI6Imh0dHBzOlwvXC9sb2NhbGhvc3Q6OTAzMSIsImlhdCI6MTQyMTA5MzM4MiwiZXhwIjoxNDIxMDkzOTgyLCJub2" +
@@ -76,7 +76,7 @@ class JwksVerificationPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "JwksVerificationPrimitives" should "succeed with some Hmac ones" in {
+  "JwksVerificationPrimitives" should "pass for some Hmac ones" in {
     val json = "{\"keys\":[{\"kty\":\"oct\",\"kid\":\"uno\",\"k\":\"i-41ccx6-7rPpCK0-i0Hi3K-jcDjt8V0aF9aWY8081d1i2c3" +
       "3pzq5H5eR_JbwmAojgUl727gGoKz7COz9cjic1\"},{\"kty\":\"oct\",\"kid\":\"two\",\"k\":\"-v_lp7B__xRr-a90cIJqpNCo7u" +
       "6cY2o9Lz6-P--_01j0aF9d8bcKdrPpCK0-i0Hi3K-jcDjt8V0aF9aWY8081d\"},{\"kty\":\"oct\",\"kid\":\"trois\",\"k\":\"i-" +
@@ -109,7 +109,7 @@ class JwksVerificationPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "JwksVerificationPrimitives" should "succeed with disambiguate with signature check option" in {
+  "JwksVerificationPrimitives" should "pass for disambiguate with signature check option" in {
     val with1stEC = "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJtZSIsImV4cCI6MTQ5NDQzNzgwOSwiYXVkIjoidGhlIGF1ZGllbmNlIiwiaXNzIj" +
       "oidGhlIGlzc3VlciJ9.04tBvYG5QeY8lniGnkZNHMW8b0OPCN6XHuK9g8fsOz8uA_r0Yk-biMkWG7ltOMCFSiiPvEu7jNWfWbk0v-hWOg"
     val with2ndEC = "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJtZSIsImV4cCI6MTQ5NDQzNzgwOSwiYXVkIjoidGhlIGF1ZGllbmNlIiwiaXNzIj" +

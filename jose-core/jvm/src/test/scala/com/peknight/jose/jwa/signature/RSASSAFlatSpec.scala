@@ -35,7 +35,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     "t_O8W2Fp5jujGbds9uJdbF9CUAr7t1dnZcAcQjbKBYNX4BAynRFdiuB--f_nZLgrnbyTyWzO75vRK5h6xBArLIARNPvkSjtQBMHlb1L07Qe7K0G" +
     "arZRmB_eSN9383LcOLn6_dO--xi12jzDwusC-eOkHWEsqtFZESc6BfI7noOPqvhJ1phCnvWh6IeYI2w9QOYEUipUTI8np6LbgGY9Fs98rqVt5AX" +
     "LIhWkWywlVmtVrBp0igcN_IoypGlUPQGe77Rw"
-  "RSASSA" should "succeed with verify example" in {
+  "RSASSA" should "pass for verify example" in {
     val run =
       for
         publicKey <- RSA.publicKey[IO](n, e).asET
@@ -46,7 +46,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "RSASSA" should "succeed with sign example" in {
+  "RSASSA" should "pass for sign example" in {
     val run =
       for
         privateKey <- RSA.privateKey[IO](n, d).asET
@@ -58,7 +58,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSASSA" should "succeed with key 11 to 12" in {
+  "RSASSA" should "pass for key 11 to 12" in {
     // draft 12 used a JWK encoding of the key where previously it was octet sequences
     // and this is just a sanity check that it didn't change and my stuff sees them as the same
     // may want to redo some of the ExampleRsaKeyFromJws to just use the JWK serialization at some point
@@ -83,7 +83,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "RSASSA" should "succeed with PSS round trips" in {
+  "RSASSA" should "pass for PSS round trips" in {
     val run =
       for
         provider <- BouncyCastleProvider[IO].asET
@@ -119,7 +119,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "RSASSA" should "succeed with PSS some verifies" in {
+  "RSASSA" should "pass for PSS some verifies" in {
     val jwss = List(
       // created using BC provider and "SHAxxxwithRSAandMGF1" with a PSSParameterSpec
       "eyJhbGciOiJQUzI1NiJ9.c3R1ZmYgaGVyZQ.KaRX4zjLPIoT0AAK2YZ9deKyE28pZnTBS-dOaANNxpdlDrc5El99xlOD18qbPpwZDSx0iGdRT" +
@@ -196,7 +196,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "RSASSA" should "succeed with RSASSA-PKCS1-v1_5 round trips" in {
+  "RSASSA" should "pass for RSASSA-PKCS1-v1_5 round trips" in {
     val run =
       for
         pair <- RSA.keySizeGenerateKeyPair[IO](2048).asET
@@ -210,7 +210,7 @@ class RSASSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "RSASSA" should "succeed with RSASSA-PKCS1-v1_5 bad keys" in {
+  "RSASSA" should "pass for RSASSA-PKCS1-v1_5 bad keys" in {
     val cs256 = "eyJhbGciOiJSUzI1NiJ9.UEFZTE9BRCEhIQ.ln8y7TlxyR0jLemqdVybaWYmcS2nIseDEqKNJ1J-mM6TXRWjfFKsJr1kzBgh1nK" +
       "HbVT6q_cgSoPLsb-9WGvpUMkt7N0NxqT2Vffcz_2HMwKvWDJZSjbuj6_XHSJye7gqySHiI2gOggSaYyIqnua-_kOmVGmgncrzwm2YRPgwLXAl" +
       "9zB0GNul7lNGDvs193WbgOJ-rKGj515NBfqb7cV2VjQg7vsrnzIWT8FKcrQ5TYNXMrybzK5Q_1BNIxOVlrTsdh_pcUNiJvKKgC3_5PBHkhaJr" +

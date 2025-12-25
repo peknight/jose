@@ -15,7 +15,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 
 class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
-  "CriticalHeader" should "succeed with unknown critical header" in {
+  "CriticalHeader" should "pass for unknown critical header" in {
     val headerName = "urn:example.com:nope"
     List(
       "eyJhbGciOiJFUzI1NiIsImNyaXQiOlsidXJuOmV4YW1wbGUuY29tOm5vcGUiXX0.aG93IGNyaXRpY2FsIHJlYWxseT8.F-xgvRuuaqawpLAiq" +
@@ -38,7 +38,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       .asserting(value => assert(value.getOrElse(false)))
   }
 
-  "CriticalHeader" should "succeed with jws appendix E" in {
+  "CriticalHeader" should "pass for jws appendix E" in {
     // http://tools.ietf.org/html/rfc7515#appendix-E
     val cs = "eyJhbGciOiJub25lIiwNCiAiY3JpdCI6WyJodHRwOi8vZXhhbXBsZS5jb20vVU5ERUZJTkVEIl0sDQogImh0dHA6Ly9leGFtcGxlLm" +
       "NvbS9VTkRFRklORUQiOnRydWUNCn0.RkFJTA."
@@ -54,7 +54,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "CriticalHeader" should "succeed with bad crit" in {
+  "CriticalHeader" should "pass for bad crit" in {
     List(
       "eyJhbGciOiJub25lIiwKICJjcml0Ijoic2hvdWxkbm90d29yayIKfQ.RkFJTA.",
       "eyJhbGciOiJub25lIiwKICJjcml0Ijp0cnVlCn0.bWVo.")
@@ -70,7 +70,7 @@ class CriticalHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       .asserting(value => assert(value.getOrElse(false)))
   }
 
-  "CriticalHeader" should "succeed with simple round trip" in {
+  "CriticalHeader" should "pass for simple round trip" in {
     val payload = "This family is in a rut. We gotta shake things up. We're driving to Walley World."
     val run =
       for

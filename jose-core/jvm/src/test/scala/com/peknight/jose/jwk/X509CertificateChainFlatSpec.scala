@@ -18,7 +18,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.security.PublicKey
 
 class X509CertificateChainFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "X509CertificateChain" should "succeed with parse example from jwk" in {
+  "X509CertificateChain" should "pass for parse example from jwk" in {
     // https://tools.ietf.org/html/draft-ietf-jose-json-web-key-39#appendix-B
     val n = "vrjOfz9Ccdgx5nQudyhdoR17V-IubWMeOZCwX_jj0hgAsz2J_pqYW08PLbK_PdiVGKPrqzmDIsLI7sA25VEnHU1uCLNwBuUiCO11_-7" +
       "dYbsr4iJmG0Qu2j8DsVyT1azpJC_NG84Ty5KKthuCaPod7iI7w0LK9orSMhBEwwZDCxTWq4aYWAchc8t-emd9qOvWtVMDC2BXksRngh6X5bUY" +
@@ -61,7 +61,7 @@ class X509CertificateChainFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "X509CertificateChain" should "succeed with some chain things kinda" in {
+  "X509CertificateChain" should "pass for some chain things kinda" in {
     // https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-39#appendix-B
     val x5cFromJws: String = "{\"x5c\":[\"MIIE3jCCA8agAwIBAgICAwEwDQYJKoZIhvcNAQEFBQAwYzELMAkGA1UEBhMCVVMxITAfBgNVBA" +
       "oTGFRoZSBHbyBEYWRkeSBHcm91cCwgSW5jLjExMC8GA1UECxMoR28gRGFkZHkgQ2xhc3MgMiBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTAeFw0" +

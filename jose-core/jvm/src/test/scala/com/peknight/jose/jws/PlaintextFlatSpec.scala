@@ -19,7 +19,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   private val payload: String = "{\"iss\":\"joe\",\r\n \"exp\":1300819380,\r\n \"http://example.com/is_root\":true}"
   private val key: SecretKeySpec = Hmac.secretKeySpec(ByteVector(1, 2, 3, 4, 5, -3, 28, 123, -53))
 
-  "Plaintext" should "succeed with example decode" in {
+  "Plaintext" should "pass for example decode" in {
     val run =
       for
         jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
@@ -29,7 +29,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "Plaintext" should "succeed with example encode" in {
+  "Plaintext" should "pass for example encode" in {
     val run =
       for
         jws <- EitherT(JsonWebSignature.signString[IO](JoseHeader(Some(none)), payload))
@@ -39,11 +39,11 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "Plaintext" should "failed with sign with key no good" in {
+  "Plaintext" should "fail for sign with key no good" in {
     JsonWebSignature.signString[IO](JoseHeader(Some(none)), payload, Some(key)).asserting(either => assert(either.isLeft))
   }
 
-  "Plaintext" should "failed with verify with key no good" in {
+  "Plaintext" should "fail for verify with key no good" in {
     val run =
       for
         jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]
@@ -53,7 +53,7 @@ class PlaintextFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "Plaintext" should "succeed with a decode" in {
+  "Plaintext" should "pass for a decode" in {
     val cs = "eyJhbGciOiJub25lIn0.eyJhdXRoX3RpbWUiOjEzMzk2MTMyNDgsImV4cCI6MTMzOTYxMzU0OCwiaXNzIjoiaHR0cHM6XC9cL2V4YW" +
       "1wbGUuY29tIiwiYXVkIjoiYSIsImp0aSI6ImpJQThxYTM1QXJvVjZpUDJxNHdSQWwiLCJ1c2VyX2lkIjoiam9obiIsImlhdCI6MTMzOTYxMzI" +
       "0OCwiYWNyIjozfQ."

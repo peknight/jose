@@ -14,7 +14,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "ConcatKeyDerivationFunction" should "succeed with get reps" in {
+  "ConcatKeyDerivationFunction" should "pass for get reps" in {
     assert(
       ConcatKeyDerivationFunction.getReps(256, 256) == 1 &&
         ConcatKeyDerivationFunction.getReps(384, 256) == 2 &&
@@ -26,7 +26,7 @@ class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     )
   }
 
-  "ConcatKeyDerivationFunction" should "succeed with get data length data" in {
+  "ConcatKeyDerivationFunction" should "pass for get data length data" in {
     val apu = "QWxpY2U"
     val apv = "Qm9i"
     val run =
@@ -43,21 +43,21 @@ class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "ConcatKeyDerivationFunction" should "succeed with kdf 1" in {
+  "ConcatKeyDerivationFunction" should "pass for kdf 1" in {
     // test values produced from implementation found at http://stackoverflow.com/questions/10879658
     val derivedKey = "pgs50IOZ6BxfqvTSie4t9OjWxGr4whiHo1v9Dti93CRiJE2PP60FojLatVVrcjg3BxpuFjnlQxL97GOwAfcwLA"
     val z = "Sq8rGLm4rEtzScmnSsY5r1n-AqBl_iBU8FxN80Uc0S0"
     testKdf(derivedKey, z, 64, `A256CBC-HS512`.identifier)
   }
 
-  "ConcatKeyDerivationFunction" should "succeed with kdf 2" in {
+  "ConcatKeyDerivationFunction" should "pass for kdf 2" in {
     // test values produced from implementation found at http://stackoverflow.com/questions/10879658
     val derivedKey = "vphyobtvExGXF7TaOvAkx6CCjHQNYamP2ET8xkhTu-0"
     val z = "LfkHot2nGTVlmfxbgxQfMg"
     testKdf(derivedKey, z, 32, `A128CBC-HS256`.identifier)
   }
 
-  "ConcatKeyDerivationFunction" should "succeed with kdf 3" in {
+  "ConcatKeyDerivationFunction" should "pass for kdf 3" in {
     // test values produced from implementation found at http://stackoverflow.com/questions/10879658
     val derivedKey = "yRbmmZJpxv3H1aq3FgzESa453frljIaeMz6pt5rQZ4Q5Hs-4RYoFRXFh_qBsbTjlsj8JxIYTWj-cp5LKtgi1fBRsf_5yTE" +
       "cLDv4pKH2fNxjbEOKuVVDWA1_Qv2IkEC0_QSi3lSSELcJaNX-hDG8occ7oQv-w8lg6lLJjg58kOes"
@@ -65,7 +65,7 @@ class ConcatKeyDerivationFunctionFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     testKdf(derivedKey, z, 128, "meh", Some(ByteVector(65, 108, 105, 99, 101)), Some(ByteVector(66, 111, 98)))
   }
 
-  "ConcatKeyDerivationFunction" should "succeed with kdf 4" in {
+  "ConcatKeyDerivationFunction" should "pass for kdf 4" in {
     // test values produced from implementation found at http://stackoverflow.com/questions/10879658
     val derivedKey = "SNOvl6h5iSYWJ_EhlnvK8o6om9iyR8HkKMQtQYGkYKkVY0HFMleoUm-H6-kLz8sW"
     val z = "zp9Hot2noTVlmfxbkXqfn1"

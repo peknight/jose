@@ -33,29 +33,29 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   private val jwkJson = "{\"kty\":\"oct\",\"k\":\"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcg" +
     "UuTwjAzZr1Z9CAow\"}"
 
-  "HmacSHA" should "succeed with HS256 A" in {
+  "HmacSHA" should "pass for HS256 A" in {
     testBasicRoundTrip("some content that is the payload", HS256)
   }
 
-  "HmacSHA" should "succeed with HS256 B" in {
+  "HmacSHA" should "pass for HS256 B" in {
     val payload = "{\"iss\":\"https://jwt-idp.example.com\",\"prn\":\"mailto:mike@example.com\",\"aud\":\"https://jw" +
       "t-rp.example.net\",\"iat\":1300815780,\"exp\":1300819380,\"http://claims.example.com/member\":true}"
     testBasicRoundTrip(payload, HS256)
   }
 
-  "HmacSHA" should "succeed with HS384 A" in {
+  "HmacSHA" should "pass for HS384 A" in {
     testBasicRoundTrip("Looking good, Billy Ray!", HS384)
   }
 
-  "HmacSHA" should "succeed with HS384 B" in {
+  "HmacSHA" should "pass for HS384 B" in {
     testBasicRoundTrip("""{"meh":"meh"}""", HS384)
   }
 
-  "HmacSHA" should "succeed with HS512 A" in {
+  "HmacSHA" should "pass for HS512 A" in {
     testBasicRoundTrip("Feeling good, Louis!", HS512)
   }
 
-  "HmacSHA" should "succeed with HS512 B" in {
+  "HmacSHA" should "pass for HS512 B" in {
     testBasicRoundTrip("""{"meh":"mehvalue"}""", HS512)
   }
 
@@ -63,44 +63,44 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     JsonWebSignatureTestOps.testBasicRoundTrip(payload, jwsAlgo, key1, key1, key2, key2)
       .value.asserting(value => assert(value.isRight))
 
-  "HmacSHA" should "failed with min key size 256 for sign" in {
+  "HmacSHA" should "fail for min key size 256 for sign" in {
     testBadKeyOnSign(HS256, Some(Hmac.secretKeySpec(ByteVector(0)))).asserting(assert)
   }
 
-  "HmacSHA" should "failed with min key size 256 for sign 2" in {
+  "HmacSHA" should "fail for min key size 256 for sign 2" in {
     testBadKeyOnSign(HS256, Some(Hmac.secretKeySpec(ByteVector.fill(31)(0)))).asserting(assert)
   }
 
-  "HmacSHA" should "failed with min key size 384 for sign" in {
+  "HmacSHA" should "fail for min key size 384 for sign" in {
     testBadKeyOnSign(HS384, Some(Hmac.secretKeySpec(ByteVector.fill(47)(0)))).asserting(assert)
   }
 
-  "HmacSHA" should "failed with min key size 512 for sign" in {
+  "HmacSHA" should "fail for min key size 512 for sign" in {
     testBadKeyOnSign(HS512, Some(Hmac.secretKeySpec(ByteVector.fill(63)(0)))).asserting(assert)
   }
 
-  "HmacSHA" should "failed with min key size 256 for verify" in {
+  "HmacSHA" should "fail for min key size 256 for verify" in {
     val compact = "eyJhbGciOiJIUzI1NiJ9.c29tZSBjb250ZW50IHRoYXQgaXMgdGhlIHBheWxvYWQ.qGO7O7W2ECVl6uO7lfsXDgEF-EUEti0i" +
       "-a_AimulIRA"
     testBadKeyOnVerify(compact, Some(Hmac.secretKeySpec(ByteVector.fill(31)(0))))
       .value.asserting(value => assert(value.isRight))
   }
 
-  "HmacSHA" should "failed with min key size 384 for verify" in {
+  "HmacSHA" should "fail for min key size 384 for verify" in {
     val compact = "eyJhbGciOiJIUzM4NCJ9.eyJtZWgiOiJtZWgifQ.fptKQJmGN3fBP_FiQzdAGdmx-Q5iWjQvJrLfdmFnebxbQuzOmzejBrzYh" +
       "4MyS01a"
     testBadKeyOnVerify(compact, Some(Hmac.secretKeySpec(ByteVector.fill(47)(0))))
       .value.asserting(value => assert(value.isRight))
   }
 
-  "HmacSHA" should "failed with min key size 512 for verify" in {
+  "HmacSHA" should "fail for min key size 512 for verify" in {
     val compact = "eyJhbGciOiJIUzUxMiJ9.eyJtZWgiOiJtZWh2YWx1ZSJ9.NeB669dYkPmqgLqgd_sVqwIfCvb4XN-K67gpMJR93wfw_DylpxB" +
       "1ell2opHM-E5P9jNKE2GYxTxwcI68Z2CTxw"
     testBadKeyOnVerify(compact, Some(Hmac.secretKeySpec(ByteVector.fill(63)(0))))
       .value.asserting(value => assert(value.isRight))
   }
 
-  "HmacSHA" should "failed with validate key switch" in {
+  "HmacSHA" should "fail for validate key switch" in {
     val key = Hmac.secretKeySpec(ByteVector(1, 2, 5, -9, 99, -99, 0, 40, 21))
     val run =
       for
@@ -113,7 +113,7 @@ class HmacSHAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "HmacSHA" should "succeed with HS256 verify example" in {
+  "HmacSHA" should "pass for HS256 verify example" in {
     val run =
       for
         jws <- JsonWebSignature.parse(jwsCompact).eLiftET[IO]

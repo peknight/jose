@@ -16,7 +16,7 @@ import com.peknight.security.signature.{Ed25519, Ed448}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "EdDSA" should "succeed with RFC8037 appendix A1 to A5" in {
+  "EdDSA" should "pass for RFC8037 appendix A1 to A5" in {
     val jwkJson = "{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"d\":\"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A\",\"x\":" +
       "\"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo\"}"
     val expectedPayload = "Example of Ed25519 signing"
@@ -46,7 +46,7 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "EdDSA" should "succeed with verify produced else where" in {
+  "EdDSA" should "pass for verify produced else where" in {
     val jwkJson1 = """{"kty":"OKP","crv":"Ed25519","x":"sipir4_DXRPiq3vgQPbX5EIZjhdxFVO0bwcVnIFZxQA"}"""
     val jwkJson2 = "{\"kty\":\"OKP\",\"d\":\"-g8nVY3FlaY9SNE1c5Edn6kQXXQN13SVLCmdlKYgqYM\",\"crv\":\"Ed25519\",\"x" +
       "\":\"sipir4_DXRPiq3vgQPbX5EIZjhdxFVO0bwcVnIFZxQA\"}"
@@ -68,7 +68,7 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "EdDSA" should "succeed with Ed25519 round trip gen keys" in {
+  "EdDSA" should "pass for Ed25519 round trip gen keys" in {
     val run =
       for
         keyPair1 <- Ed25519.generateKeyPair[IO]().asET
@@ -80,7 +80,7 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "EdDSA" should "succeed with Ed448 round trip gen keys" in {
+  "EdDSA" should "pass for Ed448 round trip gen keys" in {
     val run =
       for
         keyPair1 <- Ed448.generateKeyPair[IO]().asET
@@ -92,7 +92,7 @@ class EdDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "EdDSA" should "succeed with Ed mixed round trip gen keys" in {
+  "EdDSA" should "pass for Ed mixed round trip gen keys" in {
     val run =
       for
         keyPair1 <- Ed25519.generateKeyPair[IO]().asET

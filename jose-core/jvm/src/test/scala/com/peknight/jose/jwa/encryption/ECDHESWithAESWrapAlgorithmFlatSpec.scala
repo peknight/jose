@@ -21,7 +21,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 
 class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
-  "ECDH-ESWithAESWrap" should "succeed with round trip" in {
+  "ECDH-ESWithAESWrap" should "pass for round trip" in {
     val run =
       for
         algs <- filterAvailableAlgorithms[IO, `ECDH-ESWithAESWrapAlgorithm`](`ECDH-ESWithAESWrapAlgorithm`.values)
@@ -60,7 +60,7 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       res == plaintext
 
-  "ECDH-ES+A128KW" should "failed with invalid curve 1" in {
+  "ECDH-ES+A128KW" should "fail for invalid curve 1" in {
     val maliciousJweCompact = "eyJhbGciOiJFQ0RILUVTK0ExMjhLVyIsImVuYyI6IkExMjhDQkMtSFMyNTYiLCJlcGsiOnsia3R5IjoiRUMiL" +
       "CJ4IjoiZ1RsaTY1ZVRRN3otQmgxNDdmZjhLM203azJVaURpRzJMcFlrV0FhRkpDYyIsInkiOiJjTEFuakthNGJ6akQ3REpWUHdhOUVQclJ6TU" +
       "c3ck9OZ3NpVUQta2YzMEZzIiwiY3J2IjoiUC0yNTYifX0.qGAdxtEnrV_3zbIxU2ZKrMWcejNltjA_dtefBFnRh9A2z9cNIqYRWg.pEA5kX30" +
@@ -69,7 +69,7 @@ class ECDHESWithAESWrapAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     pointNotOnCurve(maliciousJweCompact)
   }
 
-  "ECDH-ES+A128KW" should "failed with invalid curve 2" in {
+  "ECDH-ES+A128KW" should "fail for invalid curve 2" in {
     val maliciousJweCompact = "eyJhbGciOiJFQ0RILUVTK0ExMjhLVyIsImVuYyI6IkExMjhDQkMtSFMyNTYiLCJlcGsiOnsia3R5IjoiRUMiL" +
       "CJ4IjoiWE9YR1E5XzZRQ3ZCZzN1OHZDSS1VZEJ2SUNBRWNOTkJyZnFkN3RHN29RNCIsInkiOiJoUW9XTm90bk56S2x3aUNuZUprTElxRG5UTn" +
       "c3SXNkQkM1M1ZVcVZqVkpjIiwiY3J2IjoiUC0yNTYifX0.UGb3hX3ePAvtFB9TCdWsNkFTv9QWxSr3MpYNiSBdW630uRXRBT3sxw.6VpU84oM" +

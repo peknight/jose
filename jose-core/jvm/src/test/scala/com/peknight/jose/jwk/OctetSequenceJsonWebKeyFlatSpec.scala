@@ -17,7 +17,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "OctetSequenceJsonWebKey" should "succeed with example from Jws" in {
+  "OctetSequenceJsonWebKey" should "pass for example from Jws" in {
     val base64UrlKey = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
     val jwkJson = s"""{"kty":"oct", "k":"$base64UrlKey"}"""
     val keyBytes = ByteVector(3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166, 143, 90, 179, 40, 230,
@@ -36,7 +36,7 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "OctetSequenceJsonWebKey" should "succeed with leading and trailing zeros" in {
+  "OctetSequenceJsonWebKey" should "pass for leading and trailing zeros" in {
     val rawInputBytes = ByteVector(0, 0, 111, 16, 51, 98, -4, 0, -72, 9, -111, 60, 41, -66, 94, 0)
     val run =
       for
@@ -50,7 +50,7 @@ class OctetSequenceJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "OctetSequenceJsonWebKey" should "succeed with generator" in {
+  "OctetSequenceJsonWebKey" should "pass for generator" in {
     List(128, 192, 256, 192, 384, 512).map { size =>
       for
         key <- AES.keySizeGenerateKey[IO](size).asET

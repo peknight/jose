@@ -12,7 +12,7 @@ import com.peknight.security.cipher.AES
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "Compression" should "succeed" in {
+  "Compression" should "pass" in {
     val plaintext = "This should compress pretty good, it should, yes it should pretty good it should pretty good it " +
       "should it should it should it should pretty good it should pretty good it should pretty good it should pretty " +
       "good it should pretty good it should pretty good it should pretty good."
@@ -36,7 +36,7 @@ class CompressionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "Compression" should "failed with bad zip value consume" in {
+  "Compression" should "fail for bad zip value consume" in {
     val cs = "eyJ6aXAiOiJiYWQiLCJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..ZZZ0nR5f80ikJtaPot4RpQ." +
       "BlDAYKzn9oLH1fhZcR60ZKye7UHslg7s0h7s1ecNZ5A1Df1pq2pBWUwdRKjJRxJAEFbDFoXTFYjV-cLCCE2Uxw.zasDvsZ3U4YkTDgIUchjiA"
     val run =

@@ -15,7 +15,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 class ECDHESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "ECDH-ES" should "succeed with example jwa appendix C" in {
+  "ECDH-ES" should "pass for example jwa appendix C" in {
     val receiverJwkJson = "\n{\"kty\":\"EC\",\n \"crv\":\"P-256\",\n \"x\":\"weNJy2HscCSM6AEDTDg04biOvhFhyyWvOHQfeF_" +
       "PxMQ\",\n \"y\":\"e8lnCO-AlStT-NJVX-crhB7QRYhiix03illJOVAOyck\",\n \"d\":\"VEmDZpDXXK8p8N0Cndsxs924q6nS1RXFAS" +
       "Rl6BfUqdw\"\n}"
@@ -49,7 +49,7 @@ class ECDHESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "ECDH-ES" should "succeed with dv256" in {
+  "ECDH-ES" should "pass for dv256" in {
     /*
      * A working test w/ data produced by Dmitry Vsekhvalnov doing ECDH with P-256 + ConcatKDF to produce a 256 bit key
      * ---
@@ -89,7 +89,7 @@ class ECDHESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "ECDH-ES" should "succeed with decrypt precomputed P-256 ECDH and A256CBC-HS512" in {
+  "ECDH-ES" should "pass for decrypt precomputed P-256 ECDH and A256CBC-HS512" in {
     val jwkJson = "{\"kty\":\"EC\",\"x\":\"fXx-DfOsmecjKh3VrLZFsF98Z1nutsL4UdFTdgA8S7Y\",\"y\":\"LGzyJY99aqKk52UIExc" +
       "NFSTs0S7HnNzQ-DRWBTHDad4\",\"crv\":\"P-256\",\"d\":\"OeVCWbXuFuJ9U16q7bhLNoKPLLnK-yTx95grzfvQ2l4\"}"
     val cs = "eyJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiYWxnIjoiRUNESC1FUyIsImVwayI6eyJrdHkiOiJFQyIsIngiOiJ3ZlRHNVFHZkItNHUxan" +
@@ -99,7 +99,7 @@ class ECDHESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     testECDHAndAESCBCHmacSHA2(jwkJson, cs, text)
   }
 
-  "ECDH-ES" should "succeed with decrypt precomputed P-384 ECDH and A192CBC-HS384" in {
+  "ECDH-ES" should "pass for decrypt precomputed P-384 ECDH and A192CBC-HS384" in {
     val jwkJson = "{\"kty\":\"EC\",\"x\":\"nBr92fh2JsEjIF1LR5PKICBeHNIBe0xb7nlBrrU3WoWgfJYfXve1jxC-5VT5EPLt\",\"y\":" +
       "\"sUAxL3L5lJdzFUSR9EHLniuBhEbvXfPa_3OiR6Du0_GOlFXXIi4UmbNpk10_Thfq\",\"crv\":\"P-384\",\"d\":\"0f0NnWg__Qgqjj" +
       "3fl2gAlsID4Ni41FR88cmZPVgb6ch-ZShuVJRjoxymCuzVP7Gi\"}"
@@ -111,7 +111,7 @@ class ECDHESAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     testECDHAndAESCBCHmacSHA2(jwkJson, cs, text)
   }
 
-  "ECDH-ES" should "succeed with decrypt precomputed P-521 ECDH and A256CBC-HS512" in {
+  "ECDH-ES" should "pass for decrypt precomputed P-521 ECDH and A256CBC-HS512" in {
     val jwkJson = "{\"kty\":\"EC\",\"x\":\"AH3rqSYjKue50ThW0qq_qQ76cNtqWrc7hU6kZR6akxy8iTf8ugcpqnbgbi98AgSwIqgJZDBMC" +
       "k-8eoiGaf3R_kDD\",\"y\":\"AeafPdJjHLf6pK5V7iyMsL3-6MShpHS6jXQ8m-Bcbp06yxAMn6TJbdkacvj45dy_pdh1s6XZwoxRxNETg_g" +
       "j-hq9\",\"crv\":\"P-521\",\"d\":\"AB2tm9vgGe2BaxZmJQ016GY-U7NV_EWhrPsLDC5l9tAM9DGEwI2cT2HcO20Z6CQndw0ZhqLZ6ME" +

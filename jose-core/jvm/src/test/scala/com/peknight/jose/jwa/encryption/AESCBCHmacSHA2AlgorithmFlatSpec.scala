@@ -21,7 +21,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   private val encodedCiphertext = "KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
   private val encodedAuthenticationTag = "9hH0vgRfYgPnAHOd8stkvw"
   
-  "A128CBC-HS256" should "succeed with example encrypt from jwe appendix 2" in {
+  "A128CBC-HS256" should "pass for example encrypt from jwe appendix 2" in {
     val iv = ByteVector(3, 22, 60, 12, 43, 67, 104, 105, 108, 108, 105, 99, 111, 116, 104, 101)
     val run =
       for
@@ -35,7 +35,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "A128CBC-HS256" should "succeed with example decrypt from jwe appendix 2" in {
+  "A128CBC-HS256" should "pass for example decrypt from jwe appendix 2" in {
     val encodedIv = "AxY8DCtDaGlsbGljb3RoZQ"
     val run =
       for
@@ -53,7 +53,7 @@ class AESCBCHmacSHA2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "A128CBC-HS256" should "succeed with round trip" in {
+  "A128CBC-HS256" should "pass for round trip" in {
     val text = "I'm writing this test on a flight to Zurich"
     val run =
       for

@@ -19,7 +19,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.time.Instant
 
 class OpenIdConnectFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "OpenIdConnect" should "succeed with verify signed request object" in {
+  "OpenIdConnect" should "pass for verify signed request object" in {
     // OpenID Connect Core 1.0 - draft 15
     // 5.1.  Passing a Request Object by Value has a JWS JWT with a JWK
     val requestObject = "eyJhbGciOiJSUzI1NiJ9.ew0KICJyZXNwb25zZV90eXBlIjogImNvZGUgaWRfdG9rZW4iLA0KICJjbGllbnRfaWQiOi" +
@@ -53,7 +53,7 @@ class OpenIdConnectFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "OpenIdConnect" should "succeed with verify id tokens" in {
+  "OpenIdConnect" should "pass for verify id tokens" in {
     // OpenID Connect Core 1.0 - draft 15
     // Appendix A.  Authorization Examples has several singed ID Tokens and a JWK
     val idTokenA2 = "eyJhbGciOiJSUzI1NiJ9.ew0KICJpc3MiOiAiaHR0cDovL3NlcnZlci5leGFtcGxlLmNvbSIsDQogInN1YiI6ICIyNDgyOD" +
@@ -114,7 +114,7 @@ class OpenIdConnectFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "OpenIdConnect" should "succeed with verify id tokens with kid" in {
+  "OpenIdConnect" should "pass for verify id tokens with kid" in {
     // OpenID Connect Core 1.0 - draft 15
     // ** with my changes to have a kid per http://lists.openid.net/pipermail/openid-specs-ab/Week-of-Mon-20131104/004310.html**
     // Appendix A.  Authorization Examples has several singed ID Tokens and a JWK

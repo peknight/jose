@@ -21,65 +21,65 @@ import java.time.Instant
 import scala.concurrent.duration.*
 
 class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebTokenClaims" should "failed with get bad issuer" in {
+  "JsonWebTokenClaims" should "fail for get bad issuer" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"iss":{"name":"value"}}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with get null issuer" in {
+  "JsonWebTokenClaims" should "pass for get null issuer" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"exp":123456781}""").exists(_.issuer.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get issuer" in {
+  "JsonWebTokenClaims" should "pass for get issuer" in {
     val issuer = "https://idp.example.com"
     assert(decode[Id, JsonWebTokenClaims](s"""{"iss":"$issuer"}""").exists(_.issuer.contains(issuer)))
   }
-  "JsonWebTokenClaims" should "succeed with get audience with no audience" in {
+  "JsonWebTokenClaims" should "pass for get audience with no audience" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"iss":"some-issuer"}""").exists(claims => claims.audience.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get audience single in array" in {
+  "JsonWebTokenClaims" should "pass for get audience single in array" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"aud":["one"]}""").exists(
       claims => claims.audience.exists(audience => audience.size == 1 && audience.contains("one"))
     ))
   }
-  "JsonWebTokenClaims" should "succeed with get audience single value" in {
+  "JsonWebTokenClaims" should "pass for get audience single value" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"aud":"one"}""").exists(
       claims => claims.audience.exists(audience => audience.size == 1 && audience.contains("one"))
     ))
   }
-  "JsonWebTokenClaims" should "succeed with get audience multiple in array" in {
+  "JsonWebTokenClaims" should "pass for get audience multiple in array" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"aud":["one","two","three"]}""").exists(
       claims => claims.audience.exists(audience => audience.size == 3 &&
         audience.contains("one") && audience.contains("two") && audience.contains("three"))
     ))
   }
-  "JsonWebTokenClaims" should "succeed with get audience array" in {
+  "JsonWebTokenClaims" should "pass for get audience array" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"aud":[]}""").exists(claims => claims.audience.exists(_.isEmpty)))
   }
-  "JsonWebTokenClaims" should "failed with bad audience 1" in {
+  "JsonWebTokenClaims" should "fail for bad audience 1" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"aud":1996}""").isLeft)
   }
-  "JsonWebTokenClaims" should "failed with bad audience 2" in {
+  "JsonWebTokenClaims" should "fail for bad audience 2" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"aud":["value", "other", 2, "value"]}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with get null subject" in {
+  "JsonWebTokenClaims" should "pass for get null subject" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"exp":123456781}""").exists(_.subject.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get subject" in {
+  "JsonWebTokenClaims" should "pass for get subject" in {
     val subject = "subject@example.com"
     assert(decode[Id, JsonWebTokenClaims](s"""{"sub":"$subject"}""").exists(_.subject.contains(subject)))
   }
-  "JsonWebTokenClaims" should "failed with bad subject" in {
+  "JsonWebTokenClaims" should "fail for bad subject" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"sub":["nope", "not", "good"]}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with get null jwt id" in {
+  "JsonWebTokenClaims" should "pass for get null jwt id" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"whatever":123456781}""").exists(_.jwtID.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get jwt id" in {
+  "JsonWebTokenClaims" should "pass for get jwt id" in {
     val jwtId = "Xk9c2inNN8fFs60epZil3"
     assert(decode[Id, JsonWebTokenClaims](s"""{"jti":"$jwtId"}""").exists(_.jwtID.contains(JwtId(jwtId))))
   }
-  "JsonWebTokenClaims" should "failed with bad jwt id" in {
+  "JsonWebTokenClaims" should "fail for bad jwt id" in {
     assert(decode[Id, JsonWebTokenClaims]("""{"jti":["nope", "not", "good"]}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with generate and get jwt" in {
+  "JsonWebTokenClaims" should "pass for generate and get jwt" in {
     randomBytes[IO](16)
       .map(bytes => JsonWebTokenClaims(jwtID = Some(JwtId(Base64UrlNoPad.fromByteVector(bytes).value))))
       .asserting(jwtClaims => assert(
@@ -87,37 +87,37 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
           jwtClaims.copy(jwtID = Some(JwtId("igotyourjtirighthere"))).jwtID.exists(_.value == "igotyourjtirighthere")
       ))
   }
-  "JsonWebTokenClaims" should "succeed with get null expiration time" in {
+  "JsonWebTokenClaims" should "pass for get null expiration time" in {
     assert(decode[Id, JsonWebTokenClaims](s"""{"right":123456781}""").exists(_.expirationTime.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get expiration time" in {
+  "JsonWebTokenClaims" should "pass for get expiration time" in {
     val exp = 1418823169
     assert(decode[Id, JsonWebTokenClaims](s"""{"exp":$exp}""").exists(_.expirationTime.exists(_.getEpochSecond == exp)))
   }
-  "JsonWebTokenClaims" should "failed with get bad expiration time" in {
+  "JsonWebTokenClaims" should "fail for get bad expiration time" in {
     assert(decode[Id, JsonWebTokenClaims](s"""{"exp":"nope"}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with get null not before" in {
+  "JsonWebTokenClaims" should "pass for get null not before" in {
     assert(decode[Id, JsonWebTokenClaims](s"""{"right":123456781}""").exists(_.notBefore.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get not before" in {
+  "JsonWebTokenClaims" should "pass for get not before" in {
     val nbf = 1418823169
     assert(decode[Id, JsonWebTokenClaims](s"""{"nbf":$nbf}""").exists(_.notBefore.exists(_.getEpochSecond == nbf)))
   }
-  "JsonWebTokenClaims" should "failed with get bad not before" in {
+  "JsonWebTokenClaims" should "fail for get bad not before" in {
     assert(decode[Id, JsonWebTokenClaims](s"""{"nbf":["nope", "not", "good"]}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with get null issued at" in {
+  "JsonWebTokenClaims" should "pass for get null issued at" in {
     assert(decode[Id, JsonWebTokenClaims](s"""{"right":123456781, "wrong":123452781}""").exists(_.issuedAt.isEmpty))
   }
-  "JsonWebTokenClaims" should "succeed with get issued at" in {
+  "JsonWebTokenClaims" should "pass for get issued at" in {
     val iat = 1418823169
     assert(decode[Id, JsonWebTokenClaims](s"""{"iat":$iat}""").exists(_.issuedAt.exists(_.getEpochSecond == iat)))
   }
-  "JsonWebTokenClaims" should "failed with get bad issued at" in {
+  "JsonWebTokenClaims" should "fail for get bad issued at" in {
     assert(decode[Id, JsonWebTokenClaims](s"""{"iat":"not"}""").isLeft)
   }
-  "JsonWebTokenClaims" should "succeed with basic create" in {
+  "JsonWebTokenClaims" should "pass for basic create" in {
     val json = encodeToJson(JsonWebTokenClaims(
       issuer = Some("issuer"),
       subject = Some("subject"),
@@ -136,7 +136,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(json.contains(""""nbf":231459600"""))
   }
 
-  "JsonWebTokenClaims" should "succeed with testing audience" in {
+  "JsonWebTokenClaims" should "pass for testing audience" in {
     assert(encodeToJson(JsonWebTokenClaims(audience = Some(Set("audience")))).contains(""""aud":"audience""""))
     assert(encodeToJson(JsonWebTokenClaims(audience = Some(Set("audience1", "audience2", "outlier"))))
       .contains(""""aud":["audience1","audience2","outlier"]"""))
@@ -145,7 +145,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(encodeToJson(JsonWebTokenClaims()) == "{}")
   }
 
-  "JsonWebTokenClaims" should "succeed with create with helpers" in {
+  "JsonWebTokenClaims" should "pass for create with helpers" in {
     val run =
       for
         bytes <- randomBytes[IO](16)
@@ -177,7 +177,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     ))
   }
 
-  "JsonWebTokenClaims" should "succeed with set expiration time in the future part of minute" in {
+  "JsonWebTokenClaims" should "pass for set expiration time in the future part of minute" in {
     Clock[IO].realTimeInstant.asserting { now =>
       val json = encodeToJson(JsonWebTokenClaims(expirationTime = Some(now.plus(0.167.minutes))))
       assert(decode[Id, JsonWebTokenClaims](json).exists(jwtClaims => jwtClaims.expirationTime.exists(exp =>
@@ -186,7 +186,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     }
   }
 
-  "JsonWebTokenClaims" should "succeed with get claims map" in {
+  "JsonWebTokenClaims" should "pass for get claims map" in {
     val json = "{\"sub\":\"subject\",\"aud\":\"audience\",\"iss\":\"issuer\",\"jti\":\"mz3uxaCcLmQ2cwAV3oJxEQ\",\"ex" +
       "p\":1418906607,\"email\":\"user@somewhere.io\", \"name\":\"Joe User\", \"someclaim\":\"yup\"}"
     assert(decode[Id, JsonWebTokenClaims](json).flatMap(jwtClaims => decode[Id, JsonObject](encodeToJson(jwtClaims)))
@@ -197,7 +197,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       ))
   }
 
-  "JsonWebTokenClaims" should "succeed with decodeExt" in {
+  "JsonWebTokenClaims" should "pass for decodeExt" in {
     case class Claims(`string`: String, array: List[String])
     import com.peknight.codec.circe.sum.jsonType.given
     import com.peknight.codec.config.given
@@ -207,7 +207,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       .exists(claims => claims.`string` == "a value" && claims.array === List("one", "two", "three")))
   }
 
-  "JsonWebTokenClaims" should "succeed with simple claims example from draft" in {
+  "JsonWebTokenClaims" should "pass for simple claims example from draft" in {
     import com.peknight.codec.circe.sum.jsonType.given
     val json = """{"iss":"joe","exp":1300819380,"http://example.com/is_root":true}"""
     assert(decode[Id, JsonWebTokenClaims](json).exists(jwtClaims =>
@@ -217,7 +217,7 @@ class JsonWebTokenClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     ))
   }
 
-  "JsonWebTokenClaims" should "succeed with non integer numeric dates" in {
+  "JsonWebTokenClaims" should "pass for non integer numeric dates" in {
     assert(decode[Id, JsonWebTokenClaims]("{\"sub\":\"brain.d.campbell\",\"nbf\":1430602000.173,\"iat\":1430602060.5" +
       ",\"exp\":1430602600.77}").exists(jwtClaims =>
       jwtClaims.expirationTime.exists(_ === Instant.ofEpochMilli(1430602600770L)) &&

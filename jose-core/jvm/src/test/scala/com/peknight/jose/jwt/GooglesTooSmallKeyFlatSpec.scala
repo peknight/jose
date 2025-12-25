@@ -51,7 +51,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
   private val evaluationTime: Instant = Instant.ofEpochSecond(1431612438L)
   private val subjectValue: String = "116308408314661478132"
 
-  "Googles Too Small Key" should "failed with strict by default" in {
+  "Googles Too Small Key" should "fail for strict by default" in {
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
@@ -62,7 +62,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "Googles Too Small Key" should "succeed with first work around using two pass" in {
+  "Googles Too Small Key" should "pass for first work around using two pass" in {
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet](jwksJson).eLiftET[IO]
@@ -79,7 +79,7 @@ class GooglesTooSmallKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "Googles Too Small Key" should "succeed after they moved to 2048" in {
+  "Googles Too Small Key" should "pass after they moved to 2048" in {
     // endpoints mentioned were found at https://accounts.google.com/.well-known/openid-config
     // JWKS content from https://www.googleapis.com/oauth2/v3/certs on July 8, 2015
     val jwksJson = "{\"keys\":[{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"e53139984bd36d2c23055244" +

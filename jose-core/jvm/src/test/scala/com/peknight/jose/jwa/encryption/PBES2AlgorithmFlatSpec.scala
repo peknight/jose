@@ -119,7 +119,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     79, 85, 117, 57, 72, 67, 74, 45, 85, 115, 102, 83, 79, 73, 56, 34, 125)
 
 
-  "PBES2" should "succeed with decrypt" in {
+  "PBES2" should "pass for decrypt" in {
     val run =
       for
         keyBytes <- stringEncodeToBytes(password).eLiftET[IO]
@@ -134,7 +134,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PBES2" should "succeed with encrypt" in {
+  "PBES2" should "pass for encrypt" in {
     val encodedHeader = "eyJhbGciOiJQQkVTMi1IUzI1NitBMTI4S1ciLCJwMnMiOiIyV0NUY0paMVJ2ZF9DSnVKcmlwUTF3IiwicDJjIjo0MDk" +
       "2LCJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiY3R5IjoiandrK2pzb24ifQ"
     val expectedDerived = ByteVector(110, 171, 169, 92, 129, 92, 109, 117, 233, 242, 116, 233, 170, 14, 24, 75)
@@ -168,7 +168,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PBES2" should "succeed with round trips" in {
+  "PBES2" should "pass for round trips" in {
     val tests =
       for
         alg <- PBES2Algorithm.values
@@ -191,7 +191,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       decrypted == plaintext
 
-  "PBES2" should "succeed with defaults meet minimum required or suggested" in {
+  "PBES2" should "pass for defaults meet minimum required or suggested" in {
     val run =
       for
         keyBytes <- stringEncodeToBytes("passtheword").eLiftET[IO]
@@ -208,7 +208,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PBES2" should "succeed with setting salt and iteration count" in {
+  "PBES2" should "pass for setting salt and iteration count" in {
     val password = "secret word"
     val plaintext = "<insert some witty quote or remark here, again>"
     val saltByteLength = 32
@@ -232,7 +232,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PBES2" should "failed with too small iteration count rejected" in {
+  "PBES2" should "fail for too small iteration count rejected" in {
     val password = "super secret word"
     val plaintext = "some text"
     val iterationCount = 918L
@@ -247,7 +247,7 @@ class PBES2AlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "PBES2" should "failed with too little salt rejected" in {
+  "PBES2" should "fail for too little salt rejected" in {
     val password = "super secret word"
     val plaintext = "some text"
     val run =

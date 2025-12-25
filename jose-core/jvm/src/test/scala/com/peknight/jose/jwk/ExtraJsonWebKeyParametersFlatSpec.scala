@@ -16,7 +16,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.security.{Key, PublicKey}
 
 class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebKey" should "succeed with parsing custom params" in {
+  "JsonWebKey" should "pass for parsing custom params" in {
     val json = "{\"kty\":\"EC\",\"x\":\"14PCFt8uuLb6mbfn1XTOHzcSfZk0nU_AGe2hq91Gvl4\",\"y\":\"U0rLlwB8be5YM2ajGyactl" +
       "plFol7FKJrN83mNAOpuss\",\"crv\":\"P-256\",\"meh\":\"just some value\",\"number\":860}"
     val flag = decode[Id, JsonWebKey](json).map{ jwk =>
@@ -31,7 +31,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(flag)
   }
 
-  "JsonWebKey" should "succeed with key with custom params" in {
+  "JsonWebKey" should "pass for key with custom params" in {
     val name = "artisanal"
     val value = "parameter"
     given CanEqual[PublicKey, PublicKey] = CanEqual.derived
@@ -49,7 +49,7 @@ class ExtraJsonWebKeyParametersFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "succeed with round trip oct key" in {
+  "JsonWebKey" should "pass for round trip oct key" in {
     val name = "artisanal"
     val value = "parameter"
     val json = s"{\"kty\":\"oct\",\"k\":\"jr-TRYPvKkOxw_cBB5y4plEX5cEUT1AawUU7G3id7u4\",\"$name\":\"$value\"}"

@@ -14,7 +14,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 class JsonWebSignatureFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebSignature" should "succeed with changing new key" in {
+  "JsonWebSignature" should "pass for changing new key" in {
     val run =
       for
         jwk <- decode[Id, OctetSequenceJsonWebKey]("""{"kty":"oct","k":"9el2Km2s5LHVQqUCWIdvwMsclQqQc6CwObMnCpCC8jY"}""")

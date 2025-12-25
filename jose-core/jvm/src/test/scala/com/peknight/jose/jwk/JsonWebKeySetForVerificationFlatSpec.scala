@@ -27,7 +27,7 @@ import scodec.bits.ByteVector
 import scala.util.Try
 
 class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests" in {
     // JSON content from a PingFederate JWKS endpoint (a snapshot build circa Jan '15)
     val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"zq2ym\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaI" +
       "hf9ou3taXkQ6-nNoUfZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wce" +
@@ -93,7 +93,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests googles jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests googles jwks end point" in {
     // JSON content from https://www.googleapis.com/oauth2/v2/certs on Jan 7, 2015
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"kid\":\"da522f3b66777ff6af63460d2b54" +
       "9ad43b6660d6\",\"n\":\"69Eh051UHkBJx55OkavsrpeeulxaHzxC9pMjVNQnjhY5pwJ0YjB_FgJwOdFHEdPOc8uzi_Pnfr0ov0mE4cRTjn" +
@@ -120,7 +120,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests salesforce jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests salesforce jwks end point" in {
     // JSON content from https://login.salesforce.com/id/keys on Jan 7, 2015
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"wIQtK09qsu1qCCQu1mHh6d_EyyOlbqMCV8WMacOyhZng1sbaFJY-0PIH46Kw1uhj" +
       "bHg94_r2UELYd30vF8xwViGhCmpPuSGhkxNoT5CMoJPS6JW-zBpR7suHqBUnaGdZ6G2uYZDpwWYs_4SJDuWzxVBrQqIM_ZVgUqutniQPmjMAX" +
@@ -169,7 +169,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests Microsoft jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests Microsoft jwks end point" in {
     // JSON content from https://login.windows.net/common/discovery/keys on Jan 7, 2015
     // (n is base64 rather than base64url but we can still consume it http://www.ietf.org/mail-archive/web/jose/current/msg04807.html
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"kriMPdmBvx68skT8-mPAB3BseeA\",\"x5t\":\"kriMPd" +
@@ -252,7 +252,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests Gluu jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests Gluu jwks end point" in {
     // JSON content from https://seed.gluu.org/oxauth/seam/resource/restv1/oxauth/jwks on Jan 7, 2015
     // the "alg":"EC" isn't right, IMHO but makes a nice test case I suppose   http://www.ietf.org/mail-archive/web/jose/current/msg04783.html
     // 我不同意。不规范都该死
@@ -373,7 +373,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests forgerock jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests forgerock jwks end point" in {
     // JSON content from https://demo.forgerock.com:8443/openam/oauth2/connect/jwk_uri on Jan 8, 2015
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"fb301b61-9b8a-4c34-9212-5d6fb9df1a57\",\"use\":\"sig\",\"alg\"" +
       ":\"RS256\",\"n\":\"AK0kHP1O-RgdgLSoWxkuaYoi5Jic6hLKeuKw8WzCfsQ68ntBDf6tVOTn_kZA7Gjf4oJAL1dXLlxIEy-kZWnxT3FF-0" +
@@ -389,7 +389,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests miter jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests miter jwks end point" in {
     // JSON content from https://mitreid.org/jwk on Jan 8, 2015
     val json = "{\"keys\":[{\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"23zs5r8PQKpsKeoUd2Bjz3TJkUljWqMD8X98SaIb1LE7dCQ" +
       "zi9jwO58FGL0ieY1Dfnr9-g1iiY8sNzV-byawK98W9yFiopaghfoKtxXgUD8pi0fLPeWmAkntjn28Z_WZvvA265ELbBhphPXEJcFhdzUfgESH" +
@@ -405,7 +405,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid tests Nri Php jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid tests Nri Php jwks end point" in {
     // JSON content from https://connect.openid4.us/connect4us.jwk on Jan 8, 2015
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"tf_sB4M0sHearRLzz1q1JRgRdRnwk0lz-IcVDFlpp2dtDVyA-ZM8Tu1swp7upaTN" +
       "ykf7cp3Ne_6uW3JiKvRMDdNdvHWCzDHmbmZWGdnFF9Ve-D1cUxj4ETVpUM7AIXWbGs34fUNYl3Xzc4baSyvYbc3h6iz8AIdb_1bQLxJsHBi-y" +
@@ -422,7 +422,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with no kid test nov jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for no kid test nov jwks end point" in {
     // JSON content from https://connect-op.herokuapp.com/jwks.json on Jan 8, 2015
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"e\":\"AQAB\",\"n\":\"pKybs0WaHU_y4cHxWbm8Wzj66HtcyFn7Fh3n-99qTXu5yNa30" +
       "MRYIYfSDwe9JVc1JUoGw41yq2StdGBJ40HxichjE-Yopfu3B58QlgJvToUbWD4gmTDGgMGxQxtv1En2yedaynQ73sDpIK-12JJDY55pvf-PCi" +
@@ -445,7 +445,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with no kid test ryo tio jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for no kid test ryo tio jwks end point" in {
     // JSON content from https://openidconnect.info/jwk/jwk.json on Jan 8, 2015
     // missing kty and misused alg, user should be use
     val json = "{\"keys\":[{\"alg\":\"RSA\",\"mod\":\"4ZLcBYTH4S3b80iEkDKTAmLvNM3XkqgdQoLPtNgNoilmHD1wian5_EDl2IvwAJ" +
@@ -455,7 +455,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     assert(decode[Id, JsonWebKeySet](json).map(_.keys.isEmpty).getOrElse(false))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with unique kid and x5t test thinktecture jwks end point" in {
+  "JsonWebKeySetForVerification" should "pass for unique kid and x5t test thinktecture jwks end point" in {
     // JSON content from https://identity.thinktecture.com/.well-known/jwks on Jan 8, 2015
     //  n is regular base64 rather than base64url http://www.ietf.org/mail-archive/web/jose/current/msg04783.html
     val json = "{\"keys\":[{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"a3rMUgMFv9tPclLa6yF3zAkfquE\",\"x5t\":\"a3rMUg" +
@@ -490,7 +490,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with not unique kids so disambiguate by alg use kty tests" in {
+  "JsonWebKeySetForVerification" should "pass for not unique kids so disambiguate by alg use kty tests" in {
     // JSON content from a PingFederate JWKS endpoint modified by hand to fake up some semi-plausible cases (same kid used for different key types and algs)
     val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"3\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaIhf9o" +
       "u3taXkQ6-nNoUfZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wceFFrv" +
@@ -540,7 +540,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with not unique kids so disambiguate by use kty tests" in {
+  "JsonWebKeySetForVerification" should "pass for not unique kids so disambiguate by use kty tests" in {
     // JSON content from a PingFederate JWKS endpoint modified by hand to fake up some semi-plausible cases (same kid used for different key types - no algs so crv is used on ECs)
     val json = "{\"keys\":[{\"kty\":\"EC\",\"kid\":\"3\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaIhf9o" +
       "u3taXkQ6-nNoUfZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wceFFrv" +
@@ -600,7 +600,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with id token from ping federate" in {
+  "JsonWebKeySetForVerification" should "pass for id token from ping federate" in {
     // JWKS from a PingFederate JWKS endpoint along with a couple ID Tokens (JWTs) it issued
     val jwtCs1 = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBrIn0.eyJzdWIiOiJoYWlsaWUiLCJhdWQiOiJhIiwianRpIjoiUXhSYjF2Z2tpSE" +
       "90MlZoNVdST0pQUiIsImlzcyI6Imh0dHBzOlwvXC9sb2NhbGhvc3Q6OTAzMSIsImlhdCI6MTQyMTA5MzM4MiwiZXhwIjoxNDIxMDkzOTgyLCJ" +
@@ -650,7 +650,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with no kids" in {
+  "JsonWebKeySetForVerification" should "pass for no kids" in {
     val json = "{\"keys\":[{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"AAib8AfuP9X2esxxZXJUH0oggizKpaIhf9ou3taXkQ6-nNoUf" +
       "ZNHllwaQMWzkVSusHe_LiRLf-9MJ51grtFRCMeC\",\"y\":\"ARdAq_upn_rh4DRonyfopZbCdeJKhy7_jycKW9wceFFrvP2ZGC8uX1cH9Ib" +
       "EpcmHzXI2yAx3UZS8JiMueU6J_YEI\",\"crv\":\"P-521\"},{\"kty\":\"EC\",\"use\":\"sig\",\"x\":\"wwxLXWB-6zA06R6hs2" +
@@ -678,7 +678,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with some kids symmetric selections" in {
+  "JsonWebKeySetForVerification" should "pass for some kids symmetric selections" in {
     val json = "{\"keys\":[{\"kty\":\"oct\",\"kid\":\"uno\",\"k\":\"9gfpc39Jq5H5eR_JbwmAojgUlHIH0GoKz7COz000001\"},{" +
       "\"kty\":\"oct\",\"kid\":\"two\",\"k\":\"5vlp7BaxRr-a9pOKK7BKNCo88u6cY2o9Lz6-P--_01j\"},{\"kty\":\"oct\",\"kid" +
       "\":\"trois\",\"k\":\"i001cccx6-7rP5p91NeHi3K-jcDjt8N12o3bIeWA081\"}]}"
@@ -696,7 +696,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with select with verify signature disambiguate" in {
+  "JsonWebKeySetForVerification" should "pass for select with verify signature disambiguate" in {
     val jwksJson = "{\"keys\":[{\"kty\":\"EC\",\"x\":\"yd4yK8EJWNY-fyB0veOTNqDt_HqpPa45VTSJjIiI8vM\",\"y\":\"UspqZi9" +
       "nPaUwBY8kD6MPDHslh5f6UMnAiXsg1l3i6UM\",\"crv\":\"P-256\"},{\"kty\":\"EC\",\"x\":\"3WPq7AnMkQekA1ogYFqNS5NBOXP" +
       "s68xadKvtsn4pgas\",\"y\":\"CEvQFmGwKv96TQYRrgS-nFl9xWfN8PuLnIwBVmtpfp0\",\"crv\":\"P-256\"},{\"kty\":\"EC\"," +
@@ -770,7 +770,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with select with verify signature disambiguate different RSA sizes 1" in {
+  "JsonWebKeySetForVerification" should "pass for select with verify signature disambiguate different RSA sizes 1" in {
     val run =
       for
         rsaJwk2048 <- decode[Id, AsymmetricJsonWebKey]("{\"kty\":\"RSA\",\"n\":\"s3xFORqMy1xG-9Xx0i2y2rXxtoBCpMPeZd4" +
@@ -838,7 +838,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with select with verify signature disambiguate different RSA sizes 2" in {
+  "JsonWebKeySetForVerification" should "pass for select with verify signature disambiguate different RSA sizes 2" in {
     val run =
       for
         rsaJwk2048 <- decode[Id, AsymmetricJsonWebKey]("{\"kty\":\"RSA\",\"n\":\"s3xFORqMy1xG-9Xx0i2y2rXxtoBCpMPeZd4" +
@@ -903,7 +903,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with key ops in selector kinda random" in {
+  "JsonWebKeySetForVerification" should "pass for key ops in selector kinda random" in {
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet]("{\"keys\":[{\"kty\":\"EC\",\"key_ops\":[\"verify\",\"nope\",\"whatever\"]" +
@@ -924,7 +924,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with key ops in selector" in {
+  "JsonWebKeySetForVerification" should "pass for key ops in selector" in {
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet]("{\"keys\":[{\"kty\":\"EC\",\"key_ops\":[\"encrypt\"],\"x\":\"eBTzLIja4bP6" +
@@ -948,7 +948,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with use in selector" in {
+  "JsonWebKeySetForVerification" should "pass for use in selector" in {
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet]("{\"keys\":[{\"kty\":\"EC\",\"use\":\"enc\",\"x\":\"eBTzLIja4bP6Q25Ns5NBfb" +
@@ -972,7 +972,7 @@ class JsonWebKeySetForVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpe
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySetForVerification" should "succeed with check it'll find secp256k1" in {
+  "JsonWebKeySetForVerification" should "pass for check it'll find secp256k1" in {
     val run =
       for
         jwks <- decode[Id, JsonWebKeySet]("{\"keys\":[{\"kty\":\"EC\",\"x\":\"-_Z0BX1s-hINAcEVzWgTn0OgIAan_24g7ZFMkZ" +

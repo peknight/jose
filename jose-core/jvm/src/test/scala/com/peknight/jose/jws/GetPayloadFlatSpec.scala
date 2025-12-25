@@ -13,7 +13,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import scodec.bits.ByteVector
 
 class GetPayloadFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "GetPayload" should "succeed with get payload" in {
+  "GetPayload" should "pass for get payload" in {
     val jwkJson = """{"kty":"oct","k":"Y7T0ygpIvYvz9kSVRod2tcGhekjiQh4t_AF7GE-v0o8"}"""
     val cs = "eyJhbGciOiJIUzI1NiJ9.VUExNTgyIHRvIFNGTyBmb3IgYSBOQVBQUyBGMkYgd29ya3Nob3AgaW4gUGFsbyBBbHRv.YjnCNkxrv86F" +
       "6GufxddTYS_4URo3kmLKrREquZSEKDo"

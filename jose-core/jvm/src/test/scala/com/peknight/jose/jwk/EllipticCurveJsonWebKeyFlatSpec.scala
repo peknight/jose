@@ -13,7 +13,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.security.interfaces.{ECPrivateKey, ECPublicKey}
 
 class EllipticCurveJsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "EllipticCurveJsonWebKey" should "succeed with gen test" in {
+  "EllipticCurveJsonWebKey" should "pass for gen test" in {
     List(`P-256`, `P-384`, `P-521`).map { curve =>
       for
         keyPair <- curve.generateKeyPair[IO]().asET

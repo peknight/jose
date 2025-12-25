@@ -33,7 +33,7 @@ import java.security.PublicKey
 
 class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
-  "ECDSA Algorithm" should "succeed with encoding decoding" in {
+  "ECDSA Algorithm" should "pass for encoding decoding" in {
     val rBytes = ByteVector(14, 209, 33, 83, 121, 99, 108, 72, 60, 47, 127, 21, 88, 7, 212, 2, 163, 178, 40, 3, 58, 249,
       124, 126, 23, 129, 154, 195, 22, 158, 166, 101)
     val sBytes = ByteVector(197, 10, 7, 211, 140, 60, 112, 229, 216, 241, 45, 175, 8, 74, 84, 128, 166, 101, 144, 197,
@@ -49,7 +49,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(either.getOrElse(false))
   }
 
-  "ECDSA Algorithm" should "succeed with simple concatenation with length" in {
+  "ECDSA Algorithm" should "pass for simple concatenation with length" in {
     val noPad = ByteVector(1, 2)
     val outputLength = 16
     val either =
@@ -61,7 +61,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(either.getOrElse(false))
   }
 
-  "ECDSA Algorithm" should "succeed with simple concatenation with diff lengths" in {
+  "ECDSA Algorithm" should "pass for simple concatenation with diff lengths" in {
     val a = ByteVector(0, 0, 0, 0, 1, 1, 1, 1)
     val b = ByteVector(2, 2, 2, 2, 2, 2, 2, 2)
     val outputLength = 16
@@ -76,7 +76,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(either.getOrElse(false))
   }
 
-  "ECDSA Algorithm" should "succeed with simple concatenation with very diff lengths" in {
+  "ECDSA Algorithm" should "pass for simple concatenation with very diff lengths" in {
     val a = ByteVector(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
     val b = ByteVector(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
     val outputLength = 32
@@ -91,7 +91,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(either.getOrElse(false))
   }
 
-  "ECDSA Algorithm" should "succeed with too short previously" in {
+  "ECDSA Algorithm" should "pass for too short previously" in {
     // a ECDSA 521 sig value produced before jose4j left zero padded the R & S values
     val encoded = "7w6JjwMqcWmTFaZfrOc5kSSj5WOi0vDbMoGqcLWUL5QrTmJ_KOPMkNOjNll4pRITxuyZo_owOswnDM4dYdS7ypoPHOL13XDfd" +
       "ffG7sdwjXA6JthsItlk6l43Xtqt2ytJKqUMC-J7K5Cn1izOeuqzsI18Go9jcEEw5eUdQhR77OjfCA"
@@ -107,7 +107,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(either.getOrElse(false))
   }
 
-  "ECDSA Algorithm" should "succeed with backward compatibility" in {
+  "ECDSA Algorithm" should "pass for backward compatibility" in {
     List(
       check(
         "{\"kty\":\"EC\",\"x\":\"APlFpj7M-Kj8ArsYMbJS-6rn1XkugUwngk_iTVe_KfLs6pVIb4LYz-gJ2SytwsoNkSbwq6NuNXB3kFsiYXm" +
@@ -148,7 +148,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "ECDSA Edges" should "failed with zeros" in {
+  "ECDSA Edges" should "fail for zeros" in {
     val jws = "eyJhbGciOiJFUzI1NiJ9.RXZlcnlvbmUgcHJldGVuZHM.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     val run =
@@ -159,7 +159,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA Edges" should "failed with same as order" in {
+  "ECDSA Edges" should "fail for same as order" in {
     // https://twitter.com/phLaul/status/1517209015649914881
     val jws = "eyJhbGciOiJFUzI1NiJ9.RXZlcnlvbmUgcHJldGVuZHM._____wAAAAD__________7zm-q2nF56E87nKwvxjJVH_____AAAAAP__" +
       "________vOb6racXnoTzucrC_GMlUQ"
@@ -171,7 +171,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA Edges" should "failed with some of the wycheproof stuff P-256" in {
+  "ECDSA Edges" should "fail for some of the wycheproof stuff P-256" in {
     val jwkJson =
       s"""
          |{
@@ -299,7 +299,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     testSomeOfTheWycheproofStuff(jwkJson, hexSigs, "eyJhbGciOiJFUzI1NiJ9.RXZlcnlvbmUgcHJldGVuZHM.")
   }
 
-  "ECDSA Edges" should "failed with some of the wycheproof stuff P-384" in {
+  "ECDSA Edges" should "fail for some of the wycheproof stuff P-384" in {
     val jwkJson =
       s"""
          |{
@@ -427,7 +427,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     testSomeOfTheWycheproofStuff(jwkJson, hexSigs, "eyJhbGciOiJFUzI1NiJ9.RXZlcnlvbmUgcHJldGVuZHM.")
   }
 
-  "ECDSA Edges" should "failed with some of the wycheproof stuff P-521" in {
+  "ECDSA Edges" should "fail for some of the wycheproof stuff P-521" in {
     val jwkJson =
       s"""
          |{
@@ -634,7 +634,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "ECDSA" should "succeed with P-256 round trip gen keys" in {
+  "ECDSA" should "pass for P-256 round trip gen keys" in {
     val run =
       for
         keyPair1 <- `P-256`.generateKeyPair[IO]().asET
@@ -646,7 +646,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with ES256K round trip gen keys" in {
+  "ECDSA" should "pass for ES256K round trip gen keys" in {
     val run =
       for
         provider <- BouncyCastleProvider[IO].asET
@@ -663,7 +663,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with external ES256K" in {
+  "ECDSA" should "pass for external ES256K" in {
     val jwsCs = "eyJraWQiOiJtZWgiLCJhbGciOiJFUzI1NksifQ.eyJzdWIiOiJtZWgifQ.-5KBGAoCZYkE-1cpU8gQZ1SfLCAxd5P0TtDAEuCAh" +
       "Pl57eTMTFqNLXiM09J4lgq0IA35OxNgxIxn3WNFUAXEZg"
     val jwkJson = "{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"secp256k1\",\"kid\":\"meh\",\"x\":\"cWwaOcRUqZE6UMUtOPL" +
@@ -683,7 +683,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with P-384 round trip gen keys" in {
+  "ECDSA" should "pass for P-384 round trip gen keys" in {
     val run =
       for
         keyPair1 <- `P-384`.generateKeyPair[IO]().asET
@@ -695,7 +695,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with P-521 round trip gen keys" in {
+  "ECDSA" should "pass for P-521 round trip gen keys" in {
     val run =
       for
         keyPair1 <- `P-521`.generateKeyPair[IO]().asET
@@ -707,7 +707,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with P-256 round trip example keys and gen keys" in {
+  "ECDSA" should "pass for P-256 round trip example keys and gen keys" in {
     val run =
       for
         priv1 <- `P-256`.privateKey[IO](d256).asET
@@ -719,7 +719,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with P-521 round trip example keys and gen keys" in {
+  "ECDSA" should "pass for P-521 round trip example keys and gen keys" in {
     val run =
       for
         priv1 <- `P-521`.privateKey[IO](d521).asET
@@ -731,7 +731,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "failed with bad keys" in {
+  "ECDSA" should "fail for bad keys" in {
     val cs256 = "eyJhbGciOiJFUzI1NiJ9.UEFZTE9BRCEhIQ.WcL6cqkJSkzwK4Y85Lj96l-_WVmII6foW8d7CJNgdgDxi6NnTdXQD1Ze2vdXGcE" +
       "rIu9sJX9EXkmiaHSd0GQkgA"
     val cs384 = "eyJhbGciOiJFUzM4NCJ9.VGhlIHVtbGF1dCAoIC8_P21sYT90LyB1dW0tbG93dCkgcmVmZXJzIHRvIGEgc291bmQgc2hpZnQu.U" +
@@ -767,7 +767,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with ES256 verify example" in {
+  "ECDSA" should "pass for ES256 verify example" in {
     // http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-39#appendix-A.3
     val compact = "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19y" +
       "b290Ijp0cnVlfQ.DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQxfKTUJqPP3-Kg6NU1Q"
@@ -781,7 +781,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with ES512 verify example" in {
+  "ECDSA" should "pass for ES512 verify example" in {
     // http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-39#appendix-A.4
     val compact = "eyJhbGciOiJFUzUxMiJ9.UGF5bG9hZA.AdwMgeerwtHoh-l192l60hp9wAHZFVJbLfD_UxMi70cwnZOYaRI1bKPWROc-mZZqw" +
       "qT2SI-KGDKB34XO0aw_7XdtAG8GaSwFKdCAPZgoXD2YBJZCPEX3xKpRwcdOO8KpEHwJjyqOgzDO7iKvU8vcnwNrmxYbSW9ERBXukOXolLzeO_Jn"
@@ -795,7 +795,7 @@ class ECDSAFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "ECDSA" should "succeed with ES512 verify example from draft 14" in {
+  "ECDSA" should "pass for ES512 verify example from draft 14" in {
     // http://www.ietf.org/mail-archive/web/jose/current/msg03018.html
     val jwsCs = "eyJhbGciOiJFUzUxMiJ9.UGF5bG9hZA.AdwMgeerwtHoh-l192l60hp9wAHZFVJbLfD_UxMi70cwnZOYaRI1bKPWROc-mZZqwqT" +
       "2SI-KGDKB34XO0aw_7XdtAG8GaSwFKdCAPZgoXD2YBJZCPEX3xKpRwcdOO8KpEHwJjyqOgzDO7iKvU8vcnwNrmxYbSW9ERBXukOXolLzeO_Jn"

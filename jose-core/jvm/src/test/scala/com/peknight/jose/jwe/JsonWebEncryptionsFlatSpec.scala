@@ -15,7 +15,7 @@ import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class JsonWebEncryptionsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebEncryptions" should "succeed" in {
+  "JsonWebEncryptions" should "pass" in {
     val run =
       for
         rsaKeyPair <- RSA.keySizeGenerateKeyPair[IO](2048).asET

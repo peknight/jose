@@ -22,7 +22,7 @@ import java.time.Instant
 import scala.concurrent.duration.*
 
 class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebToken getClaims" should "succeed with jwt 61 example unsecured jwt" in {
+  "JsonWebToken getClaims" should "pass for jwt 61 example unsecured jwt" in {
     // an Example Unsecured JWT from https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-6.1
     val jwt = "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb" +
       "290Ijp0cnVlfQ."
@@ -55,7 +55,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with jwt A1 example encrypted jwt" in {
+  "JsonWebToken getClaims" should "pass for jwt A1 example encrypted jwt" in {
     // https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#appendix-A.1
     val jwt = "eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.QR1Owv2ug2WyPBnbQrRARTeEk9kDO2w8qDcjiHnSJflSdv1iN" +
       "qhWXaKH4MqAkQtMoNfABIPJaZm0HaA415sv3aeuBWnD8J-Ui7Ah6cWafs3ZwwFKDFUUsWHSK-IPKxLGTkND09XyjORj_CHAgOPJ-Sd8ONQRnJ" +
@@ -80,7 +80,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with jwt A2 example nested JWT" in {
+  "JsonWebToken getClaims" should "pass for jwt A2 example nested JWT" in {
     // an Example Nested JWT from https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#appendix-A.2
     val jwt = "eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiY3R5IjoiSldUIn0.g_hEwksO1Ax8Qn7HoN-BVeBoa8FXe0kpy" +
       "k_XdcSmxvcM5_P296JXXtoHISr_DD_MqewaQSH4dZOQHoUgKLeFly-9RI11TG-_Ge1bZFazBPwKC5lJ6OLANLMd0QSL4fYEb9ERe-epKYE3xb" +
@@ -126,7 +126,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with jwt sec 31 example JWT" in {
+  "JsonWebToken getClaims" should "pass for jwt sec 31 example JWT" in {
     // https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-3.1
     val jwt = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9l" +
       "eGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
@@ -155,7 +155,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with skip signature verification" in {
+  "JsonWebToken getClaims" should "pass for skip signature verification" in {
     val jwt = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9l" +
       "eGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
     val run =
@@ -172,7 +172,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "failed with jwt bad sig" in {
+  "JsonWebToken getClaims" should "fail for jwt bad sig" in {
     val jwt = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLAogImV4cCI6MTkwMDgxOTM4MCwKICJodHRwOi8vZXhh" +
       "bXBsZS5jb20vaXNfcm9vdCI6dHJ1ZX0.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
     val jwk = "{\"kty\":\"oct\",\"k\":\"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjA" +
@@ -192,7 +192,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isLeft))
   }
 
-  "JsonWebToken getClaims" should "succeed with algorithm constraints" in {
+  "JsonWebToken getClaims" should "pass for algorithm constraints" in {
     val jwt = "eyJ6aXAiOiJERUYiLCJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiY3R5IjoiSldUIn0.DDyrirrztC88OaDtT" +
       "kkNgNIyZqQd4gjWrab9KkiBnyOULjWZWt-IAg.Obun_t7l3FYqNUqyW46syg.ChlzoLTN1ovJP9PLHlirc-_yvP4ya_5gdhDSKiZnifS9MjCb" +
       "eMYebkOCxSHexs09PBbPv30JwtIyM7caqkSNggA8HT_ub1moMpx0uOFhTE9dpdY4Wb4Ym6mqtIQhdwLymDVCI6vRn-NH88vdLluGSYYLhelgc" +
@@ -223,7 +223,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with custom validator test" in {
+  "JsonWebToken getClaims" should "pass for custom validator test" in {
     // {"iss":"same","aud":"same","exp":1420046060}
     val jwt = "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzYW1lIiwiYXVkIjoic2FtZSIsImV4cCI6MTQyMDA0NjA2MH0.O1w_nkfQMZvEEvJ0Pach" +
       "0gPmJUMW8o4aFlA1f2c8m-I"
@@ -244,7 +244,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with custom error code validator test" in {
+  "JsonWebToken getClaims" should "pass for custom error code validator test" in {
     // {"iss":"same","aud":"same","exp":1420046060}
     val jwt = "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzYW1lIiwiYXVkIjoic2FtZSIsImV4cCI6MTQyMDA0NjA2MH0.O1w_nkfQMZvEEvJ0Pach" +
       "0gPmJUMW8o4aFlA1f2c8m-I"
@@ -266,7 +266,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with error expired error code validation" in {
+  "JsonWebToken getClaims" should "pass for error expired error code validation" in {
     val run =
       for
         now <- Clock[IO].realTimeInstant.asET
@@ -285,7 +285,7 @@ class JsonWebTokenGetClaimsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken getClaims" should "succeed with missing cty in nested" in {
+  "JsonWebToken getClaims" should "pass for missing cty in nested" in {
     // Nested jwt without "cty":"JWT" -> expect failure here as the cty is a MUST for nesting
     // setEnableLiberalContentTypeHandling() on the builder will enable a best effort to deal with the content even
     // when cty isn't specified

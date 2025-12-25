@@ -25,7 +25,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.time.Instant
 
 class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JwksDecryptionPrimitives" should "succeed with resolve okp key" in {
+  "JwksDecryptionPrimitives" should "pass for resolve okp key" in {
     val claims = JsonWebTokenClaims(subject = Some("example with OKP encryption key"))
     val run =
       for
@@ -55,7 +55,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JwksDecryptionPrimitives" should "succeed with symmetric keys with dir" in {
+  "JwksDecryptionPrimitives" should "pass for symmetric keys with dir" in {
     val json1 = "{\"keys\":[{\"kty\":\"oct\",\"kid\":\"one\",\"k\":\"SGfpdt9Jq5H5eR_JbwmAojgUlHIH0GoKz7COzLY1nRE\"},{" +
       "\"kty\":\"oct\",\"kid\":\"deux\",\"k\":\"Fvlp7BLzRr-a9pOKK7BA25om7u6cY2o9Lz6--UAFWXw\"},{\"kty\":\"oct\",\"ki" +
       "d\":\"tres\",\"k\":\"izcqzDJd6-7rP5pnldgK-jcDjT6xXdo3bIjwgeWAYEc\"}]}"
@@ -90,7 +90,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JwksDecryptionPrimitives" should "succeed with symmetric keys with AES Wrap" in {
+  "JwksDecryptionPrimitives" should "pass for symmetric keys with AES Wrap" in {
     val json = "{\"keys\":[{\"kty\":\"oct\",\"kid\":\"1one\",\"k\":\"_-cqzgJ-_aeZkppR2JCOlx\"},{\"kty\":\"oct\",\"ki" +
       "d\":\"deux\",\"k\":\"mF2rZpj_Fbeal5FRz0c0Lw\"},{\"kty\":\"oct\",\"kid\":\"tres\",\"k\":\"ad2-dGiApcezx9310j4o" +
       "7W\"}]}"
@@ -112,7 +112,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JwksDecryptionPrimitives" should "succeed with asymmetric decryption keys" in {
+  "JwksDecryptionPrimitives" should "pass for asymmetric decryption keys" in {
     val octKeysJson = "{\"keys\":[{\"kty\":\"oct\",\"kid\":\"uno\",\"k\":\"aSqzs8KJZgnYb9c7d0zgdACK0-i0Hi3K-jcDjt8V0" +
       "aF9aWY8081d1i2c33pzq5H5eR_JbwmAojgUl727gGoKz7\"},{\"kty\":\"oct\",\"kid\":\"two\",\"k\":\"-v_lp7B__xRr-90pNCo" +
       "7u6cY2o9Lz6-P--_0TWhAI4vMQFh6WeZu0fM4lui0Hi3K-jcDjt8V0aF9aWY0081dc1c\"},{\"kty\":\"oct\",\"kid\":\"trois\",\"" +
@@ -147,7 +147,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JwksDecryptionPrimitives" should "succeed with asymmetric decryption keys with disambiguate" in {
+  "JwksDecryptionPrimitives" should "pass for asymmetric decryption keys with disambiguate" in {
     val jwksJson = "{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"r1\",\"use\":\"enc\",\"n\":\"lFZ04QwtWu_hHgqlry40DuIhVZyl6" +
       "ci6FzyLfkeHLH8xfCDLR-rvslxX-Ub3teVnPjZYdUFlZztuDo5kOFsF7TvUQMJhx00VZ6qugm-4LDSJ93ioGuo37vNDjMYBs0dEw_xV38e_m_" +
       "Jo-oTJZN8xfZFroiR0cRNzac2e98lPa-TCxtOCuVp8Q8ro1Y6nC_1g51iY3nZXHfELX4vUxSh-4z7I0VkzCREQNYx-iKWw6MqEl2qG2mohiwl" +
@@ -297,7 +297,7 @@ class JwksDecryptionPrimitivesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "JwksDecryptionPrimitives" should "succeed with simple symmetric decryption keys with disambiguate" in {
+  "JwksDecryptionPrimitives" should "pass for simple symmetric decryption keys with disambiguate" in {
     val run =
       for
         keyCompactPairs <- (1 to 6).toList.traverse { i =>

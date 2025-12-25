@@ -6,7 +6,7 @@ import io.circe.{Json, JsonObject}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class JoseHeaderFlatSpec extends AnyFlatSpec:
-  "JoseHeader" should "succeed" in {
+  "JoseHeader" should "pass" in {
     val header = JoseHeader(
       algorithm = Some(HS256),
       ext = JsonObject("exp" -> Json.fromLong(1363284000))

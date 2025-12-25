@@ -24,7 +24,7 @@ import java.security.interfaces.{ECPublicKey, RSAPublicKey}
 import java.security.spec.ECPoint
 
 class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebKeySet" should "succeed with one bad apple" in {
+  "JsonWebKeySet" should "pass for one bad apple" in {
     // one of the 4 jwks is missing a required parameter
     // rather than rejecting the whole thing, we want to just ignore the problematic key
     val json =
@@ -64,7 +64,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(decode[Id, JsonWebKeySet](json).map(_.keys.size == 3).getOrElse(false))
   }
 
-  "JsonWebKeySet" should "succeed with one unknown key type" in {
+  "JsonWebKeySet" should "pass for one unknown key type" in {
     // one of them is an unknown kty
     val json =
       """
@@ -102,7 +102,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(decode[Id, JsonWebKeySet](json).map(_.keys.length == 3).getOrElse(false))
   }
 
-  "JsonWebKeySet" should "succeed with parse example public keys" in {
+  "JsonWebKeySet" should "pass for parse example public keys" in {
     // from https://tools.ietf.org/html/draft-ietf-jose-json-web-key Appendix A.1
     val n = "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCi" +
       "FV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0" +
@@ -155,7 +155,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     }.getOrElse(false))
   }
 
-  "JsonWebKeySet" should "succeed with parse example private keys" in {
+  "JsonWebKeySet" should "pass for parse example private keys" in {
     // from https://tools.ietf.org/html/draft-ietf-jose-json-web-key Appendix A.2
     val jwkJson = "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4" +
       "\",\"y\":\"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM\",\"d\":\"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE" +
@@ -199,7 +199,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     }.getOrElse(false))
   }
 
-  "JsonWebKeySet" should "succeed with parse example symmetric keys" in {
+  "JsonWebKeySet" should "pass for parse example symmetric keys" in {
     // from https://tools.ietf.org/html/draft-ietf-jose-json-web-key Appendix A.3
     val jwkJson =
       """
@@ -236,7 +236,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySet" should "succeed with from rsa public key and back" in {
+  "JsonWebKeySet" should "pass for from rsa public key and back" in {
     val run =
       for
         publicKey <- RSA.publicKey[IO](n, e).asET
@@ -257,7 +257,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySet" should "succeed with from ec public key and back" in {
+  "JsonWebKeySet" should "pass for from ec public key and back" in {
     List(`P-256`.publicKey[IO](x256, y256), `P-521`.publicKey[IO](x521, y521))
       .map { io =>
         for
@@ -290,7 +290,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
       .value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySet" should "succeed with oct and default to json" in {
+  "JsonWebKeySet" should "pass for oct and default to json" in {
     val run =
       for
         key1 <- AES.keySizeGenerateKey[IO](128).asET
@@ -305,7 +305,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySet" should "succeed with oct keys length" in {
+  "JsonWebKeySet" should "pass for oct keys length" in {
     val run =
       for
         jwk1 <- decode[Id, OctetSequenceJsonWebKey]("""{"kty":"oct","k":"bbj4v-CvqwOm1q3WkVJEpw"}""").eLiftET[IO]
@@ -318,7 +318,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySet" should "succeed with parse set containing invalid" in {
+  "JsonWebKeySet" should "pass for parse set containing invalid" in {
     val json =
       """
         |{
@@ -395,7 +395,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     assert(decode[Id, JsonWebKeySet](json).map(_.keys.length == 3).getOrElse(false))
   }
 
-  "JsonWebKeySet" should "succeed with okps ok" in {
+  "JsonWebKeySet" should "pass for okps ok" in {
     val n = "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCi" +
       "FV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0" +
       "zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFC" +
@@ -457,7 +457,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
    * producing conforming output
    */
 
-  "JsonWebKeySet" should "succeed with salesforce" in {
+  "JsonWebKeySet" should "pass for salesforce" in {
     // ~8am Aug 26, '14 from https://login.salesforce.com/id/keys
     val jwks = "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"AMCELStParLtaggkLtZh4enfxMsjpW6jAlfFjGnDsoWZ4NbG2hSWPtDyB-OisNbo" +
       "Y2x4PeP69lBC2Hd9LxfMcFYhoQpqT7khoZMTaE-QjKCT0uiVvswaUe7Lh6gVJ2hnWehtrmGQ6cFmLP-EiQ7ls8VQa0KiDP2VYFKrrZ4kD5ozA" +
@@ -498,7 +498,7 @@ class JsonWebKeySetFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKeySet" should "succeed with google" in {
+  "JsonWebKeySet" should "pass for google" in {
     // ~8am Aug 26, '14 from https://www.googleapis.com/oauth2/v2/certs
     // Fu*k google.
     val n1 = "vl9eiLnGMX7r0f7i7sSqCN5zpISYRtqrZA8JfcVSq3FrqZFoUNcMCDbSaWGzWWCTkvN3jQEkgYpCpwRAOMYM08IXm46UwxMWlcb8c4" +

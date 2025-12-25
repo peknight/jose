@@ -122,7 +122,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     }}
   end initKeyList
 
-  "X509CertificateVerification" should "succeed with x5t stuff" in {
+  "X509CertificateVerification" should "pass for x5t stuff" in {
     val jwt = "eyJ4NXQiOiJaYjFIVDdyeUNSQUFqMndjUThoV2J6YXFYMXMiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJtZSIsImF1ZCI6InlvdSIs" +
       "ImV4cCI6MTQyMDI5NjI1Nywic3ViIjoiYWJvdXQifQ.RidDM9z0OJkfV2mwxABtEh2Gr_BCFbTuetOTV_dmnFofarBK7VDPPdsdAhtIs3u7WQ" +
       "q9guoo6H3AUGfj4mTFKX3axi2TsaYRKM9wSoRjxFO7ednGcRGx8bnSerqqrbBuM9ZUUt93sIXuneJHYRKlh0Tt9mCXISv1H4OMEueXOJhck-J" +
@@ -149,7 +149,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "X509CertificateVerification" should "succeed with x5tS256 stuff" in {
+  "X509CertificateVerification" should "pass for x5tS256 stuff" in {
     val jwt = "eyJ4NXQjUzI1NiI6IkZTcU90QjV2UHFaNGtqWXAwOUZqQnBrbVhIMFZxRURtLXdFY1Rjb3g2RUUiLCJhbGciOiJFUzI1NiJ9.eyJp" +
       "c3MiOiJtZSIsImF1ZCI6InlvdSIsImV4cCI6MTQyMDI5OTUzOSwic3ViIjoiYWJvdXQifQ.9Nj3UG8N9u7Eyu0wupR-eVS4Mf0ItwwHBZzwLc" +
       "Y2KUCJeWoPRPT7zC4MqMbHfLj6PzFi09iC3q3PniSJwmWJTA"
@@ -174,7 +174,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "X509CertificateVerification" should "succeed with both x5 header stuff" in {
+  "X509CertificateVerification" should "pass for both x5 header stuff" in {
     val jwt = "eyJ4NXQjUzI1NiI6InFTX2JYTlNfSklYQ3JuUmdha2I2b3RFS3Utd0xlb3R6N0tBWjN4UVVPcUUiLCJ4NXQiOiJpSFFLdVNHZVdVR" +
       "1laQ2c0X1JHSlNJQzBORFEiLCJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJtZSIsImF1ZCI6InlvdSIsImV4cCI6MTQyMDI5OTc2MSwic3ViIjoiY" +
       "WJvdXQifQ.04qPYooLJN2G0q0LYVepaydszTuhY7jKjqi5IGkNBAWZ-IBlW_pWzkurR1MkO48SbJQK2swmy7Ogfihi1ClAlA"
@@ -199,7 +199,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "X509CertificateVerification" should "succeed with no thumb header" in {
+  "X509CertificateVerification" should "pass for no thumb header" in {
     // signed w/ 1
     val jwt = "eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJtZSIsImF1ZCI6InlvdSIsImV4cCI6MTQyMDI5ODk3OSwic3ViIjoiYWJvdXQifQ.HtKEt" +
       "mJOb5mmhHni5iJ0FUAEoNStpPZuFmQh7dtw-A7gIYsIUgdLumKCMgjG4OX_hDjvoSGl1XvHwYuzM24AohOJAaSdhLBnxTLZ4NumVwGLWp1uSj" +
@@ -235,7 +235,7 @@ class X509CertificateVerificationFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     run.value.asserting(value => assert(value.isRight))
   }
 
-  "X509CertificateVerification" should "succeed with compare to open ssl fingerprints" in {
+  "X509CertificateVerification" should "pass for compare to open ssl fingerprints" in {
     val run =
       for
         certs <- initKeyList

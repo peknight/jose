@@ -5,7 +5,7 @@ import com.peknight.jose.jwx.JoseHeader
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class TypeValidatorFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "TypeValidator" should "succeed with validate example plus jwt" in {
+  "TypeValidator" should "pass for validate example plus jwt" in {
     val run =
       for
         expected <- List("application/example+jwt", "example+jwt", "EXAMPLE+JWT", "application/example+JWT")

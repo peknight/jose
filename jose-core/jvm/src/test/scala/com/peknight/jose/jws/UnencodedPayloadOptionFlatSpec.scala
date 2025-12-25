@@ -19,7 +19,7 @@ import scodec.bits.ByteVector
 import java.nio.charset.StandardCharsets
 
 class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "UnencodedPayloadOption" should "succeed with RFC7797 examples" in {
+  "UnencodedPayloadOption" should "pass for RFC7797 examples" in {
     // the key and payload are from https://tools.ietf.org/html/rfc7797#section-4
     val payload = "$.02"
     val jwkJson = "{\"kty\":\"oct\",\"k\":\"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUu" +
@@ -57,7 +57,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "UnencodedPayloadOption" should "succeed with RFC7797 examples with derect jws set header" in {
+  "UnencodedPayloadOption" should "pass for RFC7797 examples with derect jws set header" in {
     // the key and payload are from https://tools.ietf.org/html/rfc7797#section-4
     val payload = "$.02"
     val jwkJson = "{\"kty\":\"oct\",\"k\":\"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUu" +
@@ -82,7 +82,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "UnencodedPayloadOption" should "succeed with examples from draft even without direct support for the header" in {
+  "UnencodedPayloadOption" should "pass for examples from draft even without direct support for the header" in {
     // a test of sorts to verify the examples from
     // http://tools.ietf.org/html/draft-ietf-jose-jws-signing-input-options-09#section-4
     // at Mike's request
@@ -119,7 +119,7 @@ class UnencodedPayloadOptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "UnencodedPayloadOption" should "succeed with compact serialization unencoded payload" in {
+  "UnencodedPayloadOption" should "pass for compact serialization unencoded payload" in {
     // https://bitbucket.org/b_c/jose4j/issues/156 shows the b64:false didn't work (0.6.5 and prior)
     // with compact serialization.
     val payload1 = """{"key": "value"}"""

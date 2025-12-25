@@ -21,7 +21,7 @@ import java.nio.charset.{Charset, StandardCharsets}
 import scala.util.Try
 
 class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "PayloadVariations" should "succeed with raw bytes as payload" in {
+  "PayloadVariations" should "pass for raw bytes as payload" in {
     val bytesIn = ByteVector(-98, 96, -6, 55, -118, -17, -128, 13, 126, 14, 90, -21, -91, -7, -50, -57, 37, 79, 10, 45,
       52, 77, 87, -24, -18, -94, -45, 100, -18, 110, -20, -23, -123, 120, 99, -43, 115, 126, 103, 0, -18, -43, 22, -76,
       -84, 127, -110, 7, 78, -109, 44, 81, 119, -73, -115, -10, 18, 27, -113, -104, 14, -50, -105, -41, -49, 25, 26,
@@ -40,7 +40,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PayloadVariations" should "failed with get payload bytes throws on bad signature" in {
+  "PayloadVariations" should "fail for get payload bytes throws on bad signature" in {
     val bytesIn = ByteVector(12, 6, -16, 44, 0, -17, -128, 113, 126, 14, 43, -121, 123, 35, -40, -7, 37, 79, 10, 45, 77,
       77)
     val wrongKeyJson = "{\"kty\":\"RSA\",\"e\":\"AQAB\",\"n\":\"xLyNk8AVckm8PPwxHfenLe1MvDHJL4UsOqGgbyAsEBqrATEg0aap" +
@@ -62,7 +62,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PayloadVariations" should "succeed with payload char encoding ASCII" in {
+  "PayloadVariations" should "pass for payload char encoding ASCII" in {
     val run =
       for
         privateKey <- ES256.curve.privateKey[IO](d256).asET
@@ -78,7 +78,7 @@ class PayloadVariationsFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PayloadVariations" should "succeed with payload char encoding ISO8859_15" in {
+  "PayloadVariations" should "pass for payload char encoding ISO8859_15" in {
     val run =
       for
         charset <- Try(Charset.forName("ISO8859_15")).tryAsError.eLiftET[IO]

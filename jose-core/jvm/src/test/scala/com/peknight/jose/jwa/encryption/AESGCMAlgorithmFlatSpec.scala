@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets
 
 class AESGCMAlgorithmFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
-  "A256GCM" should "succeed" in {
+  "A256GCM" should "pass" in {
     val plaintext = "The true sign of intelligence is not knowledge but imagination."
     val encodedHeader = "eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ"
     val encodedCiphertext = "5eym8TW_c8SuK0ltJ3rpYIzOeDQz7TALvtu6UG9oMo4vpzs9tX_EFShS8iB7j6jiSdiwkIr3ajwQzaBtQD_A"

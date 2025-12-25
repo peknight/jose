@@ -12,7 +12,7 @@ import com.peknight.jose.jwx.JoseHeader
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class DetachedContentFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "DetachedContent" should "succeed with some detached content" in {
+  "DetachedContent" should "pass for some detached content" in {
     val payload = "Issue #48"
     val run =
       for

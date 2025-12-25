@@ -36,7 +36,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     yield
       ()
 
-  "JsonWebKey" should "succeed with factory with X octet key pair json web key" in {
+  "JsonWebKey" should "pass for factory with X octet key pair json web key" in {
     val jwkJson = "{\"kty\":\"OKP\",\"d\":\"T4gjxXciGdlPcWC1Pgba0cptraIx8ZjORUyR-ttweZQ\",\"crv\":\"X25519\",\"x\":" +
       "\"qPRE1ElE6NArtJ0rhMkjaR8_PJZLf6v6Zk_4Vo72jho\"}"
     val run =
@@ -52,7 +52,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "succeed with factory with Ed octet key pair json web key" in {
+  "JsonWebKey" should "pass for factory with Ed octet key pair json web key" in {
     val jwkJson = "{\"kty\":\"OKP\",\"d\":\"Y6KQHffZKlIXW1JdVvEBJCliWtuYk3pYQJoeSvfJEAw\",\"crv\":\"Ed25519\",\"x\":" +
       "\"Jp1b9nhTp_Z2YmHC22k5oy32dIIWYOhiaD8PJQFcxgU\"}"
     val run =
@@ -68,7 +68,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "succeed with factory with RSA public key" in {
+  "JsonWebKey" should "pass for factory with RSA public key" in {
     val run =
       for
         publicKey <- RSA.publicKey[IO](n, e).asET
@@ -79,11 +79,11 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "failed with factory with RSA private key" in {
+  "JsonWebKey" should "fail for factory with RSA private key" in {
     RSA.privateKey[IO](n, d).asserting(privateKey => assert(JsonWebKey.fromKey(privateKey).isLeft))
   }
 
-  "JsonWebKey" should "succeed with factory with EC public key" in {
+  "JsonWebKey" should "pass for factory with EC public key" in {
     val run =
       for
         publicKey <- `P-256`.publicKey[IO](x256, y256).asET
@@ -94,11 +94,11 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "failed with factory with EC private key" in {
+  "JsonWebKey" should "fail for factory with EC private key" in {
     `P-256`.privateKey[IO](d256).asserting(privateKey => assert(JsonWebKey.fromKey(privateKey).isLeft))
   }
 
-  "JsonWebKey" should "succeed with EC single jwk to and from json" in {
+  "JsonWebKey" should "pass for EC single jwk to and from json" in {
     val jwkJson =
       """
         |{
@@ -122,7 +122,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "succeed with RSA single jwk to and from json" in {
+  "JsonWebKey" should "pass for RSA single jwk to and from json" in {
     val n = "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCi" +
       "FV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0" +
       "zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFC" +
@@ -148,7 +148,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "succeed with key ops" in {
+  "JsonWebKey" should "pass for key ops" in {
     val json1 = """{"kty":"oct","k":"Hdd5Uqtga_B4UilmahWJR8juxF_zw1_xaWeUGAvbg9c"}"""
     val json2 = """{"kty":"oct","key_ops":["decrypt","encrypt"],"k":"add14qyge_v4sscm2hWJR8juxF_____cpW8U3ahcp__"}"""
     val run =
@@ -164,11 +164,11 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebKey" should "failed with handle wrong type 1" in {
+  "JsonWebKey" should "fail for handle wrong type 1" in {
     assert(decode[Id, JsonWebKey]("""{"kty":1}""").isLeft)
   }
 
-  "JsonWebKey" should "failed with handle wrong type 2" in {
+  "JsonWebKey" should "fail for handle wrong type 2" in {
     assert(decode[Id, JsonWebKey](
       s"""
          |{
@@ -181,7 +181,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     ).isLeft)
   }
 
-  "JsonWebKey" should "failed with handle wrong type 3" in {
+  "JsonWebKey" should "fail for handle wrong type 3" in {
     assert(decode[Id, JsonWebKey](
       s"""
          |{ "kty":"EC",
@@ -195,7 +195,7 @@ class JsonWebKeyFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     ).isLeft)
   }
 
-  "JsonWebKey" should "failed with handle wrong type 4" in {
+  "JsonWebKey" should "fail for handle wrong type 4" in {
     assert(decode[Id, JsonWebKey](
       s"""
          |{

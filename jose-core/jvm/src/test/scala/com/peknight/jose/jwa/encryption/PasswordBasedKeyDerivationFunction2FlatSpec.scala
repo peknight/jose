@@ -22,17 +22,17 @@ import java.nio.charset.StandardCharsets
 
 class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with iteration count" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for iteration count" in {
     val tests = for c <- List(1, 2, 3, 4, 100) yield deriveAndCompare("somepass", "salty!", c, 20)
     tests.sequence.value.map(_.isRight).asserting(assert)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with iteration length" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for iteration length" in {
     val tests = for dkLen <- List(4, 16, 20, 21, 32, 64, 65) yield deriveAndCompare("password", "sssss", 100, dkLen)
     tests.sequence.value.map(_.isRight).asserting(assert)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with some randoms" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for some randoms" in {
     List(
       deriveAndCompare("pwd", "xxx", 1, 40),
       deriveAndCompare("alongerpasswordwithmorelettersinit", "abcdefghijklmnopqrstuv1234000001ccd", 10, 16),
@@ -54,7 +54,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     yield
       ()
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with pbkdf part from jwk appendix C" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for pbkdf part from jwk appendix C" in {
     // just the pbkdf2 part from http://tools.ietf.org/html/draft-ietf-jose-json-web-key-22#appendix-C
     val pass = "Thus from my lips, by yours, my sin is purged."
     val salt = ByteVector(80, 66, 69, 83, 50, 45, 72, 83, 50, 53, 54, 43, 65, 49, 50, 56, 75, 87, 0, 217, 96, 147, 112,
@@ -71,7 +71,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with test 1" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for test 1" in {
     val iterationCount = 1024
     val salt = "_bdWuYq60PU"
     val dkLen = 16
@@ -81,7 +81,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testPasswordKeyDerivationFunction2(prf, password, salt, iterationCount, dkLen, expectedKey)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with test 2" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for test 2" in {
     val iterationCount = 500
     val salt = "4qJnWHair2GDKxXd9SYE64MA"
     val dkLen = 64
@@ -91,7 +91,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testPasswordKeyDerivationFunction2(prf, password, salt, iterationCount, dkLen, expectedKey)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with test 3" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for test 3" in {
     val iterationCount = 7
     val salt = "SCZwvZ_lZek"
     val dkLen = 32
@@ -101,7 +101,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testPasswordKeyDerivationFunction2(prf, password, salt, iterationCount, dkLen, expectedKey)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with test 4" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for test 4" in {
     val iterationCount = 20
     val salt = "eGOROhJ6jDqos0hYhQh8EYfGJ7g"
     val dkLen = 32
@@ -111,7 +111,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testPasswordKeyDerivationFunction2(prf, password, salt, iterationCount, dkLen, expectedKey)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with test 5" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for test 5" in {
     val iterationCount = 1
     val salt = "WKSJ8q-EvvyP-0RQd6g"
     val dkLen = 16
@@ -121,7 +121,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testPasswordKeyDerivationFunction2(prf, password, salt, iterationCount, dkLen, expectedKey)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with test 6" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for test 6" in {
     val iterationCount = 3
     val salt = "SldHVNgHJadJ"
     val dkLen = 128
@@ -146,7 +146,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
         derivedKey == expectedKey
     run.value.asserting(value => assert(value.getOrElse(false)))
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with RFC6070 test 1" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for RFC6070 test 1" in {
     val password = "password"
     val salt = "salt"
     val iterationCount = 1
@@ -156,7 +156,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testAndCompare(password, salt, iterationCount, dkLen, expectedOutput)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with RFC6070 test 2" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for RFC6070 test 2" in {
     val password = "password"
     val salt = "salt"
     val iterationCount = 2
@@ -166,7 +166,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testAndCompare(password, salt, iterationCount, dkLen, expectedOutput)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with RFC6070 test 3" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for RFC6070 test 3" in {
     val password = "password"
     val salt = "salt"
     val iterationCount = 4096
@@ -176,7 +176,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testAndCompare(password, salt, iterationCount, dkLen, expectedOutput)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with RFC6070 test 4" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for RFC6070 test 4" in {
     val password = "password"
     val salt = "salt"
     val iterationCount = 16777216
@@ -186,7 +186,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testAndCompare(password, salt, iterationCount, dkLen, expectedOutput)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with RFC6070 test 5" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for RFC6070 test 5" in {
     val password = "passwordPASSWORDpassword"
     val salt = "saltSALTsaltSALTsaltSALTsaltSALTsalt"
     val iterationCount = 4096
@@ -196,7 +196,7 @@ class PasswordBasedKeyDerivationFunction2FlatSpec extends AsyncFlatSpec with Asy
     testAndCompare(password, salt, iterationCount, dkLen, expectedOutput)
   }
 
-  "PasswordBasedKeyDerivationFunction2" should "succeed with RFC6070 test 6" in {
+  "PasswordBasedKeyDerivationFunction2" should "pass for RFC6070 test 6" in {
     val password = "pass\u0000word"
     val salt = "sa\u0000lt"
     val iterationCount = 4096

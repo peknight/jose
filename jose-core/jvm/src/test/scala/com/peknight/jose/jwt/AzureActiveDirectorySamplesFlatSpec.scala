@@ -12,7 +12,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.time.Instant
 
 class AzureActiveDirectorySamplesFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "JsonWebToken" should "succeed with consume azure id token v1" in {
+  "JsonWebToken" should "pass for consume azure id token v1" in {
     // ID token issued from
     // https://login.microsoftonline.com/30aa0e58-719c-44f0-b5bb-e131f1f68ab3/oauth2/authorize?
     // scope=openid&client_id=56c77428-2d91-48a0-93e6-ca9154965e51&response_type=code&redirect_uri=...etc
@@ -72,7 +72,7 @@ class AzureActiveDirectorySamplesFlatSpec extends AsyncFlatSpec with AsyncIOSpec
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebToken" should "succeed with consume azure id token v2" in {
+  "JsonWebToken" should "pass for consume azure id token v2" in {
     // ID token issued from
     // https://login.microsoftonline.com/30aa0e58-719c-44f0-b5bb-e131f1f68ab3/oauth2/v2.0/authorize?
     // scope=openid+profile+email&client_id=6914484a-38ea-4a0b-801a-bb924cef5235&response_type=code...

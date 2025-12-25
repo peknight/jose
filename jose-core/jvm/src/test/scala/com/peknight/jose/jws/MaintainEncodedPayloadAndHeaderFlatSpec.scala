@@ -10,7 +10,7 @@ import com.peknight.security.cipher.RSA
 import org.scalatest.flatspec.AsyncFlatSpec
 
 class MaintainEncodedPayloadAndHeaderFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
-  "MaintainEncodedPayloadAndHeader" should "succeed with odd encoded paylaod" in {
+  "MaintainEncodedPayloadAndHeader" should "pass for odd encoded paylaod" in {
     // There's an extra 'X' at the end of the encoded payload but it still decodes to the same value as when the 'X'
     // isn't there; but the signature is over the X and we want to check what was signed rather than what we think
     // should be signed by re-encoding the payload

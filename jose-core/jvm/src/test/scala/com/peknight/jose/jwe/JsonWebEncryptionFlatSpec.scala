@@ -15,7 +15,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 
 class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
 
-  "JsonWebEncryption" should "succeed with jwe example A3" in {
+  "JsonWebEncryption" should "pass for jwe example A3" in {
     val jweCsFromAppendixA3Compact = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLvtgWQ8mKwb" +
       "oJW3of9locizkDTHzBC2IlrT1oOQ.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY.U0m_YmjN04DJv" +
       "ceFICbCVQ"
@@ -32,7 +32,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebEncryption" should "succeed with jwe example A2" in {
+  "JsonWebEncryption" should "pass for jwe example A2" in {
     val jweCsFromAppendixA2Compact = "eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.UGhIOguC7IuEvf_NPVaXsGMoLO" +
       "mwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-kFm1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKxGHZ7PcHALUzoO" +
       "egEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3YvkkysZIFNPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPh" +
@@ -49,7 +49,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebEncryption" should "succeed with jwe example A1" in {
+  "JsonWebEncryption" should "pass for jwe example A1" in {
     val csCompact = "eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ.OKOawDo13gRp2ojaHV7LFpZcgV7T6DVZKTyKOMTYUmKoTCVJ" +
       "RgckCL9kiMT03JGeipsEdY3mx_etLbbWSrFr05kLzcSr4qKAq7YN7e9jwQRb23nfa6c9d-StnImGyFDbSv04uVuxIp5Zms1gNxKKK2Da14B8S" +
       "4rzVRltdYwam_lDp5XnZAYpQdb76FdIKLaVmqgfwX7XWRxv2322i-vDxRfqNzo_tETKzpVLzfiwQyeyPGLBIO56YJ7eObdv0je81860ppamav" +
@@ -66,7 +66,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebEncryption" should "succeed with happy round trip RSA1_5 and A128CBC-HS256" in {
+  "JsonWebEncryption" should "pass for happy round trip RSA1_5 and A128CBC-HS256" in {
     val plaintext = "Some text that's on double secret probation"
     val run =
       for
@@ -82,7 +82,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebEncryption" should "succeed with happy round trip RSA-OAEP and A128CBC-HS256" in {
+  "JsonWebEncryption" should "pass for happy round trip RSA-OAEP and A128CBC-HS256" in {
     val plaintext = "Some text that's on double secret probation"
     val run =
       for
@@ -98,7 +98,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebEncryption" should "succeed with happy round trip Direct and A128CBC-HS256" in {
+  "JsonWebEncryption" should "pass for happy round trip Direct and A128CBC-HS256" in {
     val plaintext = "Some sensitive info"
     val run =
       for
@@ -112,7 +112,7 @@ class JsonWebEncryptionFlatSpec extends AsyncFlatSpec with AsyncIOSpec:
     run.value.asserting(value => assert(value.getOrElse(false)))
   }
 
-  "JsonWebEncryption" should "failed with accepting compact serialization with malformed JWE" in {
+  "JsonWebEncryption" should "fail for accepting compact serialization with malformed JWE" in {
     // modified to have only 4 parts, which isn't legal, from http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-14#appendix-A.3.11
     val damagedVersionOfJweCsFromAppendixA3 = "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.6KB707dM9YTIgHtLv" +
       "tgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ.AxY8DCtDaGlsbGljb3RoZQ.KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
