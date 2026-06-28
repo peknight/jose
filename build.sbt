@@ -5,14 +5,11 @@ commonSettings
 
 lazy val jose = (project in file("."))
   .settings(name := "jose")
-  .aggregate(
-    joseCore.jvm,
-    joseCore.js,
-  )
+  .aggregate(joseCore.projectRefs *)
 
-lazy val joseCore = (crossProject(JVMPlatform, JSPlatform) in file("jose-core"))
+lazy val joseCore = (projectMatrix in file("jose-core"))
   .settings(name := "jose-core")
-  .settings(crossDependencies(
+  .settings(libraryDependencies ++= dependencies(
     peknight.security,
     peknight.codec.circe.parser,
     peknight.codec.base,
@@ -23,9 +20,15 @@ lazy val joseCore = (crossProject(JVMPlatform, JSPlatform) in file("jose-core"))
     peknight.commons.time,
     peknight.validation.spire,
   ))
-  .settings(crossTestDependencies(
+  .settings(libraryDependencies ++= testDependencies(
     scalaTest.flatSpec,
     typelevel.catsEffect.testingScalaTest,
     peknight.security.bouncyCastle.provider,
   ))
-  .jvmSettings(libraryDependencies ++= Seq(jvmTestDependency(logback.classic)))
+  .jvmPlatform(
+    scalaVersions = Seq(scala.scala3.version),
+    settings = Seq(
+      libraryDependencies ++= jvmTestDependencies(logback.classic)
+    )
+  )
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
